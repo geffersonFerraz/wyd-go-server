@@ -1,0 +1,175 @@
+{{define "content"}}
+<p class="crumbs"><a href="/accounts">← Contas</a></p>
+<h1 class="title">{{.Username}}
+  {{with .Account}}<span class="pill {{if eq .Status 0}}ok{{else}}bad{{end}}">{{status .Status}}</span>{{end}}
+</h1>
+
+{{if .Missing}}
+<section class="card">
+  <p>Esta conta ainda não existe. Se ela acabou de ser pedida, aguarde o DBSRV processar o pedido abaixo.</p>
+  {{template "deliveries" .Deliveries}}
+</section>
+{{else}}
+<div class="grid">
+  <div>
+    <section class="card">
+      <h2>Conta</h2>
+      <dl class="facts">
+        <div><dt>Cash</dt><dd>{{.Account.Cash}}</dd></div>
+        <div><dt>Acesso</dt><dd>{{.Account.AccessLevel}}</dd></div>
+        <div><dt>Token</dt><dd>{{if .Account.HasNumeric}}definido{{else}}não definido{{end}}</dd></div>
+        <div><dt>Ban</dt><dd>{{if .Account.BanUntil}}tipo {{.Account.BanType}} até {{dateptr .Account.BanUntil}}{{else}}—{{end}}</dd></div>
+        <div><dt>Criada</dt><dd>{{datetime .Account.CreatedAt}}</dd></div>
+        <div><dt>Último save</dt><dd>{{datetime .Account.UpdatedAt}}</dd></div>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Personagens</h2>
+      {{if .Characters}}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Slot</th><th>Nome</th><th>Evolução</th><th class="num">Nível</th><th class="num">Gold</th><th>Guild</th></tr></thead>
+        <tbody>
+        {{range .Characters}}
+          <tr><td>{{.Slot}}</td><td><a href="/accounts/{{pathescape $.Username}}/chars/{{.Slot}}">{{.Name}}</a></td><td>{{evolution .Evolution}}</td><td class="num">{{.Level}}</td><td class="num">{{.Gold}}</td><td>{{.Guild}}</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+      </div>
+      <p class="muted small">Clique no nome para editar gold, nível, equipamento e inventário.</p>
+      {{else}}<p class="muted">Nenhum personagem.</p>{{end}}
+      <p><a href="/accounts/{{pathescape .Username}}/storage">Editar baú (itens e gold) →</a></p>
+    </section>
+
+    <section class="card">
+      <h2>Pedidos desta conta</h2>
+      {{template "deliveries" .Deliveries}}
+    </section>
+  </div>
+
+  <aside>
+    {{if .Requested}}<p class="alert info">Pedido #{{.Requested}} enviado. Acompanhe em “Pedidos desta conta”.</p>{{end}}
+    <section class="card">
+      <h2>Entregar item</h2>
+      {{if .ItemError}}<p class="alert bad">{{.ItemError}}</p>{{end}}
+      <form method="post" action="/accounts/{{pathescape .Username}}/item" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label>Item (ID) <input name="item_id" type="number" min="1" max="6499" value="{{.ItemForm.Get "item_id"}}" required>
+          <small><a href="/gamedata/items" target="_blank" rel="noopener">Procurar o ID na lista de itens</a></small></label>
+        <div class="fields">
+          <label>Quantidade <input name="amount" type="number" min="1" max="120" value="{{.ItemForm.Get "amount"}}">
+            <small>Pilha; só para itens acumuláveis</small></label>
+          <label>Refino <input name="sanc" type="number" min="0" max="15" value="{{.ItemForm.Get "sanc"}}"></label>
+          <label>Cópias <input name="copies" type="number" min="1" max="50" value="{{.ItemForm.Get "copies"}}">
+            <small>Um slot do baú por cópia</small></label>
+        </div>
+        <details{{if or (.ItemForm.Get "ef0") (.ItemForm.Get "ef1") (.ItemForm.Get "ef2")}} open{{end}}>
+          <summary>Adicionais</summary>
+          {{range $i := slice3}}{{$sel := $.ItemForm.Get (printf "ef%d" $i)}}
+          <div class="fields">
+            <label>Efeito {{add1 $i}} <select name="ef{{$i}}"><option value="0">—</option>
+              {{range $.EffectNames}}<option value="{{.ID}}"{{if eq (printf "%d" .ID) $sel}} selected{{end}}>{{.ID}} · {{.Name}}</option>{{end}}</select></label>
+            <label>Valor <input name="ev{{$i}}" type="number" min="0" max="255" value="{{$.ItemForm.Get (printf "ev%d" $i)}}"></label>
+          </div>
+          {{end}}
+        </details>
+        <p class="muted small">O item vai para o baú (cargo) da conta. Com o jogador no jogo ele chega na hora; na seleção de personagem, o pedido espera ele entrar.</p>
+        <button class="primary">Entregar</button>
+      </form>
+    </section>
+    <section class="card">
+      <h2>No jogo</h2>
+      {{if .KickError}}<p class="alert bad">{{.KickError}}</p>{{end}}
+      {{if .Online}}
+        <p><span class="pill info">online</span> no canal {{.Online.Channel}} desde {{datetime .Online.Since}}</p>
+        <p class="muted small">Enquanto o jogador está online, o TMSRV guarda a conta em memória e regrava tudo a cada save: alterações diretas no banco são bloqueadas. Desconecte para editar (o TMSRV salva antes de sair).</p>
+        <form method="post" action="/accounts/{{pathescape .Username}}/kick">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <button class="danger">Desconectar do jogo</button>
+        </form>
+      {{else}}
+        <p class="muted">Offline. Alterações diretas no banco valem no próximo login.</p>
+      {{end}}
+    </section>
+    <section class="card">
+      <h2>Acesso (GM)</h2>
+      {{if .AccessError}}<p class="alert bad">{{.AccessError}}</p>{{end}}
+      <form method="post" action="/accounts/{{pathescape .Username}}/edit" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="back" value="/accounts/{{pathescape .Username}}">
+        <input type="hidden" name="op" value="access">
+        <label>Nível de acesso <input name="value" type="number" min="0" max="255" value="{{.Account.AccessLevel}}" required>
+          <small>0 = jogador; maior que 0 = GM (libera /gm e /sgm). Vale na hora se estiver online.</small></label>
+        <button class="primary">Definir acesso</button>
+      </form>
+    </section>
+    {{if .Lock.Enabled}}
+    <section class="card">
+      <h2>Bloqueio da conta (no jogo)</h2>
+      {{if .LockError}}<p class="alert bad">{{.LockError}}</p>{{end}}
+      {{if .Lock.Error}}<p class="alert bad">Não foi possível ler o bloqueio: {{.Lock.Error}}</p>{{end}}
+      {{if .Lock.Set}}
+        <p><span class="pill bad">bloqueada</span>
+          {{if .Lock.Switches}}<small class="muted">Bloqueia: {{join .Lock.Switches ", "}}</small>{{else}}<small class="muted">sem funções bloqueadas</small>{{end}}</p>
+        <form method="post" action="/accounts/{{pathescape .Username}}/lock/remove">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <p class="muted small">Apaga a senha de bloqueio e libera todas as funções. O jogador pode criar um bloqueio novo no jogo.</p>
+          <button class="danger">Desbloquear e apagar a senha</button>
+        </form>
+        <form method="post" action="/accounts/{{pathescape .Username}}/lock/password" autocomplete="off">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <label>Nova senha de bloqueio <input name="lockpass" type="password" minlength="8" maxlength="8" pattern="[A-Za-z0-9]{8}" autocomplete="new-password" required>
+            <small>Exatamente 8 letras ou números; mantém as funções bloqueadas</small></label>
+          <label>Confirmar <input name="lockpass2" type="password" minlength="8" maxlength="8" pattern="[A-Za-z0-9]{8}" autocomplete="new-password" required></label>
+          <button class="primary">Redefinir senha de bloqueio</button>
+        </form>
+      {{else}}
+        <p><span class="pill ok">sem bloqueio</span></p>
+      {{end}}
+      <p class="muted small">Com o jogador online, a mudança vale na hora; senão, no próximo login.</p>
+    </section>
+    {{end}}
+    <section class="card">
+      <h2>Alterar senha</h2>
+      {{if .PasswordError}}<p class="alert bad">{{.PasswordError}}</p>{{end}}
+      <form method="post" action="/accounts/{{pathescape .Username}}/password" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label>Nova senha <input name="password" type="password" maxlength="11" autocomplete="new-password" required>
+          <small>1 a 11 caracteres</small></label>
+        <label>Confirmar <input name="password2" type="password" maxlength="11" autocomplete="new-password" required></label>
+        <button class="primary">Alterar senha</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Alterar token</h2>
+      {{if .TokenError}}<p class="alert bad">{{.TokenError}}</p>{{end}}
+      <form method="post" action="/accounts/{{pathescape .Username}}/token" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label>Novo token <input name="token" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{1,6}" required>
+          <small>Senha numérica, 1 a 6 dígitos</small></label>
+        <label>Confirmar <input name="token2" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]{1,6}" required></label>
+        <button class="primary">Alterar token</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{{end}}
+{{end}}
+
+{{define "deliveries"}}
+{{if .}}
+<ul class="deliveries">
+{{range .}}
+  <li>
+    <span class="pill {{tone .}}" {{if pending .}}data-delivery="{{.ID}}"{{end}}>{{result .}}</span>
+    <span>{{kind .Kind}}{{with itemlabel .}}: {{.}}{{end}}</span>
+    <small class="muted">#{{.ID}} · {{datetime .CreatedAt}}{{if .RequestedBy}} · {{.RequestedBy}}{{end}}</small>
+  </li>
+{{end}}
+</ul>
+{{else}}
+<p class="muted">Nenhum pedido.</p>
+{{end}}
+{{end}}

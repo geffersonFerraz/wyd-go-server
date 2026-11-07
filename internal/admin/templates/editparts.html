@@ -1,0 +1,87 @@
+{{define "deliveries"}}
+{{if .}}
+<ul class="deliveries">
+{{range .}}
+  <li>
+    <span class="pill {{tone .}}" {{if pending .}}data-delivery="{{.ID}}"{{end}}>{{result .}}</span>
+    <span>{{kind .Kind}}{{with itemlabel .}}: {{.}}{{end}}</span>
+    <small class="muted">#{{.ID}} · {{datetime .CreatedAt}}{{if .RequestedBy}} · {{.RequestedBy}}{{end}}</small>
+  </li>
+{{end}}
+</ul>
+{{else}}
+<p class="muted">Nenhum pedido.</p>
+{{end}}
+{{end}}
+
+{{define "editnotice"}}
+{{if .Error}}<p class="alert bad" role="alert">{{.Error}}</p>{{end}}
+{{if .Requested}}<p class="alert info">Pedido #{{.Requested}} enviado. Acompanhe em “Pedidos desta conta”.</p>{{end}}
+{{if .Online}}
+<p class="alert info">Online no canal {{.Online.Channel}}. As alterações valem na hora no jogo (com o personagem em jogo) — os itens mostrados aqui são os do último save.</p>
+{{end}}
+{{end}}
+
+{{/* itemrows: dict "Cells" "Root" "Char" */}}
+{{define "itemrows"}}
+<div class="table-wrap">
+<table class="items">
+  <thead><tr><th>Slot</th><th>Item</th><th>Adicionais</th><th></th></tr></thead>
+  <tbody>
+  {{range .Cells}}
+    <tr{{if .Picked}} class="picked"{{end}}>
+      <td>{{.Label}}</td>
+      <td>{{if .Empty}}<span class="muted">vazio</span>{{else}}{{if .Name}}{{.Name}}{{else}}item{{end}} <small>[{{.Item.Index}}]</small>{{end}}</td>
+      <td class="effects">{{join .Effects ", "}}</td>
+      <td class="actions">
+        <a href="{{$.Root.Back}}?where={{.Where}}&amp;slot={{.Slot}}#editor">{{if .Empty}}Colocar{{else}}Editar{{end}}</a>
+        {{if not .Empty}}
+        <form method="post" action="/accounts/{{pathescape $.Root.Username}}/edit" class="inline">
+          <input type="hidden" name="csrf" value="{{$.Root.CSRF}}">
+          <input type="hidden" name="back" value="{{$.Root.Back}}">
+          <input type="hidden" name="op" value="item">
+          <input type="hidden" name="remove" value="1">
+          <input type="hidden" name="char" value="{{$.Char}}">
+          <input type="hidden" name="where" value="{{.Where}}">
+          <input type="hidden" name="slot" value="{{.Slot}}">
+          <input type="hidden" name="expect" value="{{.Expect}}">
+          <button class="link danger" data-confirm="Remover {{if .Name}}{{.Name}}{{else}}o item{{end}} do slot {{.Label}}?">Remover</button>
+        </form>
+        {{end}}
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{end}}
+
+{{/* itemeditor: dict "Root" "Char" */}}
+{{define "itemeditor"}}
+{{with .Root.Pick}}
+<section class="card" id="editor">
+  <h2>{{if .Empty}}Colocar item{{else}}Editar item{{end}} · slot {{.Label}}</h2>
+  <form method="post" action="/accounts/{{pathescape $.Root.Username}}/edit" autocomplete="off">
+    <input type="hidden" name="csrf" value="{{$.Root.CSRF}}">
+    <input type="hidden" name="back" value="{{$.Root.Back}}">
+    <input type="hidden" name="op" value="item">
+    <input type="hidden" name="char" value="{{$.Char}}">
+    <input type="hidden" name="where" value="{{.Where}}">
+    <input type="hidden" name="slot" value="{{.Slot}}">
+    <input type="hidden" name="expect" value="{{.Expect}}">
+    <label>Item (ID) <input name="item_id" type="number" min="1" max="6499" value="{{if not .Empty}}{{.Item.Index}}{{end}}" required>
+      <small><a href="/gamedata/items" target="_blank" rel="noopener">Procurar o ID na lista de itens</a></small></label>
+    {{$it := .Item}}
+    {{range $k := slice3}}{{$cur := effidx $it $k}}
+    <div class="fields">
+      <label>Efeito {{add1 $k}} <select name="ef{{$k}}"><option value="0">—</option>
+        {{range $.Root.EffectNames}}<option value="{{.ID}}"{{if eq .ID $cur}} selected{{end}}>{{.ID}} · {{.Name}}</option>{{end}}</select></label>
+      <label>Valor <input name="ev{{$k}}" type="number" min="0" max="255" value="{{effval $it $k}}"></label>
+    </div>
+    {{end}}
+    <p class="muted small">Quantidade: efeito 61 (EF_AMOUNT). Refino: efeito 43 (EF_SANC; +10 em diante = 230 + 4 por nível). Se o slot mudar no jogo antes de aplicar, o pedido é recusado.</p>
+    <button class="primary">Salvar item</button>
+  </form>
+</section>
+{{end}}
+{{end}}

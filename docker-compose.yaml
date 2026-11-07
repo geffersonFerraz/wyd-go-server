@@ -1,0 +1,37 @@
+# PostgreSQL for DBSRV.
+#
+#   docker compose up -d            # start (data persists in the dbsrv-pgdata volume)
+#   docker compose down             # stop, keep data
+#   docker compose down -v          # stop and DELETE all data
+#
+# Connection strings (defaults; override in .env, see .env.example):
+#   app:   postgres://dbsrv:dbsrv@localhost:5432/dbsrv
+#   tests: postgres://dbsrv:dbsrv@localhost:5432/dbsrv_test   (wiped by every test run)
+
+name: dbsrv
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dbsrv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dbsrv}
+      POSTGRES_DB: ${POSTGRES_DB:-dbsrv}
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    ports:
+      # Bound to localhost only; TMSRV/DBSRV run on the same host.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
+    name: dbsrv-pgdata

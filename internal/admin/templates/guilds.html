@@ -1,0 +1,72 @@
+{{define "content"}}
+<h1>Guildas <span>· {{.Total}} no total, {{.WithMark}} com ícone</span></h1>
+{{if not .Enabled}}<p class="alert bad">O upload de ícones está desativado. Inicie o painel com <code>-guildmark-dir</code>.</p>{{end}}
+<div class="grid">
+  <section class="card">
+    <form method="get" action="/guilds" class="search">
+      <input name="q" value="{{.Q}}" placeholder="Nome ou id da guilda" aria-label="Buscar guilda">
+      <button>Buscar</button>
+    </form>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="num">Id</th><th>Nome</th><th>Reino</th><th class="num">Fame</th><th>Ícone</th></tr></thead>
+      <tbody>{{range .Guilds}}<tr>
+        <td class="num"><a href="/guilds?id={{.ID}}">{{.ID}}</a></td>
+        <td><a href="/guilds?id={{.ID}}">{{.Name}}</a></td>
+        <td>{{.Kingdom}}</td>
+        <td class="num">{{.Fame}}</td>
+        <td>{{if .HasMark}}<img class="mark" src="/guilds/{{.ID}}/mark.bmp?v={{.Version}}" alt="Ícone de {{.Name}}" width="32" height="24">{{else}}<span class="muted">—</span>{{end}}</td>
+      </tr>{{else}}<tr><td colspan="5" class="muted">Nenhuma guilda encontrada.</td></tr>{{end}}</tbody>
+    </table></div>
+  </section>
+  <aside>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <section class="card">
+      <h2>Cidades</h2>
+      <p class="muted small">Guilda dona de cada cidade, em todos os canais. Informe o id ou o nome exato da guilda; 0 ou vazio = sem dono.</p>
+      {{range .Cities}}
+      <form method="post" action="/cities/{{.ID}}" autocomplete="off" class="city-form">
+        <input type="hidden" name="csrf" value="{{$.CSRF}}">
+        <label>{{.Name}}
+          <input name="guild" value="{{if .Set}}{{.GuildID}}{{end}}" placeholder="{{if .Set}}sem dono{{else}}definido no guild_zone.txt{{end}}" list="guild-names">
+          <small>{{if .Set}}{{if .GuildID}}{{.GuildName}} (#{{.GuildID}}){{else}}sem dono{{end}} · por {{.ChangedBy}} em {{.ChangedAt}}{{else}}ainda não definido no painel (vale o guild_zone.txt){{end}}</small></label>
+        <button class="primary">Salvar</button>
+      </form>
+      {{end}}
+      <datalist id="guild-names">{{range .Guilds}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</datalist>
+      <form method="post" action="/cities/reset">
+        <input type="hidden" name="csrf" value="{{$.CSRF}}">
+        <button class="link danger" data-confirm="Deixar todas as cidades sem dono?">Resetar todas as cidades</button>
+      </form>
+      <p class="muted small">Os donos de cidade ficam só no banco e são geridos só por aqui (os comandos de GM +guildowner e +resetcities foram retirados).</p>
+    </section>
+    <section class="card">
+      {{with .Picked}}
+      <h2>{{.Name}} <span class="muted">#{{.ID}}</span></h2>
+      {{if gt .ID $.MaxClientGuild}}<p class="alert bad">O cliente só lê ids até {{$.MaxClientGuild}}; esta guilda vai mostrar o ícone de outra.</p>{{end}}
+      <div class="mark-preview">
+        {{if .HasMark}}<img class="mark big" src="/guilds/{{.ID}}/mark.bmp?v={{.Version}}" alt="Ícone atual" width="128" height="96">{{else}}<p class="muted">Sem ícone.</p>{{end}}
+      </div>
+      <p class="small muted">Arquivo no servidor: <code>{{$.FileName}}</code></p>
+      {{if $.Enabled}}
+      <form method="post" action="/guilds/{{.ID}}/mark" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="{{$.CSRF}}">
+        <label>Novo ícone <input type="file" name="mark" accept=".bmp,.png,image/bmp,image/png" required>
+          <small>BMP (8, 24 ou 32 bits) ou PNG, exatamente 16x12 pixels. É convertido para o BMP de 24 bits que o cliente aceita.</small></label>
+        <button class="primary">Enviar ícone</button>
+      </form>
+      {{if .HasMark}}
+      <form method="post" action="/guilds/{{.ID}}/mark/delete">
+        <input type="hidden" name="csrf" value="{{$.CSRF}}">
+        <button class="link danger" data-confirm="Remover o ícone de {{.Name}}?">Remover ícone</button>
+      </form>
+      {{end}}
+      {{end}}
+      {{else}}
+      <h2>Ícone da guilda</h2>
+      <p class="muted">Escolha uma guilda na lista para ver ou trocar o ícone.</p>
+      {{end}}
+    </section>
+  </aside>
+</div>
+{{end}}

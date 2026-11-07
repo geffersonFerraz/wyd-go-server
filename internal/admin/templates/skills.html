@@ -1,0 +1,10 @@
+{{define "content"}}
+{{template "gdnav" "skills"}}
+<section class="card">
+  <h2>Skills</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th class="num">Id</th><th>Nome</th><th>Classe</th><th class="num">Mana</th><th class="num">Recarga</th><th class="num">Alcance</th><th class="num">Tipo</th><th class="num">Alvos</th><th>Passiva</th></tr></thead>
+    <tbody>{{range .Skills}}<tr><td class="num">{{.ID}}</td><td><a href="/gamedata/skills/{{.ID}}">{{if .Name}}{{.Name}}{{else}}(sem nome){{end}}</a></td><td>{{class .ID}}</td><td class="num">{{.Mana}}</td><td class="num">{{.Delay}}</td><td class="num">{{.Range}}</td><td class="num">{{.InstanceType}}</td><td class="num">{{.MaxTarget}}</td><td>{{if .Passive}}sim{{end}}</td></tr>{{end}}</tbody>
+  </table></div>
+</section>
+{{end}}

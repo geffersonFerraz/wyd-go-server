@@ -1,0 +1,49 @@
+{{define "content"}}
+<p class="crumbs"><a href="/accounts/{{pathescape .Username}}">← {{.Username}}</a></p>
+<h1 class="title">{{.Name}} <span>personagem {{add1 .Slot}} · {{evolution .Evolution}} · nível {{.Level}}</span></h1>
+{{template "editnotice" .}}
+
+<div class="grid">
+  <div>
+    <section class="card">
+      <h2>Equipamento</h2>
+      {{template "itemrows" (dict "Cells" .Equip "Root" . "Char" .Slot)}}
+    </section>
+    <section class="card">
+      <h2>Inventário</h2>
+      {{template "itemrows" (dict "Cells" .Inv "Root" . "Char" .Slot)}}
+    </section>
+  </div>
+
+  <aside>
+    {{template "itemeditor" (dict "Root" . "Char" .Slot)}}
+    <section class="card">
+      <h2>Gold</h2>
+      <form method="post" action="/accounts/{{pathescape .Username}}/edit" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="back" value="{{.Back}}">
+        <input type="hidden" name="op" value="gold">
+        <input type="hidden" name="char" value="{{.Slot}}">
+        <label>Gold no inventário <input name="value" type="number" min="0" max="2000000000" value="{{.Gold}}" required></label>
+        <button class="primary">Definir gold</button>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Nível</h2>
+      <form method="post" action="/accounts/{{pathescape .Username}}/edit" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="back" value="{{.Back}}">
+        <input type="hidden" name="op" value="level">
+        <input type="hidden" name="char" value="{{.Slot}}">
+        <label>Nível (como aparece no jogo) <input name="value" type="number" min="1" max="400" value="{{.Level}}" required>
+          <small>A experiência vai para o início do nível. Exp atual: {{.Exp}}</small></label>
+        <button class="primary">Definir nível</button>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Pedidos desta conta</h2>
+      {{template "deliveries" .Deliveries}}
+    </section>
+  </aside>
+</div>
+{{end}}

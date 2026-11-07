@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · DBSRV Admin</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+{{if .Admin}}
+<header class="top">
+  <a class="brand" href="/accounts">DBSRV <span>Admin</span></a>
+  <nav class="mainnav"><a href="/accounts">Contas</a><a href="/gamedata/items">Dados do jogo</a><a href="/guilds">Guildas</a><a href="/alerts">Alertas{{if .UnseenAlerts}} <span class="pill bad">{{.UnseenAlerts}}</span>{{end}}</a></nav>
+  <form method="post" action="/logout" class="logout">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <span class="who">{{.Admin}}</span>
+    <button class="link">Sair</button>
+  </form>
+</header>
+{{end}}
+<main>
+{{if .DBSRVWarning}}<p class="alert bad" role="alert">{{.DBSRVWarning}}</p>{{end}}
+{{template "content" .}}
+</main>
+</body>
+</html>

@@ -1,0 +1,70 @@
+{{define "content"}}
+<div class="grid">
+  <section class="card">
+    <h2>Contas</h2>
+    <form method="get" action="/accounts" class="search">
+      <input name="q" value="{{.Q}}" placeholder="Buscar por login ou personagem" aria-label="Buscar">
+      <button>Buscar</button>
+    </form>
+    {{if .Accounts}}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Login</th><th>Personagens</th><th>Situação</th><th class="num">Cash</th><th>Token</th></tr></thead>
+      <tbody>
+      {{range .Accounts}}
+        <tr>
+          <td><a href="/accounts/{{pathescape .Username}}">{{.Username}}</a>{{if .Online}} <span class="pill info">online</span>{{end}}</td>
+          <td class="chars">{{join .Characters ", "}}</td>
+          <td><span class="pill {{if eq .Status 0}}ok{{else}}bad{{end}}">{{status .Status}}</span>{{if .BanUntil}} <span class="pill bad">Ban até {{dateptr .BanUntil}}</span>{{end}}</td>
+          <td class="num">{{.Cash}}</td>
+          <td>{{if .HasNumeric}}definido{{else}}<span class="muted">—</span>{{end}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+    {{else}}
+    <p class="muted">Nenhuma conta encontrada.</p>
+    {{end}}
+  </section>
+
+  <aside>
+    <section class="card">
+      <h2>Nova conta</h2>
+      {{with .Form}}{{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}{{end}}
+      <form method="post" action="/accounts" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label>Login <input name="username" value="{{with .Form}}{{.Username}}{{end}}" maxlength="15" pattern="[A-Za-z0-9]{3,15}" required>
+          <small>3 a 15 letras ou números</small></label>
+        <label>Senha <input name="password" type="password" maxlength="11" autocomplete="new-password" required>
+          <small>1 a 11 caracteres (limite do cliente)</small></label>
+        <label>Confirmar senha <input name="password2" type="password" maxlength="11" autocomplete="new-password" required></label>
+        <label>Token (opcional) <input name="token" value="{{with .Form}}{{.Token}}{{end}}" inputmode="numeric" maxlength="6" pattern="[0-9]{1,6}">
+          <small>Senha numérica, 1 a 6 dígitos. Sem token, o jogador define no primeiro acesso.</small></label>
+        <button class="primary">Criar conta</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Últimos pedidos</h2>
+      {{template "deliveries" .Recent}}
+    </section>
+  </aside>
+</div>
+{{end}}
+
+{{define "deliveries"}}
+{{if .}}
+<ul class="deliveries">
+{{range .}}
+  <li>
+    <span class="pill {{tone .}}" {{if pending .}}data-delivery="{{.ID}}"{{end}}>{{result .}}</span>
+    <span>{{kind .Kind}}{{with itemlabel .}}: {{.}}{{end}} ·<a href="/accounts/{{pathescape .Username}}">{{.Username}}</a></span>
+    <small class="muted">#{{.ID}} · {{datetime .CreatedAt}}{{if .RequestedBy}} · {{.RequestedBy}}{{end}}</small>
+  </li>
+{{end}}
+</ul>
+{{else}}
+<p class="muted">Nenhum pedido ainda.</p>
+{{end}}
+{{end}}

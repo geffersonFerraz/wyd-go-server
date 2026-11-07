@@ -1,0 +1,13 @@
+# Segredos e configuração local
+.env
+.admin-password
+
+# Binários (recriados com: servidor build)
+bin/
+*.exe
+*.test
+*.out
+
+# Dados gerados em execução
+guildmarks/
+data/tmsrv/Cache/

@@ -1,0 +1,16 @@
+{{define "gdnav"}}
+<nav class="subnav" aria-label="Dados do jogo">
+  <a href="/gamedata/items"{{if eq . "items"}} aria-current="page"{{end}}>Itens</a>
+  <a href="/gamedata/skills"{{if eq . "skills"}} aria-current="page"{{end}}>Skills</a>
+  <a href="/gamedata/drops"{{if eq . "drops"}} aria-current="page"{{end}}>Drops</a>
+  <a href="/gamedata/teleports"{{if eq . "teleports"}} aria-current="page"{{end}}>Teleportes</a>
+</nav>
+{{end}}
+
+{{define "changes"}}
+{{if .}}
+<ul class="deliveries">
+{{range .}}<li><span>{{.Entity}} {{.Key}} · {{.Summary}}</span><small class="muted">{{datetime .At}} · {{.By}}</small></li>{{end}}
+</ul>
+{{else}}<p class="muted">Nenhuma alteração registrada.</p>{{end}}
+{{end}}

@@ -1,0 +1,23 @@
+{{define "content"}}
+{{template "gdnav" "items"}}
+<div class="grid">
+  <section class="card">
+    <h2>Itens</h2>
+    <form method="get" action="/gamedata/items" class="search">
+      <input name="q" value="{{.Q}}" placeholder="Id ou nome" aria-label="Buscar item">
+      <button>Buscar</button>
+    </form>
+    <form method="get" class="search" onsubmit="location='/gamedata/items/'+this.id.value;return false">
+      <input name="id" type="number" min="1" max="6499" placeholder="Abrir/criar item pelo id" aria-label="Id do item">
+      <button>Abrir</button>
+    </form>
+    {{if .Items}}
+    <div class="table-wrap"><table>
+      <thead><tr><th class="num">Id</th><th>Nome</th><th class="num">Nível</th><th class="num">Preço</th><th class="num">Pos</th></tr></thead>
+      <tbody>{{range .Items}}<tr><td class="num">{{.ID}}</td><td><a href="/gamedata/items/{{.ID}}">{{.Name}}</a></td><td class="num">{{.Level}}</td><td class="num">{{.Price}}</td><td class="num">{{.Pos}}</td></tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<p class="muted">Nenhum item encontrado.</p>{{end}}
+  </section>
+  <aside><section class="card"><h2>Últimas alterações</h2>{{template "changes" .Changes}}</section></aside>
+</div>
+{{end}}

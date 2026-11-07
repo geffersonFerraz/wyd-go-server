@@ -1,0 +1,40 @@
+{{define "content"}}
+<h1>Alertas <span>· {{.Unseen}} não vistos</span></h1>
+<section class="card">
+  <p class="muted small">Avisos enviados pelos canais (TMSRV). Hoje: quando a proteção do cliente detecta o WPE (editor de pacotes), o jogador é desconectado e o alerta aparece aqui.</p>
+  <p>{{if .All}}<a href="/alerts">Mostrar só os não vistos</a>{{else}}<a href="/alerts?all=1">Mostrar também os já vistos</a>{{end}}</p>
+  {{if .Alerts}}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Quando</th><th>Tipo</th><th>Conta</th><th>Personagem</th><th>IP</th><th class="num">Canal</th><th>Detalhe</th><th></th></tr></thead>
+    <tbody>
+    {{range .Alerts}}
+      <tr>
+        <td>{{datetime .CreatedAt}}</td>
+        <td><span class="pill bad">{{alertkind .Kind}}</span></td>
+        <td>{{if .Username}}<a href="/accounts/{{pathescape .Username}}">{{.Username}}</a>{{else}}<span class="muted">antes do login</span>{{end}}</td>
+        <td>{{.CharName}}</td>
+        <td>{{.IP}}</td>
+        <td class="num">{{.Channel}}</td>
+        <td>{{.Detail}}</td>
+        <td>{{if .SeenAt}}<small class="muted">visto por {{.SeenBy}}</small>{{else}}
+          <form method="post" action="/alerts/{{.ID}}/seen">
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <button class="link">Marcar como visto</button>
+          </form>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{if .Unseen}}
+  <form method="post" action="/alerts/0/seen">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <button class="primary">Marcar todos como vistos</button>
+  </form>
+  {{end}}
+  {{else}}
+  <p class="muted">Nenhum alerta.</p>
+  {{end}}
+</section>
+{{end}}

@@ -1,0 +1,1092 @@
+/////////////////////////////LAN N ////////////////////////////////
+MobName:Guer Caveira 
+MaxDrops:19
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0 
+50 2397 0 0 
+50 2402 0 0 
+250 911 2 45 
+280 810 2 45 
+290 885 2 45 
+500 911 2 54 
+530 810 2 54 
+550 885 2 54 
+800 911 2 63 
+870 810 2 63 
+900 885 2 63 
+80 1208 0 0 
+160 1211 0 0 
+130 1213 0 0 
+100 1217 0 0 
+120 1220 0 0 
+END
+
+
+
+MobName:Elfo Negro   
+MaxDrops:19
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0  
+50 2397 0 0 
+50 2402 0 0  
+250 936 2 45 
+280 870 2 45 
+290 855 60 20 
+500 911 2 54 
+530 870 2 54 
+550 855 60 24
+800 936 2 63 
+870 810 2 63 
+900 855 60 28
+80 1493 0 0 
+160 1496 0 0 
+130 1499 0 0 
+100 1502 0 0 
+120 1502 0 0 
+END
+
+MobName:Golem de Fogo  
+MaxDrops:16
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0 
+50 2397 0 0 
+50 2402 0 0 
+280 902 60 20 
+290 900 60 20 
+530 902 60 24
+550 900 60 24
+800 902 60 28 
+870 900 60 28
+80 1343 0 0 
+160 1346 0 0 
+130 1349 0 0 
+100 1352 0 0 
+120 1355 0 0 
+END
+
+MobName:Morlock Mage
+MaxDrops:16
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0 
+50 2397 0 0 
+50 2402 0 0 
+280 825 2 45 
+290 840 2 45 
+530 825 2 54 
+550 840 2 54 
+800 825 2 63 
+870 840 2 63 
+80 1343 0 0 
+160 1346 0 0 
+130 1349 0 0 
+100 1352 0 0 
+120 1355 0 0 
+END
+
+/////////////////////////////LAN M ////////////////////////////////
+MobName:PerEnt
+MaxDrops:18
+GoldDrop:20000
+150 4020 0 0  
+100 419 0 0 
+100 420 0 0 
+300 412 0 0 
+300 413 0 0
+250 2399 0 0
+250 2404 0 0  
+100 1513 0 0
+100 1363 0 0
+100 1346 0 0
+100 1649 0 0
+100 1663 0 0
+100 1228 0 0
+100 1343 0 0
+500 4027 0 0
+250 4026 0 0
+300 3322 61 80
+300 3323 61 80
+END
+
+MobName:PerBear
+MaxDrops:18
+GoldDrop:20000
+150 4020 0 0  
+100 419 0 0 
+100 420 0 0 
+300 412 0 0 
+300 413 0 0
+250 2399 0 0
+250 2404 0 0  
+100 1512 0 0
+100 1362 0 0
+100 1346 0 0
+100 1662 0 0
+100 1211 0 0
+100 1499 0 0
+100 1208 0 0
+500 4027 0 0
+250 4026 0 0
+300 3322 61 80
+300 3323 61 80
+END
+
+
+MobName:PerWolf
+MaxDrops:19
+GoldDrop:20000
+150 4020 0 0  
+100 419 0 0 
+100 420 0 0 
+300 412 0 0 
+300 413 0 0
+250 2399 0 0
+250 2404 0 0  
+100 1514 0 0
+100 1364 0 0
+100 1496 0 0
+100 1663 0 0
+100 1229 0 0
+100 1499 0 0
+100 1496 0 0
+100 1493 0 0
+500 4027 0 0
+250 4026 0 0
+300 3322 61 80
+300 3323 61 80
+END
+
+MobName:PerAmon
+MaxDrops:23
+GoldDrop:20000
+150 4020 0 0  
+100 419 0 0 
+100 420 0 0 
+300 412 0 0 
+300 413 0 0
+250 2399 0 0
+250 2404 0 0  
+100 1510 0 0
+100 1511 0 0
+100 1660 0 0
+100 1661 0 0
+100 1360 0 0
+100 1361 0 0
+100 1225 0 0
+100 1226 0 0
+100 1505 0 0
+100 1643 0 0
+100 1655 0 0
+100 1214 0 0
+500 4027 0 0
+250 4026 0 0
+300 3322 61 80
+300 3323 61 80
+END
+
+/////////////////////////////LAN A ////////////////////////////////
+MobName:PerKalintzH
+MaxDrops:19
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0 
+50 2397 0 0 
+50 2402 0 0 
+250 911 2 45 
+280 810 2 45 
+290 885 2 45 
+500 911 2 54 
+530 810 2 54 
+550 885 2 54 
+800 911 2 63 
+870 810 2 63 
+900 885 2 63 
+80 1208 0 0 
+160 1211 0 0 
+130 1213 0 0 
+100 1217 0 0 
+120 1220 0 0
+END
+
+MobName:PerBerserker  
+MaxDrops:19
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0  
+50 2397 0 0 
+50 2402 0 0  
+250 936 2 45 
+280 870 2 45 
+290 855 60 20 
+500 911 2 54 
+530 870 2 54 
+550 855 60 24
+800 936 2 63 
+870 810 2 63 
+900 855 60 28
+80 1493 0 0 
+160 1496 0 0 
+130 1499 0 0 
+100 1502 0 0 
+120 1502 0 0 
+END
+
+MobName:PerValkyrie  
+MaxDrops:16
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0 
+50 2397 0 0 
+50 2402 0 0 
+280 902 60 20 
+290 900 60 20 
+530 902 60 24
+550 900 60 24
+800 902 60 28 
+870 900 60 28
+80 1343 0 0 
+160 1346 0 0 
+130 1349 0 0 
+100 1352 0 0 
+120 1355 0 0 
+END
+
+MobName:PerKalintzM
+MaxDrops:16
+GoldDrop:20000
+50 4019 0 0  
+55 420 0 0 
+45 419 0 0 
+50 2397 0 0 
+50 2402 0 0 
+280 825 2 45 
+290 840 2 45 
+530 825 2 54 
+550 840 2 54 
+800 825 2 63 
+870 840 2 63 
+80 1343 0 0 
+160 1346 0 0 
+130 1349 0 0 
+100 1352 0 0 
+120 1355 0 0 
+END
+
+/////////////////////////////GELO ////////////////////////////////
+MobName:Lobo Polar
+MaxDrops:7
+GoldDrop:0
+150 3140 0 0  
+250 1656 0 0 
+255 1722 0 0 
+260 1223 0 0 
+270 1508 0 0 
+255 1724 0 0 
+258 1721 0 0 
+END
+
+
+MobName:Urso Polar
+MaxDrops:8
+GoldDrop:0
+150 3140 0 0  
+250 1357 0 0 
+255 1359 0 0 
+260 1711 0 0 
+270 1223 0 0 
+255 1506 0 0 
+258 1724 0 0 
+258 1725 0 0 
+END
+
+MobName:Troll de Gelo
+MaxDrops:8
+GoldDrop:0
+150 3140 0 0  
+250 1508 0 0 
+255 1223 0 0 
+260 1358 0 0 
+270 1222 0 0 
+255 1223 0 0 
+258 1224 0 0 
+258 1725 0 0 
+END
+
+
+MobName:Ent Anciao
+MaxDrops:5
+GoldDrop:0
+150 3140 0 0  
+250 1507 0 0 
+255 1224 0 0 
+70 4020 0 0 
+270 1657 0 0 
+END
+
+MobName:Grande Lobo
+MaxDrops:7
+GoldDrop:0
+150 3140 0 0  
+250 1509 0 0 
+255 1221 0 0 
+270 1506 0 0 
+290 1659 0 0 
+70 4020 0 0 
+275 1356 0 0 
+END
+
+MobName:Mulher Kalintz
+MaxDrops:3
+GoldDrop:0
+400 903 0 0 
+450 856 0 0 
+490 904 0 0 
+END
+
+
+MobName:Mulher Kalintz
+MaxDrops:3
+GoldDrop:0
+400 903 0 0 
+450 856 0 0 
+490 904 0 0 
+END
+
+
+MobName:Homem Kalintz
+MaxDrops:7
+GoldDrop:0
+300 912 0 0 
+350 811 0 0 
+390 871 0 0 
+350 886 0 0 
+340 937 0 0 
+430 841 0 0 
+460 826 0 0 
+END
+
+
+MobName:Soldado Amon
+MaxDrops:11
+GoldDrop:0
+70 3140 0 0  
+75 4020 0 0 
+155 1657 0 0 
+160 1507 0 0 
+170 1356 0 0 
+155 1658 0 0 
+163 1222 0 0 
+165 1357 0 0 
+169 1359 0 0 
+175 1224 0 0 
+175 1659 0 0 
+END
+
+MobName:Guerreiro Amon
+MaxDrops:7
+GoldDrop:0
+70 3140 0 0  
+155 1659 0 0 
+160 1356 0 0 
+170 1506 0 0 
+155 1509 0 0 
+163 1359 0 0 
+165 1358 0 0 
+END
+
+
+MobName:Chefe Amon
+MaxDrops:10
+GoldDrop:0
+100 1712 0 0  
+130 1711 0 0  
+155 1506 0 0 
+160 1356 0 0 
+170 1357 0 0 
+155 1657 0 0 
+163 1221 0 0 
+165 1656 0 0 
+185 1359 0 0 
+195 1358 0 0 
+
+END
+
+MobName:Gorila Anciao
+MaxDrops:1
+GoldDrop:0
+100 669 0 0  
+END
+
+MobName:Berserker Ref
+MaxDrops:18
+GoldDrop:0
+50 4020 0 0 
+150 4127 0 0 
+100 1510 0 0 
+130 1511 0 0 
+150 1512 0 0    
+170 1513 0 0
+180 1514 0 0    
+120 1225 0 0 
+140 1226 0 0 
+160 1227 0 0    
+190 1228 0 0
+210 1229 0 0   
+200 3582 60 24    
+250 3566 60 24 
+280 3556 2 54   
+400 3582 60 28   
+450 3566 60 28
+480 3556 2 63   
+END
+
+MobName:Berserker Titan
+MaxDrops:10
+GoldDrop:0 
+30 578 0 0
+200 3566 60 24    
+250 3551 2 54 
+280 3561 2 54  
+300 3596 2 54   
+100 1712 0 0   
+400 3566 60 28   
+450 3551 2 63
+480 3561 2 63   
+500 3596 2 63 
+END
+
+
+MobName:Valkyrie Rosen
+MaxDrops:20
+GoldDrop:0 
+100 1360 0 0
+130 1361 0 0
+160 1362 0 0
+180 1363 0 0
+200 1364 0 0
+120 1660 0 0
+140 1661 0 0
+170 1662 0 0
+190 1663 0 0
+220 1664 0 0
+190 3576 2 54 
+140 3591 2 54 
+120 3596 2 54 
+150 3581 60 24 
+164 3582 60 24 
+400 3581  60 28   
+450 3582 60 28 
+480 3576 2 63   
+500 3591 2 63 
+520 3596 2 63 
+END
+
+
+MobName:Valkyrie Tina
+MaxDrops:15
+GoldDrop:0 
+100 670 0 0 
+150 4127 0 0 
+130 1712 0 0 
+190 3551 2 54 
+140 3561 2 54 
+120 3556 2 54 
+145 3571 2 54 
+150 3566 60 24 
+164 3581 60 24 
+400 3566  60 28   
+450 3581 60 28 
+480 3551 2 63   
+500 3561 2 63 
+520 3556 2 63 
+545 3571 2 63 
+END
+
+MobName:Guarda Beriel
+MaxDrops:4
+GoldDrop:0 
+110 669 0 0 
+145 670 0 0 
+160 671 0 0 
+150 4127 0 0 
+END
+
+MobName:WriggleSwarm
+MaxDrops:3
+GoldDrop:0 
+110 669 0 0  
+END
+
+
+MobName:GrubSwarm
+MaxDrops:1
+GoldDrop:0 
+150 413 0 0 
+END
+
+MobName:HorizonCropper
+MaxDrops:2
+GoldDrop:0 
+100 825 2 45 
+130 870 2 45 
+END
+
+MobName:XenoCropper
+MaxDrops:1
+GoldDrop:0 
+150 4127 0 0
+END
+
+MobName:FunerScyther
+MaxDrops:1
+GoldDrop:0 
+150 2444 0 0
+END
+
+MobName:Simio
+MaxDrops:1
+GoldDrop:0 
+80 419 0 0
+80 420 0 0
+END
+
+
+MobName:SimioBleg
+MaxDrops:1
+GoldDrop:0 
+80 419 0 0
+80 420 0 0
+END
+
+MobName:Batorero
+MaxDrops:1
+GoldDrop:0 
+80 419 0 0
+80 420 0 0
+END
+
+MobName:Funer Seamer
+MaxDrops:1
+GoldDrop:0 
+1 4106 0 0
+END
+
+MobName:Funer Sickler
+MaxDrops:1
+GoldDrop:0 
+1 4107 0 0
+END
+
+MobName:Simio 
+MaxDrops:1
+GoldDrop:0 
+1 4108 0 0
+END
+
+MobName:Batorero 
+MaxDrops:1
+GoldDrop:0 
+1 4109 0 0
+END
+
+MobName:Lich Vatama 
+MaxDrops:1
+GoldDrop:0 
+150 671 0 0
+END
+
+MobName:Lich Crunt
+MaxDrops:1
+GoldDrop:0 
+150 671 0 0
+END
+
+MobName:FunerSeamer
+MaxDrops:1
+GoldDrop:0 
+150 4127 0 0
+END
+
+MobName:Ladrao Tauron
+MaxDrops:3
+GoldDrop:0 
+100 2406 0 0
+100 613 0 0
+100 612 0 0
+END
+
+
+MobName:IronTaron
+MaxDrops:16
+GoldDrop:0 
+100 3556 2 45
+230 3561 2 45
+230 3561 2 45
+100 825 2 45
+100 840 2 45
+230 3556 2 63
+230 3561 2 63
+250 3561 2 63
+180 825 2 63
+160 840 2 63
+230 3566 60 20
+230 3566 60 28
+100 1227 0 0
+100 1362 0 0
+100 1512 0 0
+100 1662 0 0
+END
+
+
+
+MobName:Verme 
+MaxDrops:10
+GoldDrop:0 
+100 885 2 45
+100 3576 2 45
+110 1712 0 0
+100 1710 0 0
+200 885 2 63
+230 3576 2 63
+100 1226 0 0
+100 1361 0 0
+100 1511 0 0
+100 1661 0 0
+END
+
+MobName:Manticora
+MaxDrops:16
+GoldDrop:0 
+50 1756 0 0
+100 662 0 0
+100 591 0 0
+100 592 0 0
+100 3571 2 45
+100 3591 2 45
+110 3551 2 45
+100 870 2 45
+200 3571 2 63
+230 3591 2 63
+260 3551 2 63
+180 870 2 63
+100 1510 0 0
+100 1225 0 0
+100 1360 0 0
+100 1660 0 0
+END
+
+MobName:Adamant Tauron
+MaxDrops:11
+GoldDrop:0 
+100 578 0 0
+100 663 0 0
+100 2406 0 0
+250 2316 0 0
+100 3582 60 20
+180 3582 60 28
+100 1229 0 0
+100 1364 0 0
+100 1514 0 0
+100 1664 0 0
+END
+
+MobName:Lugefer
+MaxDrops:4
+GoldDrop:0 
+100 669 0 0
+100 614 0 0
+100 663 0 0
+20 1758 0 0
+END
+
+MobName:Cav. Lugefer
+MaxDrops:1
+GoldDrop:0 
+20 1758 0 0
+END
+
+
+MobName:Taron Assassino
+MaxDrops:4
+GoldDrop:0 
+100 2406 0 0
+250 2316 0 0
+100 613 0 0
+100 661 0 0
+END
+
+
+MobName:Arqueiro Tauron
+MaxDrops:3
+GoldDrop:0 
+100 2406 0 0
+100 614 0 0
+100 661 0 0
+END
+
+
+MobName:Arq Caveira
+MaxDrops:3
+GoldDrop:0 
+150 2441 0 0
+END
+
+
+
+
+MobName:Cav.Caveira
+MaxDrops:1
+GoldDrop:0 
+70 1753 0 0
+END
+
+
+
+MobName:Guer Caveira
+MaxDrops:1
+GoldDrop:0 
+70 1753 0 0
+END
+
+MobName:Elfo_Negro
+MaxDrops:3
+GoldDrop:0 
+15 4041 0 0
+15 4040 0 0
+150 2442 0 0
+END
+
+
+MobName:Conj Caveira
+MaxDrops:1
+GoldDrop:0 
+15 4040 0 0
+END
+
+MobName:Golem de Pedra
+MaxDrops:1
+GoldDrop:0 
+150 2444 0 0
+END
+
+
+MobName:Golem de Fogo
+MaxDrops:1
+GoldDrop:0 
+150 2444 0 0
+END
+
+MobName:Gargula
+MaxDrops:2
+GoldDrop:0 
+150 2441 0 0
+150 2444 0 0
+END
+
+MobName:Bruxa Elfica
+MaxDrops:2
+GoldDrop:0 
+150 2441 0 0
+150 2444 0 0
+END
+
+MobName:Cavaleiro Negro
+MaxDrops:2
+GoldDrop:0 
+150 2441 0 0
+150 2444 0 0
+END
+
+MobName:Dragao Lich
+MaxDrops:1
+GoldDrop:0 
+100 2441 0 0
+50 1754 0 0
+END
+
+MobName:Demon Lord
+MaxDrops:1
+GoldDrop:0 
+50 1755 0 0
+END
+
+MobName:Aqua Golem
+MaxDrops:1
+GoldDrop:0 
+150 2441 0 0
+END
+
+
+MobName:Argos
+MaxDrops:1
+GoldDrop:0 
+50 4042 0 0
+END
+
+MobName:Argos Errante
+MaxDrops:1
+GoldDrop:0 
+50 4042 0 0
+END
+
+MobName:Cav. Elfo_Negro
+MaxDrops:2
+GoldDrop:0 
+50 4042 0 0
+50 4041 0 0
+END
+
+
+MobName:Elfo Negro Abj
+MaxDrops:1
+GoldDrop:0 
+50 4042 0 0
+END
+
+MobName:Morlock
+MaxDrops:3
+GoldDrop:0 
+70 1774 0 0
+150 2443 0 0
+50 4042 0 0
+END
+
+
+MobName:Flame_Gargula
+MaxDrops:1
+GoldDrop:0 
+70 1757 0 0
+END
+
+MobName:Demo Gorgon
+MaxDrops:1
+GoldDrop:0 
+70 1712 0 0
+END
+
+MobName:FZ DemonLord
+MaxDrops:1
+GoldDrop:0 
+5 1759 0 0
+END
+
+MobName:Flame Gargula
+MaxDrops:1
+GoldDrop:0 
+70 1757 0 0
+END
+
+MobName:Urso Zumbi
+MaxDrops:4
+GoldDrop:0 
+90 693 0 0
+120 694 0 0
+150 695 0 0
+150 2441 0 0
+END
+
+
+MobName:Taurus Maligno
+MaxDrops:1
+GoldDrop:0 
+5 4080 0 0
+END
+
+MobName:Orc L Trooper
+MaxDrops:3
+GoldDrop:0 
+30 1752 0 0
+20 2303 0 0
+50 2393 0 0
+END
+
+
+MobName:Orc Sha Trooper
+MaxDrops:1
+GoldDrop:0 
+30 1752 0 0
+END
+
+MobName:Esqueleto
+MaxDrops:1
+GoldDrop:0 
+3 4117 0 0
+END
+
+MobName:Aparicao
+MaxDrops:1
+GoldDrop:0 
+1 4117 0 0
+END
+
+
+MobName:Servo Carbuncle
+MaxDrops:1
+GoldDrop:0 
+3 4118 0 0
+END
+
+MobName:Grande Carb
+MaxDrops:1
+GoldDrop:0 
+1 4118 0 0
+END
+
+MobName:Cav Servo
+MaxDrops:1
+GoldDrop:0 
+3 4119 0 0
+END
+
+
+MobName:Cav Kaizen
+MaxDrops:1
+GoldDrop:0 
+1 4119 0 0
+END
+
+
+MobName:Hidra Imortal
+MaxDrops:1
+GoldDrop:0 
+3 4120 0 0
+END
+
+
+MobName:Hidra Dourada
+MaxDrops:1
+GoldDrop:0 
+1 4120 0 0
+END
+
+
+MobName:Servo Elfo
+MaxDrops:1
+GoldDrop:0 
+3 4121 0 0
+END
+
+
+MobName:Mestre Elfo
+MaxDrops:1
+GoldDrop:0 
+1 4121 0 0
+END
+
+
+MobName:Gremlin Artif
+MaxDrops:1
+GoldDrop:0 
+1 451 0 0
+END
+
+MobName:Krill Gigante
+MaxDrops:1
+GoldDrop:0 
+1 452 0 0
+END
+
+MobName:Orc Sniper
+MaxDrops:1
+GoldDrop:0 
+1 453 0 0
+END
+
+
+MobName:Orc Guerreiro  
+MaxDrops:1
+GoldDrop:0 
+1 524 0 0
+END
+
+/////////////////////////////CARTA N ////////////////////////////////
+MobName:Meio Orc  
+MaxDrops:2
+GoldDrop:0 
+3 412 0 0
+3 413 0 0
+END
+
+
+MobName:Caveira 
+MaxDrops:2
+GoldDrop:0 
+3 419 61 1
+3 420 61 1
+END
+
+MobName:Caveira Lanc 
+MaxDrops:2
+GoldDrop:0 
+3 419 61 1
+3 420 61 1
+END
+
+
+
+MobName:Minotauro 
+MaxDrops:4
+GoldDrop:0 
+2 2441 0 0
+2 2442 0 0
+2 2443 0 0
+2 2444 0 0
+END
+
+MobName:Taurus Maligno   
+MaxDrops:1
+GoldDrop:0 
+1 4080 0 0
+END
+
+MobName:Chief Nain   
+MaxDrops:1
+GoldDrop:0 
+1 4124 0 0
+END
+
+MobName:Troll Mago   
+MaxDrops:1
+GoldDrop:0 
+1 4125 0 0
+END
+
+MobName:DeathKnightKing   
+MaxDrops:1
+GoldDrop:0 
+1 4081 0 0
+END
+
+MobName:Guarda Orc    
+MaxDrops:1
+GoldDrop:0 
+1 462 0 0
+END
+
+MobName:Orc Guard     
+MaxDrops:1
+GoldDrop:0 
+1 467 0 0
+END
+
+MobName:Chefe Orc      
+MaxDrops:1
+GoldDrop:0 
+1 468 0 0
+END
+
+MobName:Orc Lord    
+MaxDrops:1
+GoldDrop:0 
+1 470 0 0
+END

@@ -1,0 +1,21 @@
+{{define "content"}}
+{{template "gdnav" "skills"}}
+<div class="grid">
+  <section class="card">
+    <h2>Skill {{.Skill.ID}} <span class="muted">· {{class .Skill.ID}}</span></h2>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <form method="post" action="/gamedata/skills/{{.Skill.ID}}" class="gd-form">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label>Nome <input name="name" value="{{.Skill.Name}}" maxlength="64"></label>
+      <div class="fields">
+      {{range .Fields}}<label>{{.Label}} <input name="{{.Key}}" type="number" value="{{.Value}}">{{if .Help}}<small>{{.Help}}</small>{{end}}</label>{{end}}
+        <label>Act 1 <input name="act1" value="{{.Skill.Act1}}"><small>animação (não usado pelo servidor)</small></label>
+        <label>Act 2 <input name="act2" value="{{.Skill.Act2}}"></label>
+      </div>
+      <button class="primary">Salvar</button>
+    </form>
+  </section>
+  <aside><section class="card"><h2>Histórico</h2>{{template "changes" .Changes}}</section></aside>
+</div>
+{{end}}

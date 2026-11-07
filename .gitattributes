@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.bmp binary
+internal/wire/testdata/** binary
+# Dados do jogo: bytes exatos (Windows-1252, CRLF), sem conversão
+data/** -text

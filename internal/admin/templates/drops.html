@@ -1,0 +1,28 @@
+{{define "content"}}
+{{template "gdnav" "drops"}}
+<div class="grid">
+  <section class="card">
+    <h2>Drops por monstro</h2>
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <form method="get" action="/gamedata/drops" class="search">
+      <input name="q" value="{{.Q}}" placeholder="Nome do monstro ou seção" aria-label="Buscar monstro">
+      <button>Buscar</button>
+    </form>
+    {{if .Drops}}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Monstro</th><th>Seção</th><th class="num">Linhas</th><th class="num">Máx./morte</th><th class="num">Gold</th></tr></thead>
+      <tbody>{{range .Drops}}<tr><td><a href="{{dropurl .Name}}">{{spaces .Name}}</a></td><td>{{.Section}}</td><td class="num">{{.Lines}}</td><td class="num">{{.MaxDrops}}</td><td class="num">{{.Gold}}</td></tr>{{end}}</tbody>
+    </table></div>
+    <p class="muted">␣ = espaço no final do nome. O nome precisa ser igual ao do monstro, inclusive esses espaços.</p>
+    {{else}}<p class="muted">Nenhum monstro encontrado.</p>{{end}}
+  </section>
+  <aside><section class="card">
+    <h2>Novo monstro</h2>
+    <form method="post" action="/gamedata/drops">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label>Nome exato do monstro <input name="name" maxlength="16" required><small>Inclua espaços finais se o nome do monstro tiver.</small></label>
+      <button class="primary">Criar</button>
+    </form>
+  </section></aside>
+</div>
+{{end}}

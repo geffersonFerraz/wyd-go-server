@@ -1,0 +1,36 @@
+{{define "content"}}
+{{template "gdnav" "teleports"}}
+<div class="grid">
+  <section class="card">
+    <h2>Teleportes</h2>
+    <p class="muted">Ids especiais no código: 6 RvR, 14 Hall do Kefra, 43 Vale das Fadas, 44-47 eventos.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="num">Id</th><th>Origem</th><th>Destino</th><th class="num">Preço</th></tr></thead>
+      <tbody>{{range .Teleports}}<tr><td class="num"><a href="/gamedata/teleports?id={{.ID}}">{{.ID}}</a></td><td>{{.SrcX}} x {{.SrcY}}</td><td>{{.DstX}} x {{.DstY}}</td><td class="num">{{.Price}}</td></tr>{{end}}</tbody>
+    </table></div>
+  </section>
+  <aside>
+    <section class="card">
+      <h2>Editar / criar</h2>
+      {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+      {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+      <form method="post" action="/gamedata/teleports">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label>Id <input name="id" type="number" min="0" max="127" value="{{.Edit.ID}}" required></label>
+        <label>Origem X <input name="src_x" type="number" min="0" max="4095" value="{{.Edit.SrcX}}"></label>
+        <label>Origem Y <input name="src_y" type="number" min="0" max="4095" value="{{.Edit.SrcY}}"></label>
+        <label>Destino X <input name="dst_x" type="number" min="0" max="4095" value="{{.Edit.DstX}}"></label>
+        <label>Destino Y <input name="dst_y" type="number" min="0" max="4095" value="{{.Edit.DstY}}"></label>
+        <label>Preço (gold) <input name="price" type="number" min="0" value="{{.Edit.Price}}"></label>
+        <button class="primary">Salvar</button>
+      </form>
+      <form method="post" action="/gamedata/teleports/delete" onsubmit="return confirm('Remover o teleporte {{.Edit.ID}}?')">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="id" value="{{.Edit.ID}}">
+        <button class="link danger">Remover teleporte {{.Edit.ID}}</button>
+      </form>
+    </section>
+    <section class="card"><h2>Histórico</h2>{{template "changes" .Changes}}</section>
+  </aside>
+</div>
+{{end}}

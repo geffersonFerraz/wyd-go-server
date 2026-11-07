@@ -1,0 +1,43 @@
+{{define "content"}}
+{{template "gdnav" "items"}}
+<div class="grid">
+  <section class="card">
+    <h2>Item {{.Item.ID}}{{if .New}} <span class="pill info">novo</span>{{end}}</h2>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <form method="post" action="/gamedata/items/{{.Item.ID}}" class="gd-form">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label>Nome <input name="name" value="{{.Item.Name}}" maxlength="64" required></label>
+      <div class="fields">
+        <label>Nível <input name="level" type="number" value="{{.Item.Level}}"></label>
+        <label>Preço <input name="price" type="number" min="0" value="{{.Item.Price}}"></label>
+        <label>FOR <input name="req_str" type="number" value="{{.Item.ReqStr}}"></label>
+        <label>INT <input name="req_int" type="number" value="{{.Item.ReqInt}}"></label>
+        <label>DES <input name="req_dex" type="number" value="{{.Item.ReqDex}}"></label>
+        <label>CON <input name="req_con" type="number" value="{{.Item.ReqCon}}"></label>
+        <label>Posição <input name="pos" type="number" min="0" max="65535" value="{{.Item.Pos}}"></label>
+        <label>Unique <input name="unique_type" type="number" value="{{.Item.Unique}}"></label>
+        <label>Grade <input name="grade" type="number" value="{{.Item.Grade}}"></label>
+        <label>Extreme <input name="extreme" type="number" value="{{.Item.Extreme}}"></label>
+        <label>Mesh 1 <input name="mesh1" type="number" value="{{.Item.Mesh1}}"></label>
+        <label>Mesh 2 <input name="mesh2" type="number" value="{{.Item.Mesh2}}"></label>
+      </div>
+      <h3>Efeitos</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="num">#</th><th>Efeito</th><th class="num">Valor</th></tr></thead>
+        <tbody>
+        {{range .Effects}}{{$e := .Effect}}
+          <tr><td class="num">{{add1 .Slot}}</td>
+            <td><select name="ef{{.Slot}}" aria-label="Efeito {{add1 .Slot}}"><option value="0">—</option>
+              {{range $.EffectNames}}<option value="{{.ID}}"{{if eq .ID $e}} selected{{end}}>{{.ID}} · {{.Name}}</option>{{end}}</select></td>
+            <td class="num"><input name="ev{{.Slot}}" type="number" value="{{.Value}}" aria-label="Valor {{add1 .Slot}}"></td></tr>
+        {{end}}
+        </tbody>
+      </table></div>
+      <p class="muted">Nome, atributos e requisitos também aparecem no cliente (ItemList.bin dele); mudanças visuais precisam de um cliente atualizado.</p>
+      <button class="primary">Salvar</button>
+    </form>
+  </section>
+  <aside><section class="card"><h2>Histórico</h2>{{template "changes" .Changes}}</section></aside>
+</div>
+{{end}}

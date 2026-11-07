@@ -1,0 +1,42 @@
+{{define "content"}}
+{{template "gdnav" "drops"}}
+<div class="grid">
+  <section class="card">
+    <h2>{{spaces .Drop.Name}}</h2>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <form method="post" action="/gamedata/drop" class="gd-form">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="hidden" name="old_name" value="{{.OldName}}">
+      <input type="hidden" name="rows" value="{{len .Rows}}">
+      <div class="fields">
+        <label>Nome exato <input name="name" value="{{.Drop.Name}}" maxlength="16" required></label>
+        <label>Seção <input name="section" value="{{.Drop.Section}}"></label>
+        <label>Máx. itens por morte <input name="max_drops" type="number" min="0" value="{{.Drop.MaxDrops}}"></label>
+        <label>Gold por morte <input name="gold" type="number" min="0" value="{{.Drop.Gold}}"></label>
+      </div>
+      <h3>Itens</h3>
+      <p class="muted">A cada <em>kills</em> mortes (por jogador e por item) o item vai para o inventário. Deixe o item vazio para remover a linha.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="num">Kills</th><th class="num">Item</th><th>Nome</th><th class="num">Efeito</th><th class="num">Valor</th></tr></thead>
+        <tbody>
+        {{range $i, $r := .Rows}}
+          <tr><td class="num"><input name="kills{{$i}}" type="number" min="1" value="{{if $r.Item}}{{$r.Kills}}{{end}}" aria-label="Kills"></td>
+            <td class="num"><input name="item{{$i}}" type="number" min="0" max="6499" value="{{if $r.Item}}{{$r.Item}}{{end}}" aria-label="Item"></td>
+            <td>{{if $r.Item}}<a href="/gamedata/items/{{$r.Item}}">{{if $r.ItemName}}{{$r.ItemName}}{{else}}(item inexistente){{end}}</a>{{end}}</td>
+            <td class="num"><input name="effect{{$i}}" type="number" min="0" max="255" value="{{$r.Effect}}" aria-label="Efeito"></td>
+            <td class="num"><input name="value{{$i}}" type="number" min="0" max="255" value="{{$r.Value}}" aria-label="Valor"></td></tr>
+        {{end}}
+        </tbody>
+      </table></div>
+      <button class="primary">Salvar</button>
+    </form>
+    <form method="post" action="/gamedata/drop/delete" onsubmit="return confirm('Remover este monstro da tabela de drops?')">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="hidden" name="name" value="{{.OldName}}">
+      <button class="link danger">Remover monstro da tabela</button>
+    </form>
+  </section>
+  <aside><section class="card"><h2>Histórico</h2>{{template "changes" .Changes}}</section></aside>
+</div>
+{{end}}

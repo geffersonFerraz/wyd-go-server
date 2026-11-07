@@ -1,0 +1,80 @@
+# Configuração do TMSRV em Go (cmd/tmsrv, flag -config).
+#
+# É a única fonte de configuração do servidor Go: substitui o serverip.txt,
+# o dataserver.txt e o gameconfig.txt do C++ (esses arquivos continuam
+# existindo só para o TMsrv.exe em C++).
+#
+# Todas as chaves são obrigatórias: se faltar alguma, o servidor não inicia e
+# diz qual é. Chaves desconhecidas também são erro, para que um erro de
+# digitação não passe despercebido. Os comentários "C++:" dizem o valor que o
+# servidor original usava.
+
+# Endereços de rede.
+network:
+  # IP e porta em que os jogadores conectam. 127.0.0.1 só aceita conexões
+  # desta máquina; para jogadores de fora, use o IP da máquina na rede (ou
+  # 0.0.0.0 para todas as interfaces). O mesmo IP é usado como origem da
+  # conexão com o DBSRV, que reconhece o canal por ele (serverlist.txt).
+  # C++: serverip.txt.
+  listen_ip: 127.0.0.1
+  listen_port: 8281
+  # Onde está o DBSRV. C++: dataserver.txt.
+  dbsrv_ip: 127.0.0.1
+  dbsrv_port: 7514
+
+# Canal deste servidor (1..10).
+channel: 1
+
+# Pasta dos arquivos por conta compartilhados com o C++ (bloqueio de conta,
+# recompensa diária). Vazio = a pasta Cache dentro da pasta da TMSRV (-dir).
+cache_dir: ""
+
+# Level máximo para entrar na área de novatos.
+newbie_zone: 35
+
+# Safiras cobradas pelo Mestre das Habilidades (reset de atributos).
+# C++: StatSapphire do gameconfig.txt (30).
+stat_sapphire: 30
+
+login:
+  # Contas jogando ao mesmo tempo a partir do mesmo computador. C++: 3.
+  max_accounts_per_computer: 3
+
+# Missão diária.
+missions:
+  # Segundos entre uma missão e a próxima (depois de concluir, recusar ou
+  # perder a anterior). C++: 1152 (0,32 h).
+  offer_every_seconds: 1152
+  # Segundos para concluir uma missão aceita. C++: 1152.
+  time_to_complete_seconds: 1152
+
+# Lojinha (leilão).
+store:
+  # A loja aberta dá 1 ponto de honra a cada tantos segundos. C++: 600.
+  honor_every_seconds: 600
+
+# Itens, skills, drops e teleportes ficam no Postgres (schema gamedata),
+# carregados com o comando gamedata-import. O endereço do banco vem da flag
+# -dsn ou da variável DATABASE_URL (não fica neste arquivo).
+
+# Inteligência dos monstros.
+mob_ai:
+  # A cada quantos segundos um monstro parado anda e procura jogadores.
+  # Múltiplos de 0,5. C++: 3.
+  idle_think_seconds: 3
+
+  # A cada quantos segundos um monstro em combate age. C++: 2.
+  battle_think_seconds: 2
+
+  # true: o monstro procura jogadores mesmo andando longe (mais de 12
+  # células) do ponto da rota para onde está indo. C++: false.
+  aggro_while_walking: true
+
+  # true: todos os monstros do grupo procuram jogadores, não só o líder.
+  # C++: false.
+  followers_look_for_players: true
+
+  # Chance mínima (%) de um monstro em combate agir no seu turno. No C++ a
+  # chance é só o INT do monstro (a maioria tem entre 50 e 99).
+  # 0 = igual ao C++.
+  min_attack_chance: 80

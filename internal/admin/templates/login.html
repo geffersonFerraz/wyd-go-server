@@ -1,0 +1,12 @@
+{{define "content"}}
+<section class="login card">
+  <h1>DBSRV <span>Admin</span></h1>
+  <p class="muted">Gerenciador de contas</p>
+  {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+  <form method="post" action="/login">
+    <label>Usuário <input name="user" value="{{.User}}" autocomplete="username" required autofocus></label>
+    <label>Senha <input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="primary">Entrar</button>
+  </form>
+</section>
+{{end}}

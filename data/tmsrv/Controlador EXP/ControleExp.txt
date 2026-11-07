@@ -1,0 +1,31 @@
+# Configurações de bônus de XP
+Deserto Mortal = 100
+
+Deserto Arch = 20
+
+Deserto Cele = 143
+
+
+Deserto SubcCele = 142
+
+#-----------AGUA--------------------#
+
+Agua Mortal = 20
+
+Agua Arch = 145
+
+Agua Cele = 138
+
+Agua Sub = 120
+
+#--------------PESA-----------------#
+
+Pesa A = 76
+
+Pesa A Sub = 80
+
+Pesa A Mortal = 200
+
+Pesa A Arch = 400
+
+
