@@ -1,6 +1,7 @@
 # Segredos e configuração local
 .env
 .admin-password
+.admin-state/
 
 # Binários (recriados com: servidor build)
 bin/

@@ -1,6 +1,7 @@
-# PostgreSQL for DBSRV.
+# PostgreSQL + DBSRV + TMSRV + painel admin.
 #
-#   docker compose up -d            # start (data persists in the dbsrv-pgdata volume)
+#   docker compose up -d --build    # build and start everything (data persists in the dbsrv-pgdata volume)
+#   docker compose up -d postgres   # only the database
 #   docker compose down             # stop, keep data
 #   docker compose down -v          # stop and DELETE all data
 #
@@ -31,6 +32,59 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  # DBSRV e TMSRV usam a rede do host: o DBSRV reconhece o canal pelo IP de
+  # origem da TMSRV (serverlist.txt), e o cliente conecta nos IPs dessa lista.
+  dbsrv:
+    build: { context: ., args: { CMD: dbsrv } }
+    image: wyd-dbsrv
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@127.0.0.1:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-dbsrv}
+      DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  tmsrv:
+    build: { context: ., args: { CMD: tmsrv } }
+    image: wyd-tmsrv
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    network_mode: host
+    # Tempo para salvar os jogadores no DBSRV ao parar.
+    stop_grace_period: 30s
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@127.0.0.1:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-dbsrv}
+    volumes:
+      - ./data:/app/data
+      - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+      dbsrv: { condition: service_started }
+
+  # Painel web da equipe. Senha: ADMIN_PASSWORD_HASH no .env, ou a gerada em
+  # .admin-state/.admin-password na primeira vez.
+  admin:
+    build: { context: ., args: { CMD: admin } }
+    image: wyd-admin
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@127.0.0.1:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-dbsrv}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+    command: ["-listen", "${ADMIN_LISTEN:-127.0.0.1:8080}", "-password-file", ".admin-state/.admin-password"]
+    volumes:
+      - ./data:/app/data
+      - ./guildmarks:/app/guildmarks
+      - ./.admin-state:/app/.admin-state
+    depends_on:
+      postgres: { condition: service_healthy }
 
 volumes:
   pgdata:
