@@ -258,6 +258,10 @@ func (g *Game) handleEvent(ev event) {
 		}
 	case evClientClosed:
 		if u := g.userOf(ev.conn); u != nil {
+			if u.status == userLogin {
+				// Waiting for DBSRV: the client gave up (or dropped) mid-login.
+				g.log.Info("disconnected during login", "slot", u.id, "account", wire.CString(u.account.Username[:]))
+			}
 			g.closeUser(u)
 		}
 	case evDBPacket:
