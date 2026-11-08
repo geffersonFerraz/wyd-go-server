@@ -45,6 +45,7 @@ import (
 
 	"dbsrv/internal/admin"
 	"dbsrv/internal/auth"
+	"dbsrv/internal/logfile"
 	"dbsrv/internal/store"
 )
 
@@ -78,17 +79,25 @@ func main() {
 	publicListen := flag.String("public-listen", "", `public address serving the game client servNN.htm, `+admin.ServerListPath+` and the guild marks at `+admin.GuildMarkPath+` (e.g. ":80"; "" = don't serve)`)
 	config := flag.String("config", "tmsrv.yaml", `TMSRV settings, source of `+admin.ServerListPath+` ("" = don't serve it)`)
 	markListen := flag.String("guildmark-listen", "", "old name of -public-listen")
+	logDir := flag.String("log-dir", envOr("LOG_DIR", "logs"), `folder of the daily log files (or LOG_DIR; "" = console only)`)
+	logDays := flag.Int("log-days", 90, "days of log files to keep (0 = all)")
 	flag.Parse()
 	if *publicListen == "" {
 		publicListen = markListen
 	}
 
-	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	log, closeLog, err := logfile.Logger(*logDir, "admin", *logDays, slog.LevelInfo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, tmsrvDir: *tmsrvDir, config: *config}
 	if err := run(log, opts); err != nil {
 		log.Error("fatal", "err", err)
+		closeLog()
 		os.Exit(1)
 	}
+	closeLog()
 }
 
 func envOr(k, def string) string {

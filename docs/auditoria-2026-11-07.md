@@ -9,7 +9,7 @@ servidor C++ original (`Source Servidor`) e com o cliente (`Source Cliente`).
 | | Quantidade |
 |---|---|
 | Bugs encontrados | 12 (1 crítico, 3 altos, 2 médios, 6 baixos) |
-| Corrigidos em 07/11 | B1, B2, B3, B5, B6, B8, B9, B10, B12 (faltam B4 — operacional —, B7 e B11) |
+| Corrigidos | B1, B2, B3, B5, B6, B8, B9, B10, B12 em 07/11; B7 e B11 em 08/11 (falta só B4, operacional) |
 | Pacotes do cliente sem tratamento no Go | 28 de 104 |
 | Itens usáveis do C++ sem tratamento no Go | 6 grupos (8 das 98 regiões) |
 | Arquivos de dados do C++ que o Go não lê | 12 |
@@ -177,6 +177,7 @@ painel.**
 
 - Onde: [useitem_items3.go:560](../internal/game/useitem_items3.go) ainda
   tem `TODO: SendMissionInfo`; a função agora existe, basta chamá-la.
+- **Corrigido (08/11):** ativar o Passe envia a janela da missão na hora.
 
 ### B8
 **Baixo — `TestShippedSettingsAreCppDefaults` falha.**
@@ -231,6 +232,11 @@ painel.**
 - Relacionado: um líder que **já tem capa** do outro reino não consegue
   migrar; o Rei não responde nada ([merchant.go:823](../internal/game/merchant.go)).
   Uma mensagem ("tire a capa para mudar de reino") ajudaria.
+- **Corrigido (08/11):** ao levar a guilda para o outro reino, a aliança
+  dela e as alianças declaradas com ela são desfeitas (pelo DBSRV, em todos
+  os canais). O líder com a capa do outro reino ouve do Rei "Tire a capa do
+  outro reino para mudar sua guild de reino". Testes em
+  `TestKingKingdomChangeEndsAlliances` e `TestKingLeaderWithOtherCape`.
 
 ### Observações de migração e configuração
 
@@ -347,11 +353,26 @@ O DBSRV já sabe aplicar **banimento** e **entrega de cash**, mas o painel
 não tem tela para isso. Também não há **aviso global** (o C++ tinha pelo
 programa NP).
 
+**Feito (08/11):** a página da conta ganhou **Cash** (soma ao saldo; chega
+na hora se o jogador estiver no jogo) e **Banimento** (bloqueada ou
+desativada, por N dias ou permanente; retirar banimento). Desbanir com o
+jogador online não o derruba mais. O menu ganhou **Aviso global**: o texto
+(até 95 caracteres, só caracteres que o jogo mostra) vai para todos os
+canais abertos, e a página lista os avisos enviados. Protocolo de pedidos
+subiu para 6 (o painel avisa se o DBSRV estiver desatualizado). Testes em
+`TestBanAndCash`, `TestNotice` e `TestNoticeDelivery`.
+
 ---
 
 ## 4. Sugestões de melhoria
 
-1. **Logs em arquivo (prioridade alta).** TMSRV, DBSRV e painel só escrevem
+1. **Logs em arquivo (prioridade alta).** **Feito (08/11):** DBSRV,
+   TMSRV (um arquivo por canal) e painel gravam, além do console, um
+   arquivo por dia em `logs/` (`dbsrv-`, `tmsrvN-`, `admin-AAAA-MM-DD.log`),
+   guardando 90 dias (`-log-dir`, `-log-days`, `LOG_DIR`). O
+   docker-compose monta `./logs`. As trocas, vendas da lojinha, entregas,
+   comandos de GM e refinações já eram registrados no log; agora ficam no
+   arquivo. Texto original: TMSRV, DBSRV e painel só escrevem
    no console; ao fechar a janela, tudo some. O C++ gravava
    `Logs/Servidor_1/*.txt` (criação de itens, trocas). Gravar em arquivo
    por dia (ou no Postgres) as trocas, vendas da lojinha, entregas, comandos
@@ -370,12 +391,16 @@ programa NP).
    o cliente monta.
 7. **Backup do banco**: não há rotina de `pg_dump`. Agendar um backup diário
    do volume `dbsrv-pgdata` (o `docker compose down -v` apaga tudo).
+   **Feito (08/11):** serviço `backup` no docker-compose grava um
+   `pg_dump` por dia em `./backups` (como restaurar está no comentário do
+   serviço). Os backups antigos **não** são apagados automaticamente.
 8. **Senha do Postgres**: o padrão é `dbsrv`/`dbsrv`. A porta só escuta em
    127.0.0.1 (risco baixo), mas vale definir outra no `.env`.
 9. **Windows**: o Controle de Aplicativos está bloqueando executáveis de
    teste do Go. Liberar a pasta de build do Go ou desligar o Smart App
    Control na máquina de desenvolvimento.
 10. **`gofmt`** nos 8 arquivos antigos e checagem `gofmt -l` no `build`.
+    (Em 08/11 o `gofmt -l` já não aponta nenhum arquivo.)
 11. **Documentação**: atualizar o comentário do `tmsrv.yaml` (B8) e manter
     este relatório junto do `docs/tmsrv-port.md`.
 

@@ -96,8 +96,9 @@ func (s *Store) AccountDetail(ctx context.Context, username string) (AccountSumm
 // 3 = "kick" deliveries and online_accounts tracking.
 // 4 = "edit" deliveries (package acctedit).
 // 5 = the "lock" edit (reload the in-game account lock).
+// 6 = "notice" deliveries (a notice to every channel).
 // Bump it whenever dbsrv learns a payload the admin panel starts sending.
-const DeliveryProtocol = 5
+const DeliveryProtocol = 6
 
 // OnlineInfo says where an account is logged in.
 type OnlineInfo struct {
@@ -221,6 +222,12 @@ type DeliveryInfo struct {
 	Effects  [][2]int
 	// Edit deliveries only: the change.
 	Edit *acctedit.Edit
+	// Cash deliveries: the amount. Ban deliveries: the type (0 lifts the
+	// ban) and the end. Notice deliveries: the text.
+	Text     string
+	Amount   int64
+	BanType  int
+	BanUntil *time.Time
 }
 
 const deliveryCols = `id, kind, username, requested_by, created_at, processed_at, COALESCE(result, ''), attempts,
@@ -228,7 +235,7 @@ const deliveryCols = `id, kind, username, requested_by, created_at, processed_at
 	CASE WHEN kind = 'item' AND payload->>'item_id' ~ '^[0-9]{1,5}$'
 		THEN COALESCE((SELECT name FROM gamedata.items i WHERE i.id = (payload->>'item_id')::int), '') ELSE '' END,
 	CASE WHEN kind = 'item' THEN payload->'effects' END,
-	CASE WHEN kind = 'edit' THEN payload END`
+	CASE WHEN kind IN ('edit', 'cash', 'ban', 'notice') THEN payload END`
 
 func scanDelivery(r pgx.CollectableRow) (DeliveryInfo, error) {
 	var d DeliveryInfo
@@ -239,8 +246,20 @@ func scanDelivery(r pgx.CollectableRow) (DeliveryInfo, error) {
 		_ = json.Unmarshal(effects, &d.Effects) // display only
 	}
 	if err == nil && len(edit) > 0 {
-		d.Edit = &acctedit.Edit{}
-		_ = json.Unmarshal(edit, d.Edit)
+		switch d.Kind {
+		case "edit":
+			d.Edit = &acctedit.Edit{}
+			_ = json.Unmarshal(edit, d.Edit)
+		default: // cash, ban, notice
+			var p struct {
+				Text   string     `json:"text"`
+				Amount int64      `json:"amount"`
+				Type   int        `json:"type"`
+				Until  *time.Time `json:"until"`
+			}
+			_ = json.Unmarshal(edit, &p)
+			d.Text, d.Amount, d.BanType, d.BanUntil = p.Text, p.Amount, p.Type, p.Until
+		}
 	}
 	return d, err
 }

@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"dbsrv/internal/game"
+	"dbsrv/internal/logfile"
 	"dbsrv/internal/store"
 )
 
@@ -38,17 +39,36 @@ func main() {
 	config := flag.String("config", "tmsrv.yaml", "server settings (YAML, required: every option comes from it)")
 	channel := flag.Int("channel", envInt("TMSRV_CHANNEL"), "channel of this TMSRV in the settings (or TMSRV_CHANNEL; 0 = the only one)")
 	debug := flag.Bool("debug", false, "debug logging")
+	logDir := flag.String("log-dir", envOr("LOG_DIR", "logs"), `folder of the daily log files (or LOG_DIR; "" = console only)`)
+	logDays := flag.Int("log-days", 90, "days of log files to keep (0 = all)")
 	flag.Parse()
 
 	level := slog.LevelInfo
 	if *debug {
 		level = slog.LevelDebug
 	}
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
-	if err := run(log, *dir, *listen, *config, *dsn, *channel); err != nil {
-		log.Error("fatal", "err", err)
+	name := "tmsrv"
+	if *channel > 0 {
+		name = fmt.Sprintf("tmsrv%d", *channel)
+	}
+	log, closeLog, err := logfile.Logger(*logDir, name, *logDays, level)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	if err := run(log, *dir, *listen, *config, *dsn, *channel); err != nil {
+		log.Error("fatal", "err", err)
+		closeLog()
+		os.Exit(1)
+	}
+	closeLog()
+}
+
+func envOr(k, def string) string {
+	if v, ok := os.LookupEnv(k); ok {
+		return v
+	}
+	return def
 }
 
 func envInt(k string) int {

@@ -238,6 +238,17 @@ func (g *Game) doAlly(guild, ally int) {
 	}
 }
 
+// endAlliances cancels the guild's alliance and every alliance declared
+// with it (Go only: the guild changed kingdom, and an alliance needs both
+// guilds in the same kingdom). DBSRV saves and rebroadcasts each one.
+func (g *Game) endAlliances(guild int) {
+	for other, ally := range g.guildAlly {
+		if (other == guild && ally > 0) || ally == guild {
+			g.sendDB(&wire.GuildRelation{Header: wire.NewHeader(wire.OpGuildAlly, 0), GuildIndex1: uint32(other)})
+		}
+	}
+}
+
 // guildNotice is SendGuildNotice.
 func (g *Game) guildNotice(guild int, format string, args ...any) {
 	for _, u := range g.users[1:] {

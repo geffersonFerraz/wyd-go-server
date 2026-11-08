@@ -818,6 +818,13 @@ func (g *Game) npcKing(u *User, npc int, click uint32) {
 		return
 	}
 	if mine != 0 && mine != kingdom {
+		// The C++ said nothing here. A guild leader trying to take the
+		// guild to this kingdom needs to know the cape is in the way.
+		if guild := int(pl.GuildIndex); guild != 0 && pl.GuildMemberType == 9 {
+			if gd := g.guilds[guild]; gd != nil && gd.Kingdom != kingdom {
+				g.sendSay(npc, "Tire a capa do outro reino para mudar sua guild de reino")
+			}
+		}
 		return
 	}
 	if g.sapphire == 0 {
@@ -967,6 +974,7 @@ func (g *Game) npcKing(u *User, npc int, click uint32) {
 	if moveGuild != 0 {
 		g.log.Info("guild changed kingdom", "slot", u.id, "guild", moveGuild, "kingdom", kingdom)
 		g.sendDB(&wire.AddGuild{Header: wire.NewHeader(wire.OpAddGuild, 0), Type: guildInfoKingdom, Value: int32(kingdom), GuildIndex: int32(moveGuild)})
+		g.endAlliances(moveGuild)
 		g.clientMessage(u, "Sua guild agora pertence a este reino.")
 	}
 }

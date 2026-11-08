@@ -551,7 +551,7 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 		g.clientMessage(u, "Seu Passe de Missões foi ativado até %s", end.Format("02/01/2006 às 15:04:05"))
 		amountMinus(src)
 		resend()
-		// TODO(phase E): SendMissionInfo (the daily mission window).
+		g.sendMissionInfo(u)
 
 	case id == 3214: // Jóia da Alma: resets the Limite da Alma cooldown
 		if pl.Learn[0]&learnSoulLimit == 0 {

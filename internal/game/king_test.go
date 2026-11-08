@@ -61,3 +61,59 @@ func TestKingGuildLeaderChangesKingdom(t *testing.T) {
 		t.Fatalf("neutral guild member cape %d", pl.Equip[15].Index)
 	}
 }
+
+// captureDB replaces the DBSRV link with a queue the test reads.
+func captureDB(g *Game) chan []byte {
+	g.db = &dbLink{g: g, out: make(chan []byte, 64)}
+	return g.db.out
+}
+
+// dbAllyCancels lists the guilds whose alliance was cancelled through
+// DBSRV (OpGuildAlly with no second guild).
+func dbAllyCancels(t *testing.T, out chan []byte) []int {
+	var guilds []int
+	for {
+		select {
+		case b := <-out:
+			var p wire.GuildRelation
+			if wire.Unmarshal(b, &p) == nil && p.Header.PacketID == wire.OpGuildAlly && p.GuildIndex2 == 0 {
+				guilds = append(guilds, int(p.GuildIndex1))
+			}
+		default:
+			return guilds
+		}
+	}
+}
+
+// Taking the guild to the other kingdom ends its alliances (both ways).
+func TestKingKingdomChangeEndsAlliances(t *testing.T) {
+	g, u, pl, npc := kingGame(t)
+	out := captureDB(g)
+	pl.Status.Level, pl.BStatus.Level = 250, 250
+	pl.GuildIndex, pl.GuildMemberType = 77, 9
+	g.guilds[77] = &Guild{Name: "Azuis", Kingdom: capeBlue}
+	g.guildAlly[77] = 78
+	g.guildAlly[79] = 77
+	g.guildAlly[80] = 81
+	pl.Inventory[0] = wire.Item{Index: itemSapphirePack}
+	pl.Inventory[0].Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: 5}
+
+	g.npcKing(u, npc, 1)
+	got := dbAllyCancels(t, out)
+	if len(got) != 2 || !(got[0] == 77 && got[1] == 79 || got[0] == 79 && got[1] == 77) {
+		t.Fatalf("alliances cancelled %v, want 77 and 79", got)
+	}
+}
+
+// A leader wearing the other kingdom's cape is told to take it off.
+func TestKingLeaderWithOtherCape(t *testing.T) {
+	g, u, pl, npc := kingGame(t)
+	pl.GuildIndex, pl.GuildMemberType = 77, 9
+	pl.CapeInfo = capeBlue
+	pl.Equip[15] = wire.Item{Index: 545}
+	g.guilds[77] = &Guild{Name: "Azuis", Kingdom: capeBlue}
+	g.npcKing(u, npc, 1)
+	if pl.Equip[15].Index != 545 {
+		t.Fatalf("cape changed to %d", pl.Equip[15].Index)
+	}
+}

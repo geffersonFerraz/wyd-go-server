@@ -15,3 +15,10 @@ data/tmsrv/Cache/
 
 # Configuração local da TMSRV (Windows: canais em 127.0.0.N)
 tmsrv.local.yaml
+
+# Logs diários (dbsrv, tmsrvN, admin) e backups do banco. As pastas ficam
+# no git para o Docker não criá-las como root.
+logs/*
+!logs/.gitkeep
+backups/*
+!backups/.gitkeep

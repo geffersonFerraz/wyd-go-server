@@ -134,6 +134,10 @@ func (g *Game) banNotify(u *User, pkt protocol.Packet) {
 	}
 	u.account.BanType = uint32(p.BanType)
 	u.account.Ban = p.Ban
+	if p.BanType == 0 { // ban lifted: nothing to apply in game
+		g.log.Info("ban lifted", "slot", u.id)
+		return
+	}
 	g.clientMessage(u, "Conta banida. Contate o suporte para maiores informações.")
 	g.flush(u)
 	if u.status == userPlay {

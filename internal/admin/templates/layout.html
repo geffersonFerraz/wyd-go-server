@@ -11,7 +11,7 @@
 {{if .Admin}}
 <header class="top">
   <a class="brand" href="/accounts">DBSRV <span>Admin</span></a>
-  <nav class="mainnav"><a href="/accounts">Contas</a><a href="/gamedata/items">Dados do jogo</a><a href="/guilds">Guildas</a><a href="/alerts">Alertas{{if .UnseenAlerts}} <span class="pill bad">{{.UnseenAlerts}}</span>{{end}}</a></nav>
+  <nav class="mainnav"><a href="/accounts">Contas</a><a href="/gamedata/items">Dados do jogo</a><a href="/guilds">Guildas</a><a href="/notice">Aviso global</a><a href="/alerts">Alertas{{if .UnseenAlerts}} <span class="pill bad">{{.UnseenAlerts}}</span>{{end}}</a></nav>
   <form method="post" action="/logout" class="logout">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <span class="who">{{.Admin}}</span>

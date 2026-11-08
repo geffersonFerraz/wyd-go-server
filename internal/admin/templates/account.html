@@ -18,7 +18,7 @@
         <div><dt>Cash</dt><dd>{{.Account.Cash}}</dd></div>
         <div><dt>Acesso</dt><dd>{{.Account.AccessLevel}}</dd></div>
         <div><dt>Token</dt><dd>{{if .Account.HasNumeric}}definido{{else}}não definido{{end}}</dd></div>
-        <div><dt>Ban</dt><dd>{{if .Account.BanUntil}}tipo {{.Account.BanType}} até {{dateptr .Account.BanUntil}}{{else}}—{{end}}</dd></div>
+        <div><dt>Ban</dt><dd>{{if and .Account.BanType .Account.BanUntil}}{{bantype .Account.BanType}} até {{dateptr .Account.BanUntil}}{{if .BanExpired}} <small class="muted">(vencido)</small>{{end}}{{else}}—{{end}}</dd></div>
         <div><dt>Criada</dt><dd>{{datetime .Account.CreatedAt}}</dd></div>
         <div><dt>Último save</dt><dd>{{datetime .Account.UpdatedAt}}</dd></div>
       </dl>
@@ -91,6 +91,40 @@
       {{else}}
         <p class="muted">Offline. Alterações diretas no banco valem no próximo login.</p>
       {{end}}
+    </section>
+    <section class="card">
+      <h2>Cash</h2>
+      {{if .CashError}}<p class="alert bad">{{.CashError}}</p>{{end}}
+      <form method="post" action="/accounts/{{pathescape .Username}}/cash" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label>Cash a adicionar <input name="amount" type="number" min="1" max="2147483647" required>
+          <small>Soma ao saldo atual ({{.Account.Cash}}). Com o jogador no jogo, chega na hora.</small></label>
+        <button class="primary">Entregar cash</button>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Banimento</h2>
+      {{if .BanError}}<p class="alert bad">{{.BanError}}</p>{{end}}
+      {{if .BanActive}}
+        <p><span class="pill bad">{{bantype .Account.BanType}}</span> até {{dateptr .Account.BanUntil}}</p>
+        <form method="post" action="/accounts/{{pathescape .Username}}/unban">
+          <input type="hidden" name="csrf" value="{{.CSRF}}">
+          <button class="primary">Retirar banimento</button>
+        </form>
+      {{end}}
+      <form method="post" action="/accounts/{{pathescape .Username}}/ban" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <div class="fields">
+          <label>Tipo <select name="type">
+            <option value="1">Bloqueada</option>
+            <option value="2">Desativada</option></select>
+            <small>A mensagem que o jogador vê no login</small></label>
+          <label>Dias <input name="days" type="number" min="1" max="3650" value="7"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="permanent" value="1"> Permanente</label>
+        <p class="muted small">Com o jogador no jogo, ele é salvo e desconectado na hora.</p>
+        <button class="danger">{{if .BanActive}}Alterar banimento{{else}}Banir conta{{end}}</button>
+      </form>
     </section>
     <section class="card">
       <h2>Acesso (GM)</h2>

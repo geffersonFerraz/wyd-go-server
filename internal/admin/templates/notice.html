@@ -1,0 +1,34 @@
+{{define "content"}}
+<h1>Aviso global</h1>
+<div class="grid">
+  <div>
+    <section class="card">
+      <h2>Avisos enviados</h2>
+      {{if .Notices}}
+      <ul class="deliveries">
+      {{range .Notices}}
+        <li>
+          <span class="pill {{tone .}}" {{if pending .}}data-delivery="{{.ID}}"{{end}}>{{result .}}</span>
+          <span>{{.Text}}</span>
+          <small class="muted">#{{.ID}} · {{datetime .CreatedAt}}{{if .RequestedBy}} · {{.RequestedBy}}{{end}}</small>
+        </li>
+      {{end}}
+      </ul>
+      {{else}}<p class="muted">Nenhum aviso enviado.</p>{{end}}
+    </section>
+  </div>
+  <aside>
+    {{if .Sent}}<p class="alert info">Aviso #{{.Sent}} enviado.</p>{{end}}
+    <section class="card">
+      <h2>Enviar aviso</h2>
+      {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+      <form method="post" action="/notice" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label>Texto <input name="text" maxlength="{{.Max}}" value="{{.Text}}" required>
+          <small>Até {{.Max}} caracteres. Aparece para todos os jogadores de todos os canais abertos.</small></label>
+        <button class="primary">Enviar a todos</button>
+      </form>
+    </section>
+  </aside>
+</div>
+{{end}}

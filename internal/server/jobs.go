@@ -164,6 +164,8 @@ type deliveryPayload struct {
 	// AfterLogout (item): put it in the stored storage only once the player
 	// is offline (TMSRV returned it for lack of room).
 	AfterLogout bool `json:"after_logout"`
+	// Text (notice): the message for every channel.
+	Text string `json:"text"`
 }
 
 // secrets returns argon2id hashes for the password and numeric password in
@@ -198,6 +200,36 @@ func (p *deliveryPayload) secrets() (hash, num *string, bad string, err error) {
 	return hash, num, bad, err
 }
 
+// NoticeUser is the username of notice deliveries (they are for everyone).
+const NoticeUser = "*"
+
+// MaxNoticeLen is the longest notice in game bytes (Notice96 keeps a NUL).
+const MaxNoticeLen = 95
+
+// deliverNotice sends a staff notice to every connected channel, which
+// shows it to all players (as a 0x908 from another channel). A notice is
+// only worth it now: with no channel up it is dropped.
+func (s *Server) deliverNotice(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "" || len(text) > 4*MaxNoticeLen {
+		return resInvalid + ": text"
+	}
+	out := wire.Notice96{Header: wire.NewHeader(wire.OpServerNotice, 0)}
+	wire.PutGameString(out.Text[:MaxNoticeLen], text)
+	sent := 0
+	for i := range s.cfg.ChannelIPs {
+		if c := s.channel(i); c != nil {
+			out.Header = wire.NewHeader(wire.OpServerNotice, uint16(i))
+			c.send(&out)
+			sent++
+		}
+	}
+	if sent == 0 {
+		return resNotOnline
+	}
+	return fmt.Sprintf("%s: %d", resSentOnline, sent)
+}
+
 // ValidPassword: the client sends at most 11 characters (char Password[12]).
 func ValidPassword(s string) bool { return len(s) >= 1 && len(s) <= 11 }
 
@@ -206,6 +238,9 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 	var p deliveryPayload
 	if err := json.Unmarshal(d.Payload, &p); err != nil {
 		return resInvalid + ": " + err.Error(), true, nil
+	}
+	if d.Kind == "notice" {
+		return s.deliverNotice(p.Text), true, nil
 	}
 	user := d.Username
 	if user == "" || len(user) > 15 || strings.ContainsAny(user, " '\"\\/") {

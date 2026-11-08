@@ -22,6 +22,7 @@ import (
 	_ "time/tzdata"
 
 	"dbsrv/internal/cluster"
+	"dbsrv/internal/logfile"
 	"dbsrv/internal/server"
 	"dbsrv/internal/store"
 	"dbsrv/internal/wire"
@@ -35,17 +36,32 @@ func main() {
 	tz := flag.String("tz", "America/Sao_Paulo", "game time zone")
 	statusFile := flag.String("status-file", "", "write online counts here every 30s (C++: C:\\xampp\\htdocs\\servNN.htm)")
 	debug := flag.Bool("debug", false, "debug logging")
+	logDir := flag.String("log-dir", envOr("LOG_DIR", "logs"), `folder of the daily log files (or LOG_DIR; "" = console only)`)
+	logDays := flag.Int("log-days", 90, "days of log files to keep (0 = all)")
 	flag.Parse()
 
 	level := slog.LevelInfo
 	if *debug {
 		level = slog.LevelDebug
 	}
-	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
-	if err := run(log, *listen, *dsn, *config, *npcDir, *tz, *statusFile); err != nil {
-		log.Error("fatal", "err", err)
+	log, closeLog, err := logfile.Logger(*logDir, "dbsrv", *logDays, level)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	if err := run(log, *listen, *dsn, *config, *npcDir, *tz, *statusFile); err != nil {
+		log.Error("fatal", "err", err)
+		closeLog()
+		os.Exit(1)
+	}
+	closeLog()
+}
+
+func envOr(k, def string) string {
+	if v, ok := os.LookupEnv(k); ok {
+		return v
+	}
+	return def
 }
 
 func run(log *slog.Logger, listen, dsn, configPath, npcDir, tz, statusFile string) error {

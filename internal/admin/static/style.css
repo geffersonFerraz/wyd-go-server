@@ -63,6 +63,8 @@ aside { display: grid; gap: 16px; }
 
 form { display: grid; gap: 12px; }
 label { display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+label.check { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+label.check input { width: auto; }
 small { font-weight: 400; color: var(--muted); font-size: 12.5px; }
 input {
   font: inherit; color: var(--text); background: var(--bg);

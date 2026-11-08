@@ -88,7 +88,8 @@ func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
 		"result":    func(d store.DeliveryInfo) string { l, _ := resultLabel(d); return l },
 		"tone":      func(d store.DeliveryInfo) string { _, t := resultLabel(d); return t },
 		"kind":      kindLabel,
-		"itemlabel": func(d store.DeliveryInfo) string { return itemLabel(d) + editLabel(d) },
+		"itemlabel": func(d store.DeliveryInfo) string { return itemLabel(d) + editLabel(d) + banLabel(d) + cashLabel(d) },
+		"bantype":   func(t int32) string { return banTypeLabel(int(t)) },
 		"pending":   func(d store.DeliveryInfo) bool { return d.ProcessedAt == nil },
 		"datetime":  func(t time.Time) string { return t.Local().Format("02/01/2006 15:04:05") },
 		"dateptr": func(t *time.Time) string {
@@ -121,11 +122,11 @@ func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
 		}
 		return "especial"
 	}
-	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts"} {
+	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts", "notice"} {
 		files := []string{"templates/layout.html", "templates/" + page + ".html"}
 		if page == "character" || page == "storage" {
 			files = append(files, "templates/editparts.html")
-		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" {
+		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" && page != "notice" {
 			files = append(files, "templates/gamedata_common.html")
 		}
 		t, err := template.New("layout.html").Funcs(funcs).ParseFS(assets, files...)
@@ -160,6 +161,8 @@ func (s *Server) Handler() http.Handler {
 	s.editRoutes(mux)
 	s.guildRoutes(mux)
 	s.alertRoutes(mux)
+	s.accountRoutes(mux)
+	s.noticeRoutes(mux)
 	return securityHeaders(mux)
 }
 
@@ -426,6 +429,10 @@ func (s *Server) renderAccount(w http.ResponseWriter, r *http.Request, code int,
 	data := map[string]any{"Title": user, "Username": user, "Account": acc, "Characters": chars,
 		"Deliveries": deliveries, "Online": online, "EffectNames": names, "Lock": s.lockInfo(user),
 		"ItemForm": url.Values{"amount": {"1"}, "copies": {"1"}, "sanc": {"0"}}}
+	if acc.BanType != 0 && acc.BanUntil != nil {
+		data["BanActive"] = time.Now().Before(*acc.BanUntil)
+		data["BanExpired"] = !time.Now().Before(*acc.BanUntil)
+	}
 	if which != "" {
 		data[which+"Error"] = msg
 	}
@@ -623,6 +630,8 @@ func kindLabel(k string) string {
 		return "Edição"
 	case "lock":
 		return "Bloqueio da conta"
+	case "notice":
+		return "Aviso global"
 	}
 	return k
 }
@@ -650,6 +659,10 @@ func resultLabel(d store.DeliveryInfo) (string, string) {
 		return "Jogador desconectado", "ok"
 	case r == "sent_online":
 		return "Enviado ao jogo", "ok"
+	case d.Kind == "notice" && strings.HasPrefix(r, "sent_online: "):
+		return "Enviado a " + strings.TrimPrefix(r, "sent_online: ") + " canal(is)", "ok"
+	case r == "not_online" && d.Kind == "notice":
+		return "Nenhum canal aberto", "bad"
 	case r == "not_online":
 		return "Jogador não estava online", "ok"
 	case r == "exists":

@@ -5,8 +5,11 @@
 #   docker compose down             # stop, keep data
 #   docker compose down -v          # stop and DELETE all data
 #
+# Logs: além do console (docker compose logs), cada programa grava um arquivo
+# por dia em ./logs (dbsrv-, tmsrvN-, admin-AAAA-MM-DD.log; 90 dias).
+#
 # Rede própria "wyd" (172.30.87.0/24), IP fixo por container:
-#   172.30.87.10 postgres   172.30.87.11 dbsrv   172.30.87.13 admin
+#   172.30.87.10 postgres   172.30.87.11 dbsrv   172.30.87.13 admin   172.30.87.14 backup
 #   172.30.87.21..30 tmsrv1..tmsrv10 (um container por canal)
 #
 # Canais: a fonte é a lista "channels" do tmsrv.yaml. Cada canal é um serviço
@@ -39,6 +42,7 @@ x-tmsrv: &tmsrv
     DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
   volumes:
     - ./data:/app/data
+    - ./logs:/app/logs
     - ./tmsrv.yaml:/app/tmsrv.yaml:ro
   depends_on:
     postgres: { condition: service_healthy }
@@ -82,6 +86,7 @@ services:
       DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
     volumes:
       - ./data:/app/data
+      - ./logs:/app/logs
       - ./tmsrv.yaml:/app/tmsrv.yaml:ro
     depends_on:
       postgres: { condition: service_healthy }
@@ -118,6 +123,46 @@ services:
     ports:
       - "8284:8284"
 
+  # Backup diário do banco em ./backups (dbsrv-AAAA-MM-DD.dump, formato
+  # custom do pg_dump). Confere a cada hora se o backup do dia já existe; o
+  # primeiro sai ao subir. Os antigos não são apagados automaticamente.
+  # Restaurar (substitui o que estiver no banco):
+  #   docker compose stop dbsrv admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
+  #   docker compose exec -T postgres pg_restore -U dbsrv -d dbsrv --clean --if-exists < backups/dbsrv-AAAA-MM-DD.dump
+  #   docker compose start dbsrv admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
+  backup:
+    image: postgres:17-alpine
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    networks:
+      wyd: { ipv4_address: 172.30.87.14 }
+    environment:
+      PGHOST: 172.30.87.10
+      PGUSER: ${POSTGRES_USER:-dbsrv}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-dbsrv}
+      PGDATABASE: ${POSTGRES_DB:-dbsrv}
+      TZ: America/Sao_Paulo
+    volumes:
+      - ./backups:/backups
+    # Um .tmp de uma tentativa que falhou é sobrescrito na seguinte.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          f=/backups/$$PGDATABASE-$$(date +%F).dump
+          if [ ! -s "$$f" ]; then
+            if pg_dump -Fc -f "$$f.tmp" && mv "$$f.tmp" "$$f"; then
+              echo "backup: $$f"
+            else
+              echo "backup failed"
+            fi
+          fi
+          sleep 3600
+        done
+    depends_on:
+      postgres: { condition: service_healthy }
+
   # Painel web da equipe, publicado só em 127.0.0.1 (ADMIN_LISTEN). Senha:
   # ADMIN_PASSWORD_HASH no .env, ou a gerada em .admin-state/.admin-password.
   # A porta pública (PUBLIC_PORT, padrão 80, sem login) serve ao cliente do
@@ -141,6 +186,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./guildmarks:/app/guildmarks
+      - ./logs:/app/logs
       - ./.admin-state:/app/.admin-state
       - ./tmsrv.yaml:/app/tmsrv.yaml:ro
     depends_on:
