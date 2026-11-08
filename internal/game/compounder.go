@@ -568,7 +568,9 @@ func (g *Game) requestEhre(u *User, pkt protocol.Packet) {
 		g.give(c, 2, it)
 		g.clientMessage(u, "%s", g.lang(nnSuccessComp))
 
-	case in(items[0].Index, 2360, 2389) && (in(items[1].Index, 4190, 4219) || in(items[1].Index, 5706, 5725) || items[1].Index == 4899):
+	// 5706..5725 are belts on this server and in the client's item list,
+	// not costumes as in the C++ table.
+	case in(items[0].Index, 2360, 2389) && (in(items[1].Index, 4190, 4219) || items[1].Index == 4899):
 		if !g.ehreCostume(c) {
 			return
 		}

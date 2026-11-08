@@ -19,6 +19,8 @@
 //     serverlist.bin, entry [group][0], must point at this host);
 //   - /serverlist.bin: the client's server list, built from the channels of
 //     -config (tmsrv.yaml) on every request;
+//   - /itemlist.bin: the client's item list, the file given by -itemlist
+//     as it is on disk;
 //   - /guild/img_guilds/b0100000<id>.bmp: guild marks uploaded in the panel
 //     and saved to -guildmark-dir (GameURLMark in the client's TMPaths.h
 //     must point at this host).
@@ -79,6 +81,7 @@ func main() {
 	publicListen := flag.String("public-listen", "", `public address serving the game client servNN.htm, `+admin.ServerListPath+` and the guild marks at `+admin.GuildMarkPath+` (e.g. ":80"; "" = don't serve)`)
 	config := flag.String("config", "tmsrv.yaml", `TMSRV settings, source of `+admin.ServerListPath+` ("" = don't serve it)`)
 	markListen := flag.String("guildmark-listen", "", "old name of -public-listen")
+	itemList := flag.String("itemlist", "data/client/ItemList.bin", `the game client's ItemList.bin, served at `+admin.ItemListPath+` ("" = don't serve it)`)
 	logDir := flag.String("log-dir", envOr("LOG_DIR", "logs"), `folder of the daily log files (or LOG_DIR; "" = console only)`)
 	logDays := flag.Int("log-days", 90, "days of log files to keep (0 = all)")
 	flag.Parse()
@@ -91,7 +94,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, tmsrvDir: *tmsrvDir, config: *config}
+	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, tmsrvDir: *tmsrvDir, config: *config, itemList: *itemList}
 	if err := run(log, opts); err != nil {
 		log.Error("fatal", "err", err)
 		closeLog()
@@ -111,6 +114,7 @@ type options struct {
 	listen, dsn, user, pwFile string
 	secure                    bool
 	markDir, publicListen     string
+	itemList                  string
 	tmsrvDir                  string
 	config                    string
 }
@@ -171,6 +175,12 @@ func run(log *slog.Logger, o options) error {
 			}
 			mux.Handle("GET "+admin.ServerListPath, admin.ServerListHandler(o.config, log))
 		}
+		if o.itemList != "" {
+			if _, err := os.Stat(o.itemList); err != nil {
+				return fmt.Errorf("itemlist.bin: %w", err)
+			}
+			mux.Handle("GET "+admin.ItemListPath, admin.ItemListHandler(o.itemList, log))
+		}
 		if o.markDir != "" {
 			mux.Handle(admin.GuildMarkPath, admin.GuildMarkHandler(o.markDir))
 		}
@@ -187,6 +197,7 @@ func run(log *slog.Logger, o options) error {
 		}()
 		go func() {
 			log.Info("public files", "status", "http://"+o.publicListen+"/serv00.htm", "serverlist", "http://"+o.publicListen+admin.ServerListPath,
+				"itemlist", "http://"+o.publicListen+admin.ItemListPath,
 				"guild_marks", "http://"+o.publicListen+admin.GuildMarkPath, "dir", o.markDir)
 			if err := public.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				log.Error("public server", "err", err)

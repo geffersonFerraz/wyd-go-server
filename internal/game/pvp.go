@@ -303,8 +303,8 @@ func (g *Game) pvpDeath(target, killer int) {
 		g.clientMessage(du, "Level abaixo de 20 não perde experiancia.")
 	}
 
-	// CP (PK points) and frag counters. TODO(phase E): the CP-free areas of
-	// g_pPositionCP, tower war.
+	// CP (PK points) and frag counters. TODO(phase E): tower war.
+	noCP := g.noCPArea(x, y)
 	if war != -1 {
 		return
 	}
@@ -317,6 +317,9 @@ func (g *Game) pvpDeath(target, killer int) {
 		}
 		if victimGuilty == 0 {
 			delta := min(max(-(pkPoint(dpl)/20)*3, -3), 0)
+			if noCP || (x >= 2180 && x <= 2558 && y >= 3837 && y <= 4096) {
+				delta = 0
+			}
 			setPKPoint(kpl, kpk+delta)
 			g.clientMessage(ku, "CP %d diminuiu em %d", kpk+delta-75, delta)
 		}
@@ -334,7 +337,7 @@ func (g *Game) pvpDeath(target, killer int) {
 	if c := dpl.Equip[15].Index; c == 548 || c == 549 || kpl.Equip[15].Index == 548 || kpl.Equip[15].Index == 549 {
 		delta *= 3
 	}
-	if x >= 2180 && x <= 2541 && y >= 3858 && y <= 4051 {
+	if noCP || (x >= 2180 && x <= 2541 && y >= 3858 && y <= 4051) {
 		delta = 0
 	}
 	setPKPoint(kpl, kpk+delta)

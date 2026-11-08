@@ -435,7 +435,8 @@ func (g *Game) requestOpenGate(u *User, pkt protocol.Packet) {
 	}
 	pl := &g.mobs[u.id].info.Player
 	if u.status != userPlay || pl.Status.CurHP == 0 {
-		return // TODO(phase C): SendHpMode
+		g.sendHpMode(u)
+		return
 	}
 	id := int(p.GateID) - groundIDBase
 	if id < 0 || id >= maxGroundItem {
@@ -626,7 +627,8 @@ func (g *Game) requestDropItem(u *User, pkt protocol.Packet) {
 	}
 	pl := &g.mobs[u.id].info.Player
 	if u.status != userPlay || pl.Status.CurHP <= 0 {
-		return // TODO(phase C): SendHpMode
+		g.sendHpMode(u)
+		return
 	}
 	if other := int(u.trade.ClientID); other > 0 && other < MaxPlayer {
 		g.removeTrade(other)

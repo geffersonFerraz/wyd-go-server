@@ -114,6 +114,41 @@ func (g *Game) multicastRaw(x, y int, raw []byte) {
 	}
 }
 
+// manaShield is affect 18: 80% of the damage comes out of the MP, as long
+// as at least 300 MP are left. It returns the remaining damage, whether the
+// target has the shield, and whether it absorbed this hit.
+func (g *Game) manaShield(tid, dam int) (left int, shielded, absorbed bool) {
+	m := &g.mobs[tid]
+	for i := range m.info.Affects {
+		if m.info.Affects[i].Index != 18 {
+			continue
+		}
+		part := dam * 80 / 100
+		st := &m.info.Player.Status
+		if int(st.CurMP)-part < 300 {
+			return dam, true, false
+		}
+		st.CurMP -= int32(part)
+		if u := g.player(tid); u != nil {
+			u.potionMP = max(u.potionMP-int32(part), 0)
+			g.setReqMp(u)
+		}
+		return dam - part, true, true
+	}
+	return dam, false, false
+}
+
+// sendHpMode is SendHpMode (0x292): the server's HP and user status, sent
+// when the client acts on a state the server does not share (e.g. dead here
+// but alive there).
+func (g *Game) sendHpMode(u *User) {
+	if u.status != userPlay {
+		return
+	}
+	g.queue(u, &wire.HpMode{Header: wire.NewHeader(wire.OpSrvHpMode, uint16(u.id)),
+		CurHP: g.mobs[u.id].info.Player.Status.CurHP, Status: int16(u.status)})
+}
+
 // sendSetHpMp is SendSetHpMp (0x181).
 func (g *Game) sendSetHpMp(u *User) {
 	if u.status != userPlay {
@@ -132,20 +167,27 @@ func (g *Game) requestAttack(u *User, pkt protocol.Packet) {
 		return
 	}
 	var p wire.Attack
-	if wire.Unmarshal(pkt.Raw, &p) != nil {
+	if wire.Unmarshal(pkt.Raw, &p) != nil || p.Header.TimeStamp == magicTimestamp {
 		return
 	}
+	g.doAttack(u, p, false)
+}
+
+// doAttack is RequestAttack. auto marks the attacks the server makes for
+// the player (familiar, auras), which skip the rate, cooldown, learned and
+// mana checks.
+func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 	me := &g.mobs[u.id]
 	pl := &me.info.Player
 	if pl.Status.CurHP == 0 && p.SkillID != 99 {
-		return // TODO(phase C): SendHpMode
-	}
-	if p.Header.TimeStamp == magicTimestamp {
+		g.sendHpMode(u)
 		return
 	}
-	if now := time.Now(); now.Sub(u.lastAttack) < 900*time.Millisecond {
-		return
-	} else {
+	if !auto {
+		now := time.Now()
+		if now.Sub(u.lastAttack) < 900*time.Millisecond {
+			return
+		}
 		u.lastAttack = now
 	}
 	var maxTarget int
@@ -163,10 +205,17 @@ func (g *Game) requestAttack(u *User, pkt protocol.Packet) {
 	if skill >= 0 && skill < 110 && g.data.Skills[skill].PassiveCheck == 1 {
 		return
 	}
-	sc, ok := g.checkSkill(u, &p)
-	if !ok {
-		return
+	var sc skillCast
+	if auto {
+		sc = skillCast{skill: skill, auto: true, mastery: int(pl.Status.Mastery[0]), delay: 100 + int(pl.Status.Mastery[0]), maxTarget: 1}
+		g.removeAffect(u.id, 24) // DoRemovePossuido
+	} else {
+		var ok bool
+		if sc, ok = g.checkSkill(u, &p); !ok {
+			return
+		}
 	}
+	sc.startHP = int(pl.Status.CurHP)
 	if skill == 99 {
 		if pl.Status.CurHP == 0 {
 			raw, _ := wire.Marshal(&p)
@@ -179,6 +228,11 @@ func (g *Game) requestAttack(u *User, pkt protocol.Packet) {
 			if p.Target[i].Index != 0 && p.Target[i].Index == p.Target[j].Index {
 				p.Target[j].Index = 0
 			}
+		}
+	}
+	if skill == 79 { // Tempestade de Raios strikes the first target 6 times
+		for i := 1; i < 6; i++ {
+			p.Target[i] = p.Target[0]
 		}
 	}
 	master := 0
@@ -355,19 +409,9 @@ func (g *Game) requestAttack(u *User, pkt protocol.Packet) {
 			if mt.X >= 1664 && mt.X <= 1791 && mt.Y >= 1537 && mt.Y <= 1920 {
 				dam /= 2
 			}
-			for _, a := range mob.info.Affects { // mana shield
-				if a.Index == 18 {
-					part := dam * 80 / 100
-					if int(mob.info.Player.Status.CurMP)-part >= 300 {
-						mob.info.Player.Status.CurMP -= int32(part)
-						if tu := g.player(tid); tu != nil {
-							g.setReqMp(tu)
-						}
-						g.sendScore(tid)
-						dam -= part
-					}
-					break
-				}
+			var absorbed bool
+			if dam, _, absorbed = g.manaShield(tid, dam); absorbed {
+				g.sendScore(tid)
 			}
 			t.Damage = int32(dam)
 		}
@@ -450,6 +494,9 @@ func (g *Game) requestAttack(u *User, pkt protocol.Packet) {
 	}
 	if pl.Learn[0]&0x20000000 != 0 {
 		p.DoubleCritical |= 8
+	}
+	if skill == 30 {
+		g.sendSetHpMp(u)
 	}
 	p.CurrentExp = pl.Exp
 	p.CurrentMP = pl.Status.CurMP

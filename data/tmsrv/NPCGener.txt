@@ -131041,3 +131041,23 @@
 	DestY:		2075
 	DestRange:	0
 	DestWait:	0
+
+// Mestre Grifo (NPC proprio; o bloco acima com este titulo gera o Teleporte_Quest)
+// ********************************************
+#	[4848]
+	MinuteGenerate:	1
+	MaxNumMob:	1
+	MinGroup:	0
+	MaxGroup:	0
+	Leader:		Mestre_Grifo
+	Follower:	Mestre_Grifo
+	RouteType:	2
+	Formation:	0
+	StartX:		2118
+	StartY:		2080
+	StartRange:	0
+	StartWait:	9
+	DestX:		2118
+	DestY:		2080
+	DestRange:	0
+	DestWait:	4

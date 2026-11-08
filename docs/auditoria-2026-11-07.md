@@ -269,6 +269,53 @@ painel.**
 
 Hoje o Go ignora esses pacotes (só registra "unhandled" com `-debug`).
 
+**Atualização de 08/11.** Implementados: ranking (0x528/0x529/0x530), perfil
+(0x487, 0x912A), lista e busca de drops (0xA08/0xA09), filtro de drop
+(0x506D), roleta (0xF06/0xF07), loja premium (0xAF3, 0xF03), Mercado de Honra
+(0xAAF1), painel de guildas (0x766), essência (0x473), reconexão (0xAF5) e o
+eco 0x3776. O aviso de WPE (0x634) já tinha sido feito no B10.
+
+**Sem efeito hoje, de propósito:** 0x655/0x656 e 0x1495 só respondem a uma
+pergunta que o servidor faz ao cliente (anti-hack e reCaptcha), e o Go não
+pergunta.
+
+Mestre Grifo (0xAD9, 0x632) feito em 08/11.
+
+**Ainda faltam:** desafio da cidade (0x28E, 0x3A0), declarar guerra (0xED7),
+Pesadelo (0x631) e Quiz (0x2C7).
+
+Decisões que diferem do C++:
+
+- O ranking fica no banco (tabela `ranking`, pacote novo 0xC14), igual em
+  todos os canais e atualizado a cada 30 s; o C++ tinha um arquivo por canal.
+  A lista "Level" ordena por evolução, nível e exp (o C++ ordenava por um
+  campo Exp que nunca preenchia).
+- Loja premium: recusa quantidade zero ou negativa, e o item de presente
+  (EF_GIFTID) sai uma vez por conta; no C++ ele saía de graça sem limite.
+- Roleta: uma caixa sem prêmios não consome a caixa nem a chave. Prêmio
+  pendente ao sair vai para o inventário ou, se cheio, para o baú. A barra do
+  super prêmio volta a zero ao entrar no jogo, como no C++ (ficava só na
+  memória).
+- Reconexão: as áreas de quest foram corrigidas. No C++ as colunas estavam
+  trocadas: a maioria nunca valia e a da Kaizen cobria quase o mapa inteiro.
+
+**Lista de itens (08/11):** os 15 itens que só existiam no `ItemList.bin` do
+cliente foram para o `ItemList.csv` e, no banco em uso, pela migração `0014`.
+O servidor guarda a posição do cliente (colares 65536, cintos 131072), mas as
+regras do jogo continuam vendo 16 bits, como no C++. O arquivo do cliente
+fica em `data/client/ItemList.bin` e sai em `/itemlist.bin` na porta pública.
+Restam diferenças de campo em 294 itens e 189 itens só no servidor.
+
+Os ids 5706 a 5725 são cintos, então deixaram de valer como traje de montaria
+na composição da Ehre. O Mestre Grifo ganhou gerador próprio em 2118, 2080, no
+fim do `NPCGener.txt`. Os tickets 4716 e 4731 não existem nas listas de itens,
+e o 4731 entregaria 5715 ou 5714, que são cintos.
+
+**Dados das lojas:** convertidos para o `tmsrv.yaml`, seções `cash_shop` (8
+abas, 92 itens, de `Data/CashShop.xml`) e `honor_market` (20 itens, de
+`MarketHonra.txt`). O servidor Go não lê mais os originais; para mudar uma
+loja, edite o yaml e reinicie os canais.
+
 | Opcode | No C++ | Efeito para o jogador hoje |
 |---|---|---|
 | 0x528 / 0x529 / 0x530 | Ranking de nível, PvP e pontuação | Ranking não abre |
@@ -300,7 +347,7 @@ item volta ([useitem.go:319](../internal/game/useitem.go)).
 |---|---|
 | Pacotes de itens (volátil 210) | `PAC ITENS` — depende de `ReadPacItens` |
 | Pergaminhos de Pesadelo (volátil 173) | `PESADELOS` — depende do sistema de Pesadelo |
-| Roleta (5381) | `ROLETA` — depende do giro 0xF06/0xF07 |
+| ~~Roleta (5381)~~ | **Feito (08/11)** |
 | Masmorras Lanhouse (4111, 4112, 4113) | `LANHOUSE (MASMORRA N/M/A)` |
 | Recusa de Guerra (4031) | `RECUSA DE GUERRA` — depende das guerras |
 | Cartas de Duelo (3172, 1731, 3171) | `CARTA DE DUELO` — evento `DuelLetter` |
@@ -318,28 +365,33 @@ As demais regiões ativas do C++ já existem no Go.
   [world.go:302](../internal/game/world.go)) e prêmios das guerras.
 - Quests de NPC: Zakum, Uxmal (Pista de Runas), dungeon zumbi, Yugi;
   `Quests\*.c` (o servidor não traz os arquivos).
-- Recompensas por nível (`LevelItem.txt`).
+- ~~Recompensas por nível (`LevelItem.txt`)~~ **Feito (08/11).**
 - Lojas "Honra" e de RvR, itens especiais de evento nas lojas de NPC.
 
 ### 3.4 Arquivos de dados do C++ que o Go não lê
 
-`ReadNoCP` (áreas sem perda de CP), `ReadBlockedItem`, `ReadPacItens`,
-`ReadCashShop`, `ReadRanking`, `ReadLevelItem`, `ReadBoss` (chefes:
+`ReadBlockedItem`, `ReadPacItens`,
+`ReadRanking`, `ReadBoss` (chefes:
 renascimento e fama), `ReadArenaConfig`, `ReadBanList` (banimento por
-IP/MAC), `ReadScheduled` (tarefas agendadas), `LoadQuiz`, `LoadMarketHonra`.
+IP/MAC), `ReadScheduled` (tarefas agendadas), `LoadQuiz`.
 
 ### 3.5 Combate e detalhes pendentes (TODO no código)
 
-- Escudo de mana (affect 18) não protege contra golpes de monstros
-  ([ai.go:777](../internal/game/ai.go)).
-- Auras 22/23 (ataque automático em área) e ataque automático do familiar.
-- Skills especiais 79/30/41/98/102, empurrão (6), invocar jogador (9) e o
-  movimento do Exterminar (22).
-- `SendHpMode` não é enviado em 5 lugares (combate, chão, pontos, loja):
-  pode deixar o HP do cliente fora de sincronia.
-- `fixBoots`, custo de mana da ilusão, colisão de rota no movimento do
-  jogador (`GetRoute`).
-- Anti-spam de 169 ms no uso de itens.
+**Feito (08/11), com testes:**
+
+- Escudo de mana contra golpes de monstros, e dano de evocações em jogadores
+  a 40%.
+- Familiar (754, 769, 1726: ataque automático; 753/1726 perdem refino ao
+  morrer) e auras 22 e 23.
+- Skills 6 (puxão), 30, 41, 79, 98 e 102. A 9 e a 22 já existiam. O movimento
+  do Exterminar não foi portado: no C++ a condição só vale para o gerador 374.
+- Ilusão custa mana e exige a skill; botas com dano acima do limite são
+  corrigidas ao entrar no mundo.
+- Colisão de rota: mantido o desvio para a célula livre mais próxima. O laço
+  `GetRoute` do C++ testava sempre a mesma posição e não fazia nada.
+- Recompensas por nível e áreas sem perda de CP: seções `level_items` (181)
+  e `no_cp_areas` (4) do `tmsrv.yaml`.
+- Uso de itens rápido demais (169 ms) só registra no log, como no C++.
 
 ### 3.6 Comandos de GM ainda sem suporte
 

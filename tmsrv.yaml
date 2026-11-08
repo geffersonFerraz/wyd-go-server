@@ -104,3 +104,430 @@ mob_ai:
   # chance é só o INT do monstro (a maioria tem entre 50 e 99).
   # 0 = igual ao C++.
   min_attack_chance: 80
+
+# Loja premium (cash). Substitui o Data/CashShop.xml do C++. Para mudar, edite
+# aqui e reinicie os canais.
+#   id, name: aba da loja (o cliente pede a aba pelo id).
+#   slot:     posição na aba, 0..64.
+#   effects:  [efeito, valor], na ordem do item, até 3.
+#   price:    cash por unidade. Só o item com EF_GIFTID (201) pode ser 0.
+#   amount, promo: mostrados na janela da loja.
+#   limit:    máximo por compra; -1 = fora de venda, 0 = esgotado.
+cash_shop:
+  - id: 0
+    name: BIGSALE
+    items:
+      - { slot: 0, item: 4533, effects: [[61, 1]], price: 200, amount: 1, promo: 0, limit: 1000 } # Donate (200)
+      - { slot: 1, item: 4534, effects: [[61, 1]], price: 500, amount: 1, promo: 0, limit: 1000 } # Donate (500)
+      - { slot: 2, item: 4535, effects: [[61, 1]], price: 1000, amount: 1, promo: 0, limit: 1000 } # Donate (1000)
+  - id: 1
+    name: CONSUMIVEIS
+    items:
+      - { slot: 0, item: 3379, effects: [[61, 1]], price: 100, amount: 1, promo: 0, limit: 1000 } # Poção Divina(7dias)
+      - { slot: 1, item: 3380, effects: [[61, 1]], price: 170, amount: 1, promo: 0, limit: 1000 } # Poção Divina(15dias)
+      - { slot: 2, item: 3381, effects: [[61, 1]], price: 300, amount: 1, promo: 0, limit: 1000 } # Poção Divina(30dias)
+      - { slot: 3, item: 3361, effects: [[61, 1]], price: 110, amount: 1, promo: 0, limit: 1000 } # Poção Sephira (7dias)
+      - { slot: 4, item: 3362, effects: [[61, 1]], price: 180, amount: 1, promo: 0, limit: 1000 } # Poção Sephira (15dias)
+      - { slot: 5, item: 3363, effects: [[61, 1]], price: 310, amount: 1, promo: 0, limit: 1000 } # Poção Sephira (30dias)
+      - { slot: 6, item: 4140, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Baú de Experiência
+      - { slot: 7, item: 3314, effects: [[61, 1]], price: 10, amount: 1, promo: 0, limit: 1000 } # Frango Assado
+      - { slot: 8, item: 3914, effects: [[106, 3], [107, 0], [108, 0]], price: 300, amount: 1, promo: 0, limit: 1000 } # Fada Prateada
+      - { slot: 9, item: 3902, effects: [[106, 3], [107, 0], [108, 0]], price: 200, amount: 1, promo: 0, limit: 1000 } # Fada Vermelha(3dias)
+      - { slot: 10, item: 3905, effects: [[106, 5], [107, 0], [108, 0]], price: 300, amount: 1, promo: 0, limit: 1000 } # Fada Vermelha(5dias)
+      - { slot: 11, item: 3908, effects: [[106, 7], [107, 0], [108, 0]], price: 400, amount: 1, promo: 0, limit: 1000 } # Fada Vermelha(7dias)
+      - { slot: 12, item: 3915, effects: [[106, 7], [107, 0], [108, 0]], price: 500, amount: 1, promo: 0, limit: 1000 } # Fada Dourada
+      - { slot: 13, item: 3330, effects: [[61, 120]], price: 10, amount: 1, promo: 0, limit: 1000 } # Trombeta Mágica
+      - { slot: 14, item: 3343, effects: [[61, 1]], price: 350, amount: 1, promo: 0, limit: 1000 } # Pergaminho do Perdão
+      - { slot: 15, item: 775, effects: [[61, 1]], price: 125, amount: 1, promo: 0, limit: 1000 } # Pedra da Troca Menor
+      - { slot: 16, item: 774, effects: [[61, 1]], price: 125, amount: 1, promo: 0, limit: 1000 } # Pedra da Troca Maior
+      - { slot: 17, item: 3336, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Retorno da Habilidade
+      - { slot: 18, item: 4621, effects: [[61, 1]], price: 15, amount: 1, promo: 0, limit: 1000 } # ?
+      - { slot: 19, item: 4617, effects: [[61, 1]], price: 100, amount: 1, promo: 0, limit: 1000 } # ?
+      - { slot: 20, item: 4618, effects: [[61, 1]], price: 180, amount: 1, promo: 0, limit: 1000 } # ?
+      - { slot: 21, item: 4616, effects: [[61, 1]], price: 350, amount: 1, promo: 0, limit: 1000 } # ?
+  - id: 2
+    name: SUBIR_DE_NIVEL
+    items:
+      - { slot: 0, item: 3173, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Pergaminho da Água(N)LV1
+      - { slot: 1, item: 3173, effects: [[61, 120]], price: 5500, amount: 1, promo: 0, limit: 1000 } # Pergaminho da Água(N)LV1
+  - id: 3
+    name: PVP
+    items:
+      - { slot: 0, item: 3200, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Joia da Sagacidade
+      - { slot: 1, item: 3201, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Joia da Resistência
+      - { slot: 2, item: 3202, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Joia da Revelação
+      - { slot: 3, item: 3203, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Joia da Recuperação
+      - { slot: 4, item: 3204, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Joia da Absorção
+      - { slot: 5, item: 3205, effects: [[61, 1]], price: 25, amount: 1, promo: 0, limit: 1000 } # Joia da Proteção
+      - { slot: 8, item: 3206, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Joia do Poder
+      - { slot: 9, item: 3207, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Joia da Armazenagem
+      - { slot: 10, item: 3208, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Joia da Precisão
+      - { slot: 11, item: 3209, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Joia da Magia
+  - id: 4
+    name: MONTARIAS
+    items:
+      - { slot: 0, item: 3345, effects: [[61, 1]], price: 100, amount: 1, promo: 0, limit: 1000 } # Catalisador de Acuban
+      - { slot: 1, item: 3346, effects: [[61, 1]], price: 300, amount: 1, promo: 0, limit: 1000 } # Catalisador de Mencar
+      - { slot: 2, item: 3347, effects: [[61, 1]], price: 400, amount: 1, promo: 0, limit: 1000 } # Catalisador de Birago
+      - { slot: 3, item: 3348, effects: [[61, 1]], price: 700, amount: 1, promo: 0, limit: 1000 } # Catalisador de Yus
+      - { slot: 4, item: 3438, effects: [[61, 1]], price: 200, amount: 1, promo: 0, limit: 1000 } # Acelerador de Nascimento
+      - { slot: 5, item: 3352, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Restaurador de Acuban
+      - { slot: 6, item: 3353, effects: [[61, 1]], price: 100, amount: 1, promo: 0, limit: 1000 } # Restaurador de Mencar
+      - { slot: 7, item: 3354, effects: [[61, 1]], price: 150, amount: 1, promo: 0, limit: 1000 } # Restaurador de Birago
+      - { slot: 8, item: 3355, effects: [[61, 1]], price: 200, amount: 1, promo: 0, limit: 1000 } # Restaurador de Yus
+      - { slot: 9, item: 4128, effects: [[61, 1]], price: 100, amount: 1, promo: 0, limit: 1000 } # Esfera da Sorte(N)
+      - { slot: 10, item: 4129, effects: [[61, 1]], price: 175, amount: 1, promo: 0, limit: 1000 } # Esfera da Sorte(M)
+      - { slot: 11, item: 4130, effects: [[61, 1]], price: 220, amount: 1, promo: 0, limit: 1000 } # Esfera da Sorte(A)
+  - id: 5
+    name: TINTURAS
+    items:
+      - { slot: 0, item: 3397, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Azul
+      - { slot: 1, item: 3398, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Vermelha
+      - { slot: 2, item: 3399, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Verde
+      - { slot: 3, item: 3400, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Prateada
+      - { slot: 4, item: 3401, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Preta
+      - { slot: 5, item: 3402, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Roxa
+      - { slot: 6, item: 3403, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Marrom
+      - { slot: 7, item: 3404, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Rosa
+      - { slot: 8, item: 3405, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Amarela
+      - { slot: 9, item: 3406, effects: [[61, 1]], price: 50, amount: 1, promo: 0, limit: 1000 } # Tintura Azul Claro
+      - { slot: 10, item: 3417, effects: [[61, 1]], price: 100, amount: 1, promo: 0, limit: 1000 } # Removedor de tintura
+  - id: 6
+    name: TRAJES
+    items:
+      - { slot: 0, item: 4150, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Dosa Set
+      - { slot: 1, item: 4152, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Uniform Set(30days)
+      - { slot: 2, item: 4153, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Skeleton Set(30days)
+      - { slot: 3, item: 4154, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Summer Costume(Female)
+      - { slot: 4, item: 4155, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # CatMan Set(30days)
+      - { slot: 5, item: 4156, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # CatWoman Set(30days)
+      - { slot: 6, item: 4157, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Female Wizard Set(30days)
+      - { slot: 7, item: 4158, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # A son of dragon Set(30days)
+      - { slot: 8, item: 4163, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # WhiteUniform Set(30days)
+      - { slot: 9, item: 4164, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # BlackUniform Set(30days)
+      - { slot: 10, item: 4165, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Blindness Set(30days)
+      - { slot: 11, item: 4166, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Deafness Set(30days)
+      - { slot: 12, item: 4170, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # ST Set(30days)
+      - { slot: 13, item: 4171, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # KingDom Armor
+      - { slot: 14, item: 4172, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # KingDom Armor
+      - { slot: 15, item: 4173, effects: [], price: 300, amount: 1, promo: 0, limit: 1000 } # Gandi
+      - { slot: 16, item: 4190, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Tigre Branco
+      - { slot: 17, item: 4191, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Sombra da Morte(Prata)
+      - { slot: 18, item: 4192, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Sombra da Morte(Ouro)
+      - { slot: 19, item: 4193, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Aranha Guerreira
+      - { slot: 20, item: 4194, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Pogobol(Vermelho)
+      - { slot: 21, item: 4195, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Pogobol(Azul)
+      - { slot: 22, item: 4196, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Cavalo Real(Vermelho)
+      - { slot: 23, item: 4197, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Cavalo Real(Azul)
+      - { slot: 24, item: 4198, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Wooden horse
+      - { slot: 25, item: 4199, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Galinha Fofinha
+      - { slot: 26, item: 4200, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Cat
+      - { slot: 27, item: 4201, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Spider
+      - { slot: 28, item: 4202, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Deer
+      - { slot: 29, item: 4203, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Red Dragon2
+      - { slot: 30, item: 4204, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Blue Dragon2
+      - { slot: 31, item: 4205, effects: [], price: 500, amount: 1, promo: 0, limit: 1000 } # Traje Mont: Red Rudolph
+  - id: 7
+    name: KITS
+    items:
+
+# Mercado de Honra. Substitui o MarketHonra.txt do C++. A janela mostra o
+# inventário do NPC "Honra" (data/tmsrv/npc/Honra); daqui vêm o preço e os
+# efeitos do item entregue.
+#   price: pontos de honra (o efeito 93 do arquivo original).
+honor_market:
+  - { item: 4140, effects: [[61, 1]], price: 20 } # Baú de Experiência
+  - { item: 3314, effects: [[61, 1]], price: 20 } # Frango Assado
+  - { item: 3915, effects: [[106, 0], [107, 3]], price: 100 } # Fada Dourada
+  - { item: 692, effects: [[61, 1]], price: 10 } # Pedaço do Círc Div Comp
+  - { item: 2399, effects: [[61, 1]], price: 10 } # Harnessed Horse's Essence
+  - { item: 2404, effects: [[61, 1]], price: 10 } # Harnessed Horse's Essence
+  - { item: 3336, effects: [[61, 1]], price: 10 } # Retorno da Habilidade
+  - { item: 3288, effects: [[61, 1]], price: 1 } # ?
+  - { item: 3289, effects: [[61, 1]], price: 50 } # ?
+  - { item: 3290, effects: [[61, 1]], price: 100 } # ?
+  - { item: 2307, effects: [], price: 100 } # Steed's Egg
+  - { item: 2312, effects: [], price: 100 } # Steed's Egg
+  - { item: 3200, effects: [[61, 3]], price: 10 } # Joia da Sagacidade
+  - { item: 3201, effects: [[61, 3]], price: 10 } # Joia da Resistência
+  - { item: 3202, effects: [[61, 3]], price: 10 } # Joia da Revelação
+  - { item: 1739, effects: [[61, 1]], price: 2 } # Chocolate do Amor
+  - { item: 4145, effects: [[61, 1]], price: 2 } # Coração Doce
+  - { item: 3203, effects: [[61, 3]], price: 10 } # Joia da Recuperação
+  - { item: 3204, effects: [[61, 3]], price: 10 } # Joia da Absorção
+  - { item: 3205, effects: [[61, 3]], price: 10 } # Joia da Proteção
+
+# Áreas onde o matador não perde CP ao matar um jogador. Substitui o
+# Data/NonCP.txt do C++.
+no_cp_areas:
+  - { min_x: 1666, min_y: 1538, max_x: 1920, max_y: 1790 }
+  - { min_x: 2176, min_y: 3841, max_x: 2559, max_y: 4095 }
+  - { min_x: 1041, min_y: 1950, max_x: 1248, max_y: 2158 }
+  - { min_x: 143, min_y: 546, max_x: 195, max_y: 625 }
+
+# Itens entregues ao chegar a um nível. Substitui o Data/LevelItem.txt do C++.
+# O item vai para o inventário; se estiver cheio, para o baú.
+#   evolution: 1 mortal, 2 arch, 3 celestial, 4 sub-celestial.
+#   level:     o nível interno (o mostrado no jogo é este + 1).
+#   class:     0 TK, 1 FM, 2 BM, 3 HT.
+#   type:      -1 qualquer classe; 0 só a classe; 1, 2, 3 a classe com mais
+#              pontos em STR, INT ou DEX.
+#   effects:   [efeito, valor], na ordem do item, até 3.
+level_items:
+  # EVOLUÇÃO, LEVEL, CLASSE, TYPE, ITEM
+  # TYPE = -1 -> ENTREGA O ITEM INDEPENDENTE DA CLASSE
+  # TYPE = 0 -> ENTREGA O ITEM INDEPENDENTE DOS PONTOS
+  # TYPE = 1 -> TEM MAIS PONTOS EM STR
+  # TYPE = 2 -> TEM MAIS PONTOS EM INT
+  # TYPE = 3 -> TEM MAIS PONTOS EM DEX
+  # CLASSES: 0=TK, 1=FM, 2=BM, 3=HT
+  # SEQUENCIA, LEVEL, CLASSE, TYPE, ITEM
+  # EVOLUÇÃO LEVEL CLASSE TYPE ITEM
+  # GLOBAL PREMIO - Ovo do Iniciante
+  - { evolution: 1, level: 140, class: 0, type: -1, item: 4615, effects: [] } # ?
+  # TK DN SET MALHA
+  - { evolution: 1, level: 29, class: 0, type: 1, item: 1147, effects: [[43, 3], [2, 20], [53, 3]] } # Manoplas de Malha(M)
+  - { evolution: 1, level: 34, class: 0, type: 1, item: 1159, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Malha(M)
+  - { evolution: 1, level: 39, class: 0, type: 1, item: 1111, effects: [[43, 3], [4, 20]] } # Elmo de Malha(M)
+  - { evolution: 1, level: 44, class: 0, type: 1, item: 1135, effects: [[43, 3], [2, 20], [3, 20]] } # Calça de Malha(M)
+  - { evolution: 1, level: 49, class: 0, type: 1, item: 1123, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura de Malha(M)
+  # TK MAGO SET MALHA
+  - { evolution: 1, level: 29, class: 0, type: 2, item: 1147, effects: [[43, 3], [60, 6], [53, 3]] } # Manoplas de Malha(M)
+  - { evolution: 1, level: 34, class: 0, type: 2, item: 1159, effects: [[43, 3], [60, 6], [74, 12]] } # Botas de Malha(M)
+  - { evolution: 1, level: 39, class: 0, type: 2, item: 1111, effects: [[43, 3], [4, 20]] } # Elmo de Malha(M)
+  - { evolution: 1, level: 44, class: 0, type: 2, item: 1135, effects: [[43, 3], [60, 6], [3, 20]] } # Calça de Malha(M)
+  - { evolution: 1, level: 49, class: 0, type: 2, item: 1123, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura de Malha(M)
+  # TK DN SET DOURADO
+  - { evolution: 1, level: 84, class: 0, type: 1, item: 1186, effects: [[43, 3], [2, 20], [53, 3]] } # Manoplas Douradas(M)
+  - { evolution: 1, level: 89, class: 0, type: 1, item: 1189, effects: [[43, 3], [73, 18], [74, 12]] } # Botas Douradas(M)
+  - { evolution: 1, level: 94, class: 0, type: 1, item: 1177, effects: [[43, 3], [4, 20]] } # Elmo Dourado(M)
+  - { evolution: 1, level: 99, class: 0, type: 1, item: 1183, effects: [[43, 3], [2, 20], [3, 20]] } # Calça Dourada(M)
+  - { evolution: 1, level: 104, class: 0, type: 1, item: 1180, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura Dourada(M)
+  # TK MAGO SET DOURADO
+  - { evolution: 1, level: 84, class: 0, type: 2, item: 1186, effects: [[43, 3], [60, 6], [53, 3]] } # Manoplas Douradas(M)
+  - { evolution: 1, level: 89, class: 0, type: 2, item: 1189, effects: [[43, 3], [60, 6], [74, 12]] } # Botas Douradas(M)
+  - { evolution: 1, level: 94, class: 0, type: 2, item: 1177, effects: [[43, 3], [4, 20]] } # Elmo Dourado(M)
+  - { evolution: 1, level: 99, class: 0, type: 2, item: 1183, effects: [[43, 3], [60, 6], [3, 20]] } # Calça Dourada(M)
+  - { evolution: 1, level: 104, class: 0, type: 2, item: 1180, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura Dourada(M)
+  # TK DN SET ANÃ
+  - { evolution: 1, level: 119, class: 0, type: 1, item: 1201, effects: [[43, 3], [2, 20], [53, 3]] } # Manopla Anã(M)
+  - { evolution: 1, level: 124, class: 0, type: 1, item: 1204, effects: [[43, 3], [73, 18], [74, 12]] } # Botas Anã(M)
+  - { evolution: 1, level: 129, class: 0, type: 1, item: 1192, effects: [[43, 3], [4, 20]] } # Elmo Anão(M)
+  - { evolution: 1, level: 134, class: 0, type: 1, item: 1198, effects: [[43, 3], [2, 20], [3, 20]] } # Calça Anã(M)
+  - { evolution: 1, level: 139, class: 0, type: 1, item: 1195, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura Anã(M)
+  # TK DN SET ANÃ
+  - { evolution: 1, level: 119, class: 0, type: 2, item: 1201, effects: [[43, 3], [60, 6], [53, 3]] } # Manopla Anã(M)
+  - { evolution: 1, level: 124, class: 0, type: 2, item: 1204, effects: [[43, 3], [60, 6], [74, 12]] } # Botas Anã(M)
+  - { evolution: 1, level: 129, class: 0, type: 2, item: 1192, effects: [[43, 3], [4, 20]] } # Elmo Anão(M)
+  - { evolution: 1, level: 134, class: 0, type: 2, item: 1198, effects: [[43, 3], [60, 6], [3, 20]] } # Calça Anã(M)
+  - { evolution: 1, level: 139, class: 0, type: 2, item: 1195, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura Anã(M)
+  # GLOBAL PREMIO - CAVALO FANTASMA
+  - { evolution: 1, level: 149, class: 0, type: -1, item: 2367, effects: [[100, 100], [5, 5], [100, 0]] } # Cavalo Fantasm N
+  # ARMA TK DANO NO LEVEL 155
+  - { evolution: 1, level: 154, class: 0, type: 1, item: 910, effects: [[43, 6], [2, 36]] } # Luna
+  # ARMA TK MAG NO LEVEL 155
+  - { evolution: 1, level: 154, class: 0, type: 2, item: 854, effects: [[43, 6], [60, 16]] } # Gungnir
+  # TK DN SET EMBUTIDO
+  - { evolution: 1, level: 159, class: 0, type: 1, item: 1216, effects: [[43, 3], [2, 20], [53, 3]] } # Manoplas Embutidas(M)
+  - { evolution: 1, level: 169, class: 0, type: 1, item: 1219, effects: [[43, 3], [73, 18], [74, 12]] } # Botas Embutidas(M)
+  - { evolution: 1, level: 179, class: 0, type: 1, item: 1207, effects: [[43, 3], [4, 20]] } # Elmo Embutido(M)
+  - { evolution: 1, level: 189, class: 0, type: 1, item: 1213, effects: [[43, 3], [2, 20], [3, 20]] } # Calça Embutida(M)
+  - { evolution: 1, level: 199, class: 0, type: 1, item: 1210, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura Embutida(M)
+  # TK MAGO SET EMBUTIDO
+  - { evolution: 1, level: 159, class: 0, type: 2, item: 1216, effects: [[43, 3], [60, 6], [53, 3]] } # Manoplas Embutidas(M)
+  - { evolution: 1, level: 169, class: 0, type: 2, item: 1219, effects: [[43, 3], [60, 6], [74, 12]] } # Botas Embutidas(M)
+  - { evolution: 1, level: 179, class: 0, type: 2, item: 1207, effects: [[43, 3], [4, 20]] } # Elmo Embutido(M)
+  - { evolution: 1, level: 189, class: 0, type: 2, item: 1213, effects: [[43, 3], [60, 6], [3, 20]] } # Calça Embutida(M)
+  - { evolution: 1, level: 199, class: 0, type: 2, item: 1210, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura Embutida(M)
+  # ARMA TK DANO NO LEVEL 255
+  - { evolution: 1, level: 254, class: 0, type: 1, item: 3596, effects: [[43, 6], [2, 36]] } # Demolidor Celestial
+  # ARMA TK MAG NO LEVEL 255
+  - { evolution: 1, level: 254, class: 0, type: 2, item: 3566, effects: [[43, 6], [60, 16]] } # Foice Platinada
+  # ARMA TK DEX NO LVL 255
+  - { evolution: 1, level: 254, class: 0, type: 3, item: 3551, effects: [[43, 6], [2, 36]] } # Asa Draconiana
+  - { evolution: 1, level: 254, class: 0, type: 3, item: 3551, effects: [[43, 6], [2, 36]] } # Asa Draconiana
+  # ID LEVEL CLASSE TYPE ITEM
+  # FM DN SET SOMBRIO
+  - { evolution: 1, level: 29, class: 1, type: 1, item: 1297, effects: [[43, 3], [2, 20], [53, 3]] } # Luvas Sombrias(M)
+  - { evolution: 1, level: 34, class: 1, type: 1, item: 1309, effects: [[43, 3], [73, 18], [74, 12]] } # Botas Sombrias(M)
+  - { evolution: 1, level: 39, class: 1, type: 1, item: 1261, effects: [[43, 3], [4, 20]] } # Chapéu Sombrio(M)
+  - { evolution: 1, level: 44, class: 1, type: 1, item: 1285, effects: [[43, 3], [2, 20], [3, 20]] } # Calça Sombria(M)
+  - { evolution: 1, level: 49, class: 1, type: 1, item: 1273, effects: [[43, 3], [2, 20], [3, 20]] } # Robe Sombrio(M)
+  # FM MAG SET SOMBRIO
+  - { evolution: 1, level: 29, class: 1, type: 2, item: 1297, effects: [[43, 3], [60, 6], [53, 3]] } # Luvas Sombrias(M)
+  - { evolution: 1, level: 34, class: 1, type: 2, item: 1309, effects: [[43, 3], [60, 6], [74, 12]] } # Botas Sombrias(M)
+  - { evolution: 1, level: 39, class: 1, type: 2, item: 1261, effects: [[43, 3], [4, 20]] } # Chapéu Sombrio(M)
+  - { evolution: 1, level: 44, class: 1, type: 2, item: 1285, effects: [[43, 3], [60, 6], [3, 20]] } # Calça Sombria(M)
+  - { evolution: 1, level: 49, class: 1, type: 2, item: 1273, effects: [[43, 3], [60, 6], [3, 20]] } # Robe Sombrio(M)
+  # FM DN SET CONCHA
+  - { evolution: 1, level: 84, class: 1, type: 1, item: 1321, effects: [[43, 3], [2, 20], [53, 3]] } # Luvas de Concha(M)
+  - { evolution: 1, level: 89, class: 1, type: 1, item: 1324, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Concha(M)
+  - { evolution: 1, level: 94, class: 1, type: 1, item: 1312, effects: [[43, 3], [4, 20]] } # Chapéu de Concha(M)
+  - { evolution: 1, level: 99, class: 1, type: 1, item: 1318, effects: [[43, 3], [2, 20], [3, 20]] } # Calça de Concha(M)
+  - { evolution: 1, level: 104, class: 1, type: 1, item: 1315, effects: [[43, 3], [2, 20], [3, 20]] } # Túnica de Concha(M)
+  # FM MAG SET CONCHA
+  - { evolution: 1, level: 84, class: 1, type: 2, item: 1321, effects: [[43, 3], [60, 6], [53, 3]] } # Luvas de Concha(M)
+  - { evolution: 1, level: 89, class: 1, type: 2, item: 1324, effects: [[43, 3], [60, 6], [74, 12]] } # Botas de Concha(M)
+  - { evolution: 1, level: 94, class: 1, type: 2, item: 1312, effects: [[43, 3], [4, 20]] } # Chapéu de Concha(M)
+  - { evolution: 1, level: 99, class: 1, type: 2, item: 1318, effects: [[43, 3], [60, 6], [3, 20]] } # Calça de Concha(M)
+  - { evolution: 1, level: 104, class: 1, type: 2, item: 1315, effects: [[43, 3], [60, 6], [3, 20]] } # Túnica de Concha(M)
+  # FM DN SET CONJURADORA
+  - { evolution: 1, level: 119, class: 1, type: 1, item: 1336, effects: [[43, 3], [2, 20], [53, 3]] } # Luvas Conjuradoras(M)
+  - { evolution: 1, level: 124, class: 1, type: 1, item: 1339, effects: [[43, 3], [73, 18], [74, 12]] } # Botas Conjuradoras(M)
+  - { evolution: 1, level: 129, class: 1, type: 1, item: 1327, effects: [[43, 3], [4, 20]] } # Chapéu Conjurador(M)
+  - { evolution: 1, level: 134, class: 1, type: 1, item: 1333, effects: [[43, 3], [2, 20], [3, 20]] } # Calça Conjuradora(M)
+  - { evolution: 1, level: 139, class: 1, type: 1, item: 1330, effects: [[43, 3], [2, 20], [3, 20]] } # Túnica Conjuradora(M)
+  # FM MAG SET CONJURADORA
+  - { evolution: 1, level: 119, class: 1, type: 2, item: 1336, effects: [[43, 3], [60, 6], [53, 3]] } # Luvas Conjuradoras(M)
+  - { evolution: 1, level: 124, class: 1, type: 2, item: 1339, effects: [[43, 3], [60, 6], [74, 12]] } # Botas Conjuradoras(M)
+  - { evolution: 1, level: 129, class: 1, type: 2, item: 1327, effects: [[43, 3], [4, 20]] } # Chapéu Conjurador(M)
+  - { evolution: 1, level: 134, class: 1, type: 2, item: 1333, effects: [[43, 3], [60, 6], [3, 20]] } # Calça Conjuradora(M)
+  - { evolution: 1, level: 139, class: 1, type: 2, item: 1330, effects: [[43, 3], [60, 6], [3, 20]] } # Túnica Conjuradora(M)
+  # ARMA FM DANO NO LEVEL 155
+  - { evolution: 1, level: 154, class: 1, type: 1, item: 824, effects: [[43, 6], [2, 36]] } # Arco Élfico
+  # ARMA FM MAG NO LEVEL 155
+  - { evolution: 1, level: 154, class: 1, type: 2, item: 899, effects: [[43, 6], [60, 16]] } # Olho do Carbunkle
+  # FM DN SET MYTRIL
+  - { evolution: 1, level: 159, class: 1, type: 1, item: 1351, effects: [[43, 3], [2, 20], [53, 3]] } # Luvas de Mytril(M)
+  - { evolution: 1, level: 169, class: 1, type: 1, item: 1354, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Mytril(M)
+  - { evolution: 1, level: 179, class: 1, type: 1, item: 1342, effects: [[43, 3], [4, 20]] } # Chapéu de Mytril(M)
+  - { evolution: 1, level: 189, class: 1, type: 1, item: 1348, effects: [[43, 3], [2, 20], [3, 20]] } # Calça de Mytril(M)
+  - { evolution: 1, level: 199, class: 1, type: 1, item: 1345, effects: [[43, 3], [2, 20], [3, 20]] } # Túnica de Mytril(M)
+  # FM MAG SET MYTRIL
+  - { evolution: 1, level: 159, class: 1, type: 2, item: 1351, effects: [[43, 3], [60, 6], [53, 3]] } # Luvas de Mytril(M)
+  - { evolution: 1, level: 169, class: 1, type: 2, item: 1354, effects: [[43, 3], [60, 6], [74, 12]] } # Botas de Mytril(M)
+  - { evolution: 1, level: 179, class: 1, type: 2, item: 1342, effects: [[43, 3], [4, 20]] } # Chapéu de Mytril(M)
+  - { evolution: 1, level: 189, class: 1, type: 2, item: 1348, effects: [[43, 3], [60, 6], [3, 20]] } # Calça de Mytril(M)
+  - { evolution: 1, level: 199, class: 1, type: 2, item: 1345, effects: [[43, 3], [60, 6], [3, 20]] } # Túnica de Mytril(M)
+  # ARMA FM DANO NO LEVEL 255
+  - { evolution: 1, level: 254, class: 1, type: 1, item: 3556, effects: [[43, 6], [2, 36]] } # Arco Guardião
+  # ARMA FM MAG NO LEVEL 255
+  - { evolution: 1, level: 254, class: 1, type: 2, item: 3582, effects: [[43, 6], [60, 16]] } # Cajado Caótico
+  # ARMA FM DEX NO LVL 255
+  - { evolution: 1, level: 254, class: 1, type: 3, item: 3551, effects: [[43, 6], [2, 36]] } # Asa Draconiana
+  - { evolution: 1, level: 254, class: 1, type: 3, item: 3551, effects: [[43, 6], [2, 36]] } # Asa Draconiana
+  # ID LEVEL CLASSE TYPE ITEM
+  # BM DN SET AGUIA
+  - { evolution: 1, level: 29, class: 2, type: 1, item: 1456, effects: [[43, 3], [2, 20], [53, 3]] } # Luvas de Águia(M)
+  - { evolution: 1, level: 34, class: 2, type: 1, item: 1459, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Águia(M)
+  - { evolution: 1, level: 39, class: 2, type: 1, item: 1447, effects: [[43, 3], [4, 20]] } # Elmo de Águia(M)
+  - { evolution: 1, level: 44, class: 2, type: 1, item: 1453, effects: [[43, 3], [2, 20], [3, 20]] } # Calça de Águia(M)
+  - { evolution: 1, level: 49, class: 2, type: 1, item: 1450, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura de Águia(M)
+  # BM MAG SET AGUIA
+  - { evolution: 1, level: 29, class: 2, type: 2, item: 1456, effects: [[43, 3], [60, 6], [53, 3]] } # Luvas de Águia(M)
+  - { evolution: 1, level: 34, class: 2, type: 2, item: 1459, effects: [[43, 3], [60, 6], [74, 12]] } # Botas de Águia(M)
+  - { evolution: 1, level: 39, class: 2, type: 2, item: 1447, effects: [[43, 3], [4, 20]] } # Elmo de Águia(M)
+  - { evolution: 1, level: 44, class: 2, type: 2, item: 1453, effects: [[43, 3], [60, 6], [3, 20]] } # Calça de Águia(M)
+  - { evolution: 1, level: 49, class: 2, type: 2, item: 1450, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura de Águia(M)
+  # BM DN SET OSSO
+  - { evolution: 1, level: 84, class: 2, type: 1, item: 1471, effects: [[43, 3], [2, 20], [53, 3]] } # Manoplas de Osso(M)
+  - { evolution: 1, level: 89, class: 2, type: 1, item: 1474, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Osso(M)
+  - { evolution: 1, level: 94, class: 2, type: 1, item: 1462, effects: [[43, 3], [4, 20]] } # Elmo de Osso(M)
+  - { evolution: 1, level: 99, class: 2, type: 1, item: 1468, effects: [[43, 3], [2, 20], [3, 20]] } # Calça de Osso(M)
+  - { evolution: 1, level: 104, class: 2, type: 1, item: 1465, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura de Osso(M)
+  # BM MAG SET OSSO
+  - { evolution: 1, level: 84, class: 2, type: 2, item: 1471, effects: [[43, 3], [60, 6], [53, 3]] } # Manoplas de Osso(M)
+  - { evolution: 1, level: 89, class: 2, type: 2, item: 1474, effects: [[43, 3], [60, 6], [74, 12]] } # Botas de Osso(M)
+  - { evolution: 1, level: 94, class: 2, type: 2, item: 1462, effects: [[43, 3], [4, 20]] } # Elmo de Osso(M)
+  - { evolution: 1, level: 99, class: 2, type: 2, item: 1468, effects: [[43, 3], [60, 6], [3, 20]] } # Calça de Osso(M)
+  - { evolution: 1, level: 104, class: 2, type: 2, item: 1465, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura de Osso(M)
+  # BM DN SET AEON
+  - { evolution: 1, level: 119, class: 2, type: 1, item: 1486, effects: [[43, 3], [2, 20], [53, 3]] } # Manoplas Aeon(M)
+  - { evolution: 1, level: 124, class: 2, type: 1, item: 1489, effects: [[43, 3], [73, 18], [74, 12]] } # Botas Aeon(M)
+  - { evolution: 1, level: 129, class: 2, type: 1, item: 1477, effects: [[43, 3], [4, 20]] } # Elmo Aeon(M)
+  - { evolution: 1, level: 134, class: 2, type: 1, item: 1483, effects: [[43, 3], [2, 20], [3, 20]] } # Calça Aeon(M)
+  - { evolution: 1, level: 139, class: 2, type: 1, item: 1480, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura Aeon(M)
+  # BM MAG SET AEON
+  - { evolution: 1, level: 119, class: 2, type: 2, item: 1486, effects: [[43, 3], [60, 6], [53, 3]] } # Manoplas Aeon(M)
+  - { evolution: 1, level: 124, class: 2, type: 2, item: 1489, effects: [[43, 3], [60, 6], [74, 12]] } # Botas Aeon(M)
+  - { evolution: 1, level: 129, class: 2, type: 2, item: 1477, effects: [[43, 3], [4, 20]] } # Elmo Aeon(M)
+  - { evolution: 1, level: 134, class: 2, type: 2, item: 1483, effects: [[43, 3], [60, 6], [3, 20]] } # Calça Aeon(M)
+  - { evolution: 1, level: 139, class: 2, type: 2, item: 1480, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura Aeon(M)
+  # ARMA BM DANO NO LEVEL 155
+  - { evolution: 1, level: 154, class: 2, type: 1, item: 884, effects: [[43, 6], [2, 36]] } # Lança Relâmpago
+  # ARMA BM MAG NO LEVEL 155
+  - { evolution: 1, level: 154, class: 2, type: 2, item: 854, effects: [[43, 6], [60, 16]] } # Gungnir
+  # BM DN SET ELEMENTAL
+  - { evolution: 1, level: 159, class: 2, type: 1, item: 1501, effects: [[43, 3], [2, 20], [53, 3]] } # Manoplas Elementais(M)
+  - { evolution: 1, level: 169, class: 2, type: 1, item: 1504, effects: [[43, 3], [73, 18], [74, 12]] } # Botas Elementais(M)
+  - { evolution: 1, level: 179, class: 2, type: 1, item: 1492, effects: [[43, 3], [4, 20]] } # Elmo Elemental(M)
+  - { evolution: 1, level: 189, class: 2, type: 1, item: 1498, effects: [[43, 3], [2, 20], [3, 20]] } # Calça Elemental(M)
+  - { evolution: 1, level: 199, class: 2, type: 1, item: 1495, effects: [[43, 3], [2, 20], [3, 20]] } # Armadura Elemental(M)
+  # BM MAG SET ELEMENTAL
+  - { evolution: 1, level: 159, class: 2, type: 2, item: 1501, effects: [[43, 3], [60, 6], [53, 3]] } # Manoplas Elementais(M)
+  - { evolution: 1, level: 169, class: 2, type: 2, item: 1504, effects: [[43, 3], [60, 6], [74, 12]] } # Botas Elementais(M)
+  - { evolution: 1, level: 179, class: 2, type: 2, item: 1492, effects: [[43, 3], [4, 20]] } # Elmo Elemental(M)
+  - { evolution: 1, level: 189, class: 2, type: 2, item: 1498, effects: [[43, 3], [60, 6], [3, 20]] } # Calça Elemental(M)
+  - { evolution: 1, level: 199, class: 2, type: 2, item: 1495, effects: [[43, 3], [60, 6], [3, 20]] } # Armadura Elemental(M)
+  # ARMA BM DANO NO LEVEL 255
+  - { evolution: 1, level: 254, class: 2, type: 1, item: 3551, effects: [[43, 6], [2, 36]] } # Asa Draconiana
+  # ARMA BM MAG NO LEVEL 255
+  - { evolution: 1, level: 254, class: 2, type: 2, item: 3566, effects: [[43, 6], [60, 16]] } # Foice Platinada
+  # ARMA FM DEX NO LVL 255
+  - { evolution: 1, level: 254, class: 2, type: 3, item: 3551, effects: [[43, 6], [2, 36]] } # Asa Draconiana
+  # ID LEVEL CLASSE TYPE ITEM
+  # HT DN SET METAL
+  - { evolution: 1, level: 29, class: 3, type: 0, item: 1606, effects: [[43, 3], [2, 20], [53, 3]] } # Braçadeira de Metal(M)
+  - { evolution: 1, level: 34, class: 3, type: 0, item: 1609, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Metal(M)
+  - { evolution: 1, level: 39, class: 3, type: 0, item: 1597, effects: [[43, 3], [4, 20]] } # Chapéu de Metal(M)
+  - { evolution: 1, level: 44, class: 3, type: 0, item: 1603, effects: [[43, 3], [2, 20], [3, 20]] } # Calça de Metal(M)
+  - { evolution: 1, level: 49, class: 3, type: 0, item: 1600, effects: [[43, 3], [2, 20], [3, 20]] } # Peitoral de Metal(M)
+  # HT DN SET COMBATE
+  - { evolution: 1, level: 84, class: 3, type: 0, item: 1621, effects: [[43, 3], [2, 20], [53, 3]] } # Braçadeira de Combate(M)
+  - { evolution: 1, level: 89, class: 3, type: 0, item: 1624, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Combate(M)
+  - { evolution: 1, level: 94, class: 3, type: 0, item: 1612, effects: [[43, 3], [4, 20]] } # Elmo de Combate(M)
+  - { evolution: 1, level: 99, class: 3, type: 0, item: 1618, effects: [[43, 3], [2, 20], [3, 20]] } # Calça De Combate(M)
+  - { evolution: 1, level: 104, class: 3, type: 0, item: 1615, effects: [[43, 3], [2, 20], [3, 20]] } # Peitoral de Combate(M)
+  # HT DN SET NATUREZA
+  - { evolution: 1, level: 119, class: 3, type: 0, item: 1636, effects: [[43, 3], [2, 20], [53, 3]] } # Luvas da Natureza(M)
+  - { evolution: 1, level: 124, class: 3, type: 0, item: 1639, effects: [[43, 3], [73, 18], [74, 12]] } # Botas da Natureza(M)
+  - { evolution: 1, level: 129, class: 3, type: 0, item: 1627, effects: [[43, 3], [4, 20]] } # Chapéu da Natureza(M)
+  - { evolution: 1, level: 134, class: 3, type: 0, item: 1633, effects: [[43, 3], [2, 20], [3, 20]] } # Calça da Natureza(M)
+  - { evolution: 1, level: 139, class: 3, type: 0, item: 1630, effects: [[43, 3], [2, 20], [3, 20]] } # Peitoral da Natureza(M)
+  # ARMA HT DANO NO LEVEL 155
+  - { evolution: 1, level: 154, class: 3, type: 1, item: 824, effects: [[43, 6], [2, 36]] } # Arco Élfico
+  # ARMA HT MAG NO LEVEL 155
+  - { evolution: 1, level: 154, class: 3, type: 3, item: 839, effects: [[43, 6], [2, 36]] } # Presas de Behemoth
+  # HT DN SET TEIA
+  - { evolution: 1, level: 159, class: 3, type: 0, item: 1651, effects: [[43, 3], [2, 20], [53, 3]] } # Braçadeira de Teia(M)
+  - { evolution: 1, level: 169, class: 3, type: 0, item: 1654, effects: [[43, 3], [73, 18], [74, 12]] } # Botas de Teia(M)
+  - { evolution: 1, level: 179, class: 3, type: 0, item: 1642, effects: [[43, 3], [4, 20]] } # Chapéu de Teia(M)
+  - { evolution: 1, level: 189, class: 3, type: 0, item: 1648, effects: [[43, 3], [2, 20], [3, 20]] } # Calça de Teia(M)
+  - { evolution: 1, level: 199, class: 3, type: 0, item: 1645, effects: [[43, 3], [2, 20], [3, 20]] } # Peitoral de Teia(M)
+  # ARMA HT DANO NO LEVEL 255
+  - { evolution: 1, level: 254, class: 3, type: 0, item: 3556, effects: [[43, 6], [2, 36]] } # Arco Guardião
+  # GLOBAL PREMIO - Imortalidade e Contrato
+  - { evolution: 1, level: 399, class: 0, type: -1, item: 1742, effects: [] } # Pedra da Imortalidade
+  - { evolution: 1, level: 399, class: 0, type: -1, item: 4646, effects: [] } # ?
+  # ----------------------------------------ARCH----------------------------------------
+  # EVOLUÇÃO, LEVEL, CLASSE, TYPE, ITEM
+  # TYPE = -1 -> ENTREGA O ITEM INDEPENDENTE DA CLASSE
+  # TYPE = 0 -> ENTREGA O ITEM INDEPENDENTE DOS PONTOS
+  # TYPE = 1 -> TEM MAIS PONTOS EM STR
+  # TYPE = 2 -> TEM MAIS PONTOS EM INT
+  # TYPE = 3 -> TEM MAIS PONTOS EM DEX
+  # CLASSES: 0=TK, 1=FM, 2=BM, 3=HT
+  # SEQUENCIA, LEVEL, CLASSE, TYPE, ITEM
+  # EVOLUÇÃO LEVEL CLASSE TYPE ITEM
+  # TK ARCH
+  - { evolution: 2, level: 1, class: 0, type: 0, item: 1221, effects: [[43, 6]] } # Armadura Flamejante
+  - { evolution: 2, level: 1, class: 0, type: 0, item: 1222, effects: [[43, 6]] } # Calça Flamejante
+  - { evolution: 2, level: 1, class: 0, type: 0, item: 1223, effects: [[43, 6]] } # Manoplas Flamejantes
+  - { evolution: 2, level: 1, class: 0, type: 0, item: 1224, effects: [[43, 6]] } # Botas Flamejantes
+  # FM ARCH
+  - { evolution: 2, level: 1, class: 1, type: 0, item: 1356, effects: [[43, 6]] } # Túnica Guardiã
+  - { evolution: 2, level: 1, class: 1, type: 0, item: 1357, effects: [[43, 6]] } # Calça Guardiã
+  - { evolution: 2, level: 1, class: 1, type: 0, item: 1358, effects: [[43, 6]] } # Manoplas Guardiãs
+  - { evolution: 2, level: 1, class: 1, type: 0, item: 1359, effects: [[43, 6]] } # Botas Guardiãs
+  # BM ARCH
+  - { evolution: 2, level: 1, class: 2, type: 0, item: 1506, effects: [[43, 6]] } # Armadura da Destruição
+  - { evolution: 2, level: 1, class: 2, type: 0, item: 1507, effects: [[43, 6]] } # Calça da Destruição
+  - { evolution: 2, level: 1, class: 2, type: 0, item: 1508, effects: [[43, 6]] } # Manoplas da Destruição
+  - { evolution: 2, level: 1, class: 2, type: 0, item: 1509, effects: [[43, 6]] } # Botas da Destruição
+  # HT ARCH
+  - { evolution: 2, level: 1, class: 3, type: 0, item: 1656, effects: [[43, 6]] } # Armadura Rake
+  - { evolution: 2, level: 1, class: 3, type: 0, item: 1657, effects: [[43, 6]] } # Calça Rake
+  - { evolution: 2, level: 1, class: 3, type: 0, item: 1658, effects: [[43, 6]] } # Manoplas Rake
+  - { evolution: 2, level: 1, class: 3, type: 0, item: 1659, effects: [[43, 6]] } # Botas Rake
+  # GLOBAL PREMIO - Ovo do Intermediário
+  - { evolution: 2, level: 99, class: 0, type: -1, item: 4642, effects: [] } # ?

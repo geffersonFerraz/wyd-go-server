@@ -19,8 +19,8 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	if wire.Unmarshal(pkt.Raw, &p) != nil {
 		return
 	}
-	g.fixItemsOnLogin(p.Mob.Equip[:])
-	g.fixItemsOnLogin(p.Mob.Inventory[:])
+	g.fixItemsOnLogin(u, p.Mob.Equip[:])
+	g.fixItemsOnLogin(u, p.Mob.Inventory[:])
 	for i := range p.Mob.Inventory {
 		if id := p.Mob.Inventory[i].Index; id == 470 || id == 500 {
 			p.Mob.Inventory[i].Index = 0
@@ -87,6 +87,10 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	m.last = m.target
 	m.lastTime = g.now()
 	u.status = userPlay
+	m.info.FilterDrop.IsEnabled = false // SendCharToWorld: the filter starts off
+	u.rouletteReward, u.rouletteEvol = wire.Item{}, [maxRouletteBox]int16{}
+	u.honorMarket = false
+	g.sendRankUpdate(u)
 	m.lifes = 0
 	g.getCurrentScore(u.id)
 	u.potionHP, u.potionMP = pl.Status.CurHP, pl.Status.CurMP
@@ -117,14 +121,46 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	g.sendWarInfo(u)
 	g.mountProcess(u.id)
 	g.block199(u)
+	g.fixStoredBoots(u)
 	g.loadLock(u)
 	g.sendLockStatus(u)
 	g.log.Info("entered world", "slot", u.id, "account", wire.CString(u.account.Username[:]),
 		"char", wire.GameString(pl.Name[:]), "x", x, "y", y)
 }
 
+// fixBoots caps the damage bonus of boots (30, or 42 for an arch item) on
+// the first EF_DAMAGE effect, which becomes EF_DAMAGE2; it reports a change.
+func (g *Game) fixBoots(u *User, it *wire.Item) bool {
+	total := g.data.itemAbilityNoSanc(it, EF_DAMAGE) + g.data.itemAbilityNoSanc(it, EF_DAMAGE2)
+	limit := 30
+	if g.data.itemAbility(it, EF_MOBTYPE) == 1 {
+		limit = 42
+	}
+	if total <= limit {
+		return false
+	}
+	for i := range it.Effect {
+		if it.Effect[i].Index == EF_DAMAGE {
+			it.Effect[i] = wire.ItemEffect{Index: EF_DAMAGE2, Value: uint8(limit)}
+			g.log.Info("boots fixed", "slot", u.id, "item", it.Index, "bonus", total)
+			return true
+		}
+	}
+	return false
+}
+
+// fixStoredBoots is the storage part of that clean-up.
+func (g *Game) fixStoredBoots(u *User) {
+	for i := range u.account.StorageItems {
+		it := &u.account.StorageItems[i]
+		if it.Index != 0 && int(it.Index) < MaxItemList && g.data.Item(it.Index).Pos == 32 && g.fixBoots(u, it) {
+			g.sendItem(u, wire.SlotStorage, i, it)
+		}
+	}
+}
+
 // fixItemsOnLogin is the item clean-up at the top of SendCharToWorld.
-func (g *Game) fixItemsOnLogin(items []wire.Item) {
+func (g *Game) fixItemsOnLogin(u *User, items []wire.Item) {
 	for i := range items {
 		it := &items[i]
 		if it.Index == 0 || it.Index >= MaxItemList {
@@ -151,7 +187,9 @@ func (g *Game) fixItemsOnLogin(items []wire.Item) {
 			it.Effect[0].Index == 106 && it.Effect[1].Index == 110 && it.Effect[2].Index == 109 {
 			it.Effect[0].Index, it.Effect[1].Index, it.Effect[2].Index = 0, 0, 0
 		}
-		// TODO(phase C): fixBoots (needs GetItemAbilityNoSanc).
+		if pos == 32 {
+			g.fixBoots(u, it)
+		}
 	}
 }
 
@@ -159,6 +197,7 @@ func (g *Game) fixItemsOnLogin(items []wire.Item) {
 func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 	m := &g.mobs[u.id]
 	if u.status != userPlay || m.info.Player.Status.CurHP == 0 {
+		g.sendHpMode(u)
 		return
 	}
 	g.cancelTrade(u) // moving closes the trade window on both sides
@@ -175,7 +214,18 @@ func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 	m.motion = 0
 	switch p.Header.PacketID {
 	case wire.OpCliMoveIllus:
-		// TODO(phase C): illusion costs SkillData[73].Mana; class check.
+		pl := &m.info.Player
+		if (pl.ClassInfo != 3 || pl.Learn[0]&2 == 0) && pl.BStatus.Level < 400 {
+			g.log.Warn("illusion without the skill", "slot", u.id, "class", pl.ClassInfo)
+			return
+		}
+		mana := int32(g.data.Skills[73].Mana)
+		if pl.Status.CurMP < mana {
+			g.sendSetHpMp(u)
+			return
+		}
+		pl.Status.CurMP -= mana
+		u.potionMP = max(u.potionMP-mana, 0)
 		if ts > now+15000 || ts < check {
 			g.log.Debug("illusion timestamp out of range", "slot", u.id, "ts", ts, "now", now)
 			return
@@ -220,7 +270,9 @@ func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 	if g.areaDenied(u, dx, dy) {
 		return
 	}
-	// TODO(phase C): route collision via GetRoute.
+	// An occupied destination moves the player to the nearest free cell
+	// below. The C++ tried GetRoute first, but its loop tested the unchanged
+	// destination, so only the "stay where you are" outcome ever happened.
 
 	u.movementPacket = p.Header.PacketID
 	if c := g.cell(dx, dy); c != 0 && c != uint16(u.id) {
@@ -237,6 +289,7 @@ func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 	g.multicastMove(u.id, dx, dy, &p)
 	if p.Header.PacketID == wire.OpCliMoveIllus {
 		g.queue(u, &p)
+		g.sendSetHpMp(u)
 	}
 
 	// Facing direction from the last route step, kept in Merchant's top bits.
@@ -359,6 +412,7 @@ func (g *Game) slotItem(u *User, typ, slot int) *wire.Item {
 func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 	m := &g.mobs[u.id]
 	if u.status != userPlay || m.info.Player.Status.CurHP == 0 {
+		g.sendHpMode(u)
 		return
 	}
 	g.cancelTrade(u)
@@ -457,6 +511,7 @@ func (g *Game) charLogout(u *User) {
 	g.signalParm(u, uint16(u.id), opGroupFail, 0)
 	g.removeGroup(g.charName(u.id))
 	u.follow = 0
+	g.settleRouletteReward(u)
 	u.account.Position = wire.Position{}
 	u.account.CharSlot = -1
 	g.saveUser(u, 1)
@@ -499,6 +554,7 @@ func (g *Game) saveCharacter(u *User, op uint16, quit bool) wire.SaveCharacter {
 		p.Friends = a.Friends
 		p.Slot = -1
 	}
+	g.sendRankUpdate(u)
 	return p
 }
 
@@ -517,6 +573,7 @@ func (g *Game) saveUser(u *User, arg2 uint32) {
 // the save with 0x40B.
 func (g *Game) closeUser(u *User) {
 	if u.status == userPlay {
+		g.settleRouletteReward(u)
 		g.cancelTrade(u)
 		g.removeParty(u.id)
 		g.closeStore(u)

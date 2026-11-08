@@ -147,7 +147,7 @@ func (g *Game) requestPutOutSeal(u *User, pkt protocol.Packet) {
 	}
 	pl := &g.mobs[u.id].info.Player
 	if u.status != userPlay || pl.Status.CurHP == 0 {
-		g.sendSetHpMp(u)
+		g.sendHpMode(u)
 		return
 	}
 	if u.trade.ClientID != 0 {

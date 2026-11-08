@@ -33,7 +33,8 @@ type ItemData struct {
 	Effect  [12]struct{ Index, Value int16 }
 	Price   int32
 	Unique  int16
-	Pos     uint16
+	Pos     uint16 // what the game rules see: 16 bits, as in the C++ server
+	FullPos int32  // the client's value (necklaces 65536, belts 131072), kept in the database
 	Extreme int16
 	Grade   int16
 }
@@ -68,6 +69,7 @@ type Data struct {
 	InitItems []InitItemFile        // InitItem.csv: gates, barriers, doors
 	NPCEvents [maxNPCEvent]NPCEvent // Data/NPCEvento.txt
 	StoreBase *wire.Mob             // npc/Base: the auction store NPC
+	Thorn     *wire.Mob             // npc/Vinha: Muro de Espinhos (skill 98)
 
 	DailyReward [7][4]wire.Item             // Data/DailyReward.txt
 	Missions    []Mission                   // Data/Missions.xml
@@ -79,12 +81,16 @@ type Data struct {
 // plus the TMSRV data folder. serverip.txt and dataserver.txt are no
 // longer read (they stay for the C++ server).
 type Config struct {
-	ListenIP   string
-	ListenPort int
-	DBIP       string
-	DBPort     int
-	Channel    int            // 1-based
-	Cluster    cluster.Config // every channel (in-game channel change)
+	NoCPAreas   []NoCPArea    // no_cp_areas of tmsrv.yaml
+	LevelItems  []LevelItem   // level_items of tmsrv.yaml
+	CashShop    []CashShopTab // cash_shop of tmsrv.yaml
+	HonorMarket []HonorItem   // honor_market of tmsrv.yaml
+	ListenIP    string
+	ListenPort  int
+	DBIP        string
+	DBPort      int
+	Channel     int            // 1-based
+	Cluster     cluster.Config // every channel (in-game channel change)
 	// ChangeChannelCooldown: minimum time between channel changes.
 	ChangeChannelCooldown time.Duration
 	NewbieZone            int
@@ -116,6 +122,8 @@ func (c *Config) ApplySettings(s Settings, channel int) error {
 	c.DBIP, c.DBPort = s.Network.DBSRVIP, s.Network.DBSRVPort
 	c.NewbieZone, c.MobAI = s.NewbieZone, s.MobAI
 	c.StatSapphire = s.StatSapphire
+	c.CashShop, c.HonorMarket = s.cashShopTabs(), s.honorMarketItems()
+	c.NoCPAreas, c.LevelItems = s.NoCPAreas, s.levelItems()
 	c.Login, c.Missions, c.Store = s.Login, s.Missions, s.Store
 	if s.CacheDir != "" {
 		c.CacheDir = s.CacheDir
@@ -256,7 +264,8 @@ func (d *Data) loadItemList(path string, names map[string]int) error {
 		}
 		it.Unique = int16(atoi(f[4]))
 		it.Price = int32(atoi(f[5]))
-		it.Pos = uint16(atoi(f[6]))
+		it.FullPos = int32(atoi(f[6]))
+		it.Pos = uint16(it.FullPos)
 		it.Extreme = int16(atoi(f[7]))
 		it.Grade = int16(atoi(f[8]))
 		for e := 0; e < 12 && 9+2*e+1 < len(f); e++ {

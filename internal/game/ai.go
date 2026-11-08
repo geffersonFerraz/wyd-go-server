@@ -774,7 +774,6 @@ func (g *Game) mobSay(id, progress int) {
 
 // mobAttack is the 0x1000 branch of the battle loop: GetAttack, parry,
 // damage, relay, death.
-// TODO(phase C): mana shield (affect 18) against mob hits.
 func (g *Game) mobAttack(id int) {
 	m := &g.mobs[id]
 	tgt := m.combat.currentTarget
@@ -806,6 +805,16 @@ func (g *Game) mobAttack(id int) {
 			if t.info.Player.AffectInfo&affResist != 0 {
 				dam = -4
 			}
+		}
+	}
+	if tgt < MaxPlayer && dam > 0 {
+		if m.info.Player.CapeInfo == 4 { // summons hit players at 40%
+			dam = (dam << 1) / 5
+		}
+		left, shielded, _ := g.manaShield(tgt, dam)
+		dam = left
+		if tu := g.player(tgt); shielded && tu != nil {
+			g.sendSetHpMp(tu)
 		}
 	}
 	if dam > 0 {
@@ -1095,6 +1104,7 @@ func (g *Game) regenTimer() {
 func (g *Game) requestResurrect(u *User) {
 	m := &g.mobs[u.id]
 	if u.status != userPlay || m.info.Player.Status.CurHP > 0 {
+		g.sendHpMode(u)
 		return
 	}
 	m.info.Player.Status.CurHP = 2

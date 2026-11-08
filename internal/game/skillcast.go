@@ -17,9 +17,11 @@ const (
 // skillCast holds the per-packet values RequestAttack derives once.
 type skillCast struct {
 	skill     int
-	mastery   int // userMastery: Status.Mastery[skill kind]
-	delay     int // 100 + mastery: buff duration factor
-	maxTarget int // SkillData.Maxtarget
+	mastery   int  // userMastery: Status.Mastery[skill kind]
+	delay     int  // 100 + mastery: buff duration factor
+	maxTarget int  // SkillData.Maxtarget
+	auto      bool // the server's own attack (familiar, aura)
+	startHP   int  // the caster's HP when the attack began
 }
 
 // checkSkill validates a skill use (class, learned, cooldown, gold, mana)
@@ -229,8 +231,6 @@ func skillDamage2(damage, ac, master int) int {
 // skillOnTarget is the damage = -1 branch of RequestAttack for one target.
 // It returns the damage to go through the common hit path (<= 0: none) and
 // false to skip the target.
-// TODO(phase C): PvP skill damage, summon player (9), knockback (6), Exterminar (22) movement, 79/30/41/98/102 specials, the
-// 22/23 auras.
 func (g *Game) skillOnTarget(u *User, p *wire.Attack, i, tid int, sc *skillCast, master int, sameSide bool) (int, bool) {
 	me := &g.mobs[u.id]
 	mob := &g.mobs[tid]
@@ -239,7 +239,7 @@ func (g *Game) skillOnTarget(u *User, p *wire.Attack, i, tid int, sc *skillCast,
 		return 0, false
 	}
 	sd := &g.data.Skills[skill]
-	if i >= sc.maxTarget {
+	if i >= sc.maxTarget && !sc.auto {
 		return 0, false
 	}
 	if sd.PartyCheck != 0 && !sameSide {
@@ -260,7 +260,12 @@ func (g *Game) skillOnTarget(u *User, p *wire.Attack, i, tid int, sc *skillCast,
 	case typ >= 1 && typ <= 5:
 		pvp := tid < MaxPlayer
 		def := int(mob.info.Player.Status.Defense)
-		if pvp {
+		if sc.auto && p.Motion == 0xFE && (skill == 32 || skill == 34 || skill == 36) { // familiar
+			if pvp {
+				def *= 3
+			}
+			dam = itemSanc(&me.info.Player.Equip[13])*familiarDamage[skill] + int(me.info.Player.Status.Level)*8
+		} else if pvp {
 			dam = g.skillDamagePvP(skill, u.id, 0)
 			def *= 3
 		} else {
@@ -399,12 +404,36 @@ func (g *Game) skillOnTarget(u *User, p *wire.Attack, i, tid int, sc *skillCast,
 			}
 		}
 	}
-	if skill == 22 { // Exterminar: all mana into the hit
+	switch skill {
+	case 6:
+		g.furyPull(u, tid)
+	case 22: // Exterminar: all mana into the hit. The C++ only moves the
+		// caster when the target is of generator 374, so it is not ported.
 		pl := &me.info.Player
 		mp := float64(pl.Status.CurMP)
 		pl.Status.CurMP = 0
+		u.potionMP = 0
 		p.CurrentMP = 0
 		dam = int((float64(dam) + mp*1.1 + float64(pl.Status.INT)*1.1) * 1.05)
+	case 102:
+		if !g.soulLimit(u) {
+			return 0, false
+		}
+	case 79:
+		if tid > MaxPlayer {
+			dam /= 2
+		}
+	case 30: // Julgamento Divino: costs a third of the HP
+		pl := &me.info.Player
+		dam += sc.startHP * 125 / 100
+		pl.Status.CurHP = pl.Status.CurHP << 1 / 3
+		u.potionHP = pl.Status.CurHP
+	case 41:
+		g.teleportBuff(p, sc)
+	case 98:
+		if !g.thornWall(u, p) {
+			return 0, false
+		}
 	}
 	if skill == 47 && rnd()%100 < 25 { // cancel: 25% miss
 		p.Target[i].Damage = -3
@@ -573,13 +602,17 @@ func (g *Game) sendAffect(u *User) {
 	g.queue(u, &out)
 }
 
+// familiarDamage is the damage per refine of the familiar's skills.
+var familiarDamage = map[int]int{32: 200, 34: 250, 36: 300}
+
 // processAffect is ProcessAffect: tick the affects of a mob or player.
-// TODO(phase C): auras 22/23 (automatic area attacks), familiar auto-attack.
 func (g *Game) processAffect(id int) {
 	m := &g.mobs[id]
 	pl := &m.info.Player
 	if id < MaxPlayer && g.users[id].status == userPlay {
 		g.refreshDateBuffs(g.users[id]) // keep them at 999 until their date
+		g.familiarAttack(g.users[id])
+		defer g.playerAuras(g.users[id])
 	}
 	expired, unTransform, hpChanged := false, false, false
 	delta := int32(0)
@@ -624,6 +657,23 @@ func (g *Game) processAffect(id int) {
 		g.sendScore(id)
 		if u := g.player(id); unTransform && u != nil {
 			g.sendEquip(u)
+		}
+	}
+}
+
+// playerAuras fires the auras after the affects were ticked.
+func (g *Game) playerAuras(u *User) {
+	m := &g.mobs[u.id]
+	level := int(m.info.Player.Status.Level)
+	if evolution(&m.info.Player) >= evoCelestial {
+		level += 400
+	}
+	for _, a := range m.info.Affects {
+		switch a.Index {
+		case 22:
+			g.auraOfFire(u, int(a.Value), level)
+		case 23:
+			g.auraBestial(u)
 		}
 	}
 }

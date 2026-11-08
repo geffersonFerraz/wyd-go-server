@@ -226,6 +226,46 @@ func (g *Game) handleClient(u *User, pkt protocol.Packet) {
 		g.requestAuctionRemove(u, pkt)
 	case opCliWPEWarn:
 		g.requestWPEWarn(u)
+	case opRankLevel, opRankPvP, opRankPower:
+		g.requestRankList(u, pkt)
+	case opDropList:
+		g.requestDropList(u, pkt)
+	case opDropListSearch:
+		g.requestDropSearch(u, pkt)
+	case opFilterDrop:
+		g.requestFilterDrop(u, pkt)
+	case opRouletteSpin:
+		g.spinRoulette(u)
+	case opRouletteClaim:
+		if u.status == userPlay {
+			g.getRouletteReward(u)
+		}
+	case wire.OpPanelGuildList: // the guild panel: DBSRV holds the list
+		if u.status == userPlay {
+			g.sendDB(&wire.Signal{Header: wire.NewHeader(wire.OpPanelGuildList, uint16(u.id))})
+		}
+	case opEssenceUse:
+		g.requestEssenceUse(u, pkt)
+	case opEchoMoveItem: // the C++ answers with the same packet
+		if u.status == userPlay {
+			g.queueRaw(u, pkt.Raw)
+		}
+	case opCashShopOpen:
+		g.requestCashShop(u, pkt)
+	case opCashShopBuy:
+		g.requestCashShopBuy(u, pkt)
+	case opHonorMarket:
+		g.requestHonorMarketFlag(u, pkt)
+	case opReconnectPos:
+		g.requestReconnectPos(u, pkt)
+	case opGriffinMaster:
+		g.requestGriffinMaster(u, pkt)
+	case opRedeemGriffin:
+		g.requestRedeemGriffin(u, pkt)
+	case opCharProfile:
+		g.requestCharProfile(u, pkt)
+	case opCharProfileRank:
+		g.requestCharProfileRank(u, pkt)
 	case wire.OpCliKeepAlive, wire.OpCliIgnored2CB:
 	default:
 		g.log.Debug("unhandled client packet", "slot", u.id, "id", fmt.Sprintf("0x%X", h.PacketID), "size", h.Size)
@@ -399,6 +439,11 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 		if wire.Unmarshal(pkt.Raw, &p) == nil {
 			g.chargedGuilds = p.ChargedGuildList
 		}
+	case wire.OpPanelGuildList: // 0x766: the answer goes to the client as is
+		if u != nil && u.status == userPlay {
+			g.queueRaw(u, pkt.Raw)
+		}
+		return
 	case wire.OpMessagePanel, wire.OpServerNotice: // 0x101, 0x908
 		var p wire.Notice96
 		if wire.Unmarshal(pkt.Raw, &p) == nil {

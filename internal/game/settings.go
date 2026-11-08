@@ -8,12 +8,14 @@ import (
 	"math"
 	"os"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
 	"dbsrv/internal/cluster"
+	"dbsrv/internal/wire"
 )
 
 // Settings is tmsrv.yaml, the only source of the Go server's options: the
@@ -42,6 +44,56 @@ type Settings struct {
 	Missions     MissionSettings `yaml:"missions"`
 	Store        StoreSettings   `yaml:"store"`
 	MobAI        MobAISettings   `yaml:"mob_ai"`
+	// CashShop and HonorMarket replace Data/CashShop.xml and MarketHonra.txt.
+	CashShop    []CashShopTabSettings `yaml:"cash_shop"`
+	HonorMarket []HonorItemSettings   `yaml:"honor_market"`
+	// NoCPAreas and LevelItems replace Data/NonCP.txt and Data/LevelItem.txt.
+	NoCPAreas  []NoCPArea          `yaml:"no_cp_areas"`
+	LevelItems []LevelItemSettings `yaml:"level_items"`
+}
+
+// NoCPArea is a map rectangle where a kill costs the killer no CP.
+type NoCPArea struct {
+	MinX int `yaml:"min_x"`
+	MinY int `yaml:"min_y"`
+	MaxX int `yaml:"max_x"`
+	MaxY int `yaml:"max_y"`
+}
+
+// LevelItemSettings is an item given on reaching a level.
+type LevelItemSettings struct {
+	Evolution int      `yaml:"evolution"`
+	Level     int      `yaml:"level"`
+	Class     int      `yaml:"class"`
+	Type      int      `yaml:"type"`
+	Item      int      `yaml:"item"`
+	Effects   [][2]int `yaml:"effects"`
+}
+
+// CashShopTabSettings is one tab of the premium store.
+type CashShopTabSettings struct {
+	ID    int                    `yaml:"id"`
+	Name  string                 `yaml:"name"`
+	Items []CashShopItemSettings `yaml:"items"`
+}
+
+// CashShopItemSettings is one slot of a tab. Limit is the most that can be
+// bought at once (-1 not for sale, 0 sold out).
+type CashShopItemSettings struct {
+	Slot    int      `yaml:"slot"`
+	Item    int      `yaml:"item"`
+	Effects [][2]int `yaml:"effects"`
+	Price   int      `yaml:"price"`
+	Amount  int      `yaml:"amount"`
+	Promo   int      `yaml:"promo"`
+	Limit   int      `yaml:"limit"`
+}
+
+// HonorItemSettings is what the Honor Market sells, and for how much.
+type HonorItemSettings struct {
+	Item    int      `yaml:"item"`
+	Effects [][2]int `yaml:"effects"`
+	Price   int      `yaml:"price"`
 }
 
 // NetworkSettings is where DBSRV is. Where each TMSRV listens comes from
@@ -114,6 +166,10 @@ func CppSettings() Settings {
 			IdleThinkSeconds:   3,
 			BattleThinkSeconds: 2,
 		},
+		CashShop:    []CashShopTabSettings{},
+		HonorMarket: []HonorItemSettings{},
+		NoCPAreas:   []NoCPArea{},
+		LevelItems:  []LevelItemSettings{},
 	}
 }
 
@@ -206,7 +262,138 @@ func (s *Settings) validate() error {
 	if ai.MinAttackChance < 0 || ai.MinAttackChance > 100 {
 		return fmt.Errorf("mob_ai.min_attack_chance must be 0..100, got %d", ai.MinAttackChance)
 	}
+	if err := s.validateLevels(); err != nil {
+		return err
+	}
+	return s.validateShops()
+}
+
+func (s *Settings) validateLevels() error {
+	for i, a := range s.NoCPAreas {
+		if a.MinX < 0 || a.MinY < 0 || a.MaxX >= gridSize || a.MaxY >= gridSize || a.MinX > a.MaxX || a.MinY > a.MaxY {
+			return fmt.Errorf("no_cp_areas[%d]: invalid rectangle %+v", i, a)
+		}
+	}
+	for i, it := range s.LevelItems {
+		where := fmt.Sprintf("level_items[%d]", i)
+		if err := validateItem(where, it.Item, it.Effects); err != nil {
+			return err
+		}
+		if it.Evolution < evoMortal || it.Evolution > evoSubCele {
+			return fmt.Errorf("%s: evolution must be %d..%d, got %d", where, evoMortal, evoSubCele, it.Evolution)
+		}
+		if it.Level < 0 || it.Level > 399 || it.Class < 0 || it.Class > 3 || it.Type < -1 || it.Type > 3 {
+			return fmt.Errorf("%s: level 0..399, class 0..3 and type -1..3", where)
+		}
+	}
 	return nil
+}
+
+func (s *Settings) levelItems() []LevelItem {
+	out := make([]LevelItem, 0, len(s.LevelItems))
+	for _, it := range s.LevelItems {
+		out = append(out, LevelItem{Evolution: it.Evolution, Level: it.Level, Class: it.Class, Type: it.Type, Item: makeItem(it.Item, it.Effects)})
+	}
+	return out
+}
+
+// validateItem checks an item id and its effects.
+func validateItem(where string, item int, effects [][2]int) error {
+	if item <= 0 || item >= MaxItemList {
+		return fmt.Errorf("%s: item must be 1..%d, got %d", where, MaxItemList-1, item)
+	}
+	if len(effects) > 3 {
+		return fmt.Errorf("%s: an item has at most 3 effects, got %d", where, len(effects))
+	}
+	for _, e := range effects {
+		if e[0] < 0 || e[0] > 255 || e[1] < 0 || e[1] > 255 {
+			return fmt.Errorf("%s: effect must be 0..255, got [%d, %d]", where, e[0], e[1])
+		}
+	}
+	return nil
+}
+
+func (s *Settings) validateShops() error {
+	tabs := map[int]bool{}
+	for t, tab := range s.CashShop {
+		if tabs[tab.ID] || tab.ID < 0 || tab.ID > 32767 {
+			return fmt.Errorf("cash_shop[%d]: id %d repeated or out of range", t, tab.ID)
+		}
+		tabs[tab.ID] = true
+		if len(wire.EncodeGame(tab.Name)) > 31 {
+			return fmt.Errorf("cash_shop[%d]: name longer than 31 characters", t)
+		}
+		slots := map[int]bool{}
+		for i, it := range tab.Items {
+			where := fmt.Sprintf("cash_shop[%d].items[%d]", t, i)
+			if it.Slot < 0 || it.Slot >= cashShopSlots || slots[it.Slot] {
+				return fmt.Errorf("%s: slot %d repeated or out of 0..%d", where, it.Slot, cashShopSlots-1)
+			}
+			slots[it.Slot] = true
+			if err := validateItem(where, it.Item, it.Effects); err != nil {
+				return err
+			}
+			// A missing price must not become a free item.
+			gift := slices.ContainsFunc(it.Effects, func(e [2]int) bool { return e[0] == efGiftID })
+			if it.Price < 0 || it.Price > math.MaxInt16 || (it.Price == 0 && !gift) {
+				return fmt.Errorf("%s: price must be 1..%d (0 only with effect %d), got %d", where, math.MaxInt16, efGiftID, it.Price)
+			}
+			if it.Amount < 1 || it.Amount > math.MaxInt16 || it.Promo < 0 || it.Promo > math.MaxInt16 {
+				return fmt.Errorf("%s: amount must be 1..%d and promo 0..%d", where, math.MaxInt16, math.MaxInt16)
+			}
+			if it.Limit < -1 || it.Limit > math.MaxInt16 {
+				return fmt.Errorf("%s: limit must be -1..%d, got %d", where, math.MaxInt16, it.Limit)
+			}
+		}
+	}
+	items := map[int]bool{}
+	for i, it := range s.HonorMarket {
+		where := fmt.Sprintf("honor_market[%d]", i)
+		if err := validateItem(where, it.Item, it.Effects); err != nil {
+			return err
+		}
+		if items[it.Item] {
+			return fmt.Errorf("%s: item %d repeated", where, it.Item)
+		}
+		items[it.Item] = true
+		if it.Price < 1 || it.Price > 1_000_000 {
+			return fmt.Errorf("%s: price must be 1..1000000, got %d", where, it.Price)
+		}
+	}
+	return nil
+}
+
+func makeItem(id int, effects [][2]int) wire.Item {
+	it := wire.Item{Index: uint16(id)}
+	for i, e := range effects {
+		it.Effect[i] = wire.ItemEffect{Index: uint8(e[0]), Value: uint8(e[1])}
+	}
+	return it
+}
+
+// cashShopTabs is the premium store as the game uses it: empty slots are
+// not for sale.
+func (s *Settings) cashShopTabs() []CashShopTab {
+	out := make([]CashShopTab, 0, len(s.CashShop))
+	for _, t := range s.CashShop {
+		tab := CashShopTab{ID: t.ID, Name: t.Name}
+		for i := range tab.Slots {
+			tab.Slots[i].SlotFree = -1
+		}
+		for _, it := range t.Items {
+			tab.Slots[it.Slot] = CashShopItem{Item: makeItem(it.Item, it.Effects), Price: it.Price, Amount: it.Amount, Promo: it.Promo, SlotFree: it.Limit}
+		}
+		out = append(out, tab)
+	}
+	return out
+}
+
+func (s *Settings) honorMarketItems() []HonorItem {
+	out := make([]HonorItem, 0, len(s.HonorMarket))
+	for _, it := range s.HonorMarket {
+		out = append(out, HonorItem{Item: makeItem(it.Item, it.Effects), Price: it.Price})
+	}
+	return out
 }
 
 // Cluster is the channel layout (shared with DBSRV and the admin panel).

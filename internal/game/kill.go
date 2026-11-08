@@ -193,7 +193,6 @@ const nnLevelBlocked = 347
 // (Celestial) unlock it.
 // Celestials and Sub-Celestials with the three resets also block at 199
 // and 209 (Pedra Ideal / Selo Real unlock), and 199 holds without them.
-// TODO(phase E): LevelItem rewards (Data/LevelItem.txt).
 func (g *Game) checkGetLevel(u *User) {
 	if u == nil || u.status != userPlay {
 		return
@@ -268,6 +267,7 @@ func (g *Game) checkGetLevel(u *User) {
 	g.sendScore(u.id)
 	g.sendEtc(u)
 	g.clientMessage(u, "+ + + LEVEL UP + + +")
+	g.giveLevelItems(u)
 	g.subCythera(u)
 }
 
@@ -296,12 +296,13 @@ func (g *Game) removeNPCParty(id int) {
 
 // playerKilled is the MobKilled branch for a dead player (killed by a mob).
 // sServer.DeadPoint is 0 in this server, so mobs take no experience.
-// PvP kills go to pvpDeath. TODO(phase D): familiar 753/1726.
+// PvP kills go to pvpDeath.
 func (g *Game) playerKilled(target, killer int, msg *wire.Killed) {
 	dead := &g.mobs[target]
 	k := &g.mobs[killer]
 	dead.info.Player.Status.CurHP = 0
 	msg.Hold, msg.Exp = int32(k.info.Hold), k.info.Player.Exp
+	g.familiarLosesRefine(target)
 	if killer < MaxPlayer {
 		g.pvpDeath(target, killer)
 		g.multicastKill(int(dead.target.X), int(dead.target.Y), *msg, g.partyMembers(killer))

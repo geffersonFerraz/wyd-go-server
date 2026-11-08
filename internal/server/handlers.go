@@ -60,6 +60,8 @@ func (s *Server) handle(ch *channel, pkt protocol.Packet) {
 		s.handleItemDeliveryReturn(ctx, ch, pkt)
 	case wire.OpSecurityAlert:
 		s.handleSecurityAlert(ctx, ch, pkt)
+	case wire.OpRankUpdate:
+		s.handleRankUpdate(ctx, ch, pkt)
 	default:
 		if s.handleWorld(ctx, ch, pkt) {
 			return
@@ -114,6 +116,24 @@ func (s *Server) handleSecurityAlert(ctx context.Context, ch *channel, pkt proto
 		return
 	}
 	ch.log.Warn("security alert", "id", id, "kind", a.Kind, "account", a.Username, "char", a.CharName, "ip", a.IP)
+}
+
+// handleRankUpdate (Go only, 0xC14) stores a character's ranking row.
+func (s *Server) handleRankUpdate(ctx context.Context, ch *channel, pkt protocol.Packet) {
+	var p wire.RankUpdate
+	if !decode(ch, pkt, &p) {
+		return
+	}
+	e := store.RankEntry{Name: wire.GameString(p.Name[:]), Level: int(p.Level), Class: int(p.Class), Evolution: int(p.Evolution),
+		Guild: int(p.Guild), Patent: int(p.Patent), Kingdom: int(p.Kingdom), Frags: int(p.Frags), Power: int(p.Power),
+		Fame: int(p.Fame), Citizen: int(p.Citizen), PvPKill: int(p.PvPKill), PvMKill: int(p.PvMKill), Mantle: int(p.Mantle),
+		Exp: p.Exp, Equip: p.Equip}
+	if e.Name == "" {
+		return
+	}
+	if err := s.st.SaveRank(ctx, e); err != nil && ctx.Err() == nil {
+		ch.log.Error("ranking not saved", "char", e.Name, "err", err)
+	}
 }
 
 func decode(ch *channel, pkt protocol.Packet, v any) bool {

@@ -21,7 +21,7 @@
 #   docker compose up -d --remove-orphans
 #
 # Portas publicadas no host:
-#   8281, 8282... tmsrvN (jogadores, abertas)   80 admin público: servNN.htm, serverlist.bin e marcas de guilda (aberta)
+#   8281, 8282... tmsrvN (jogadores, abertas)   80 admin público: servNN.htm, serverlist.bin, itemlist.bin e marcas de guilda (aberta)
 #   8080 painel admin (127.0.0.1)               5432 postgres (127.0.0.1)       7514 dbsrv: não publicada
 #
 # Connection strings from the host (defaults; override in .env, see .env.example):
@@ -167,7 +167,8 @@ services:
   # ADMIN_PASSWORD_HASH no .env, ou a gerada em .admin-state/.admin-password.
   # A porta pública (PUBLIC_PORT, padrão 80, sem login) serve ao cliente do
   # jogo o servNN.htm (online por canal, URL do serverlist.bin), o
-  # serverlist.bin (gerado do tmsrv.yaml) e as marcas de guilda.
+  # serverlist.bin (gerado do tmsrv.yaml), o itemlist.bin (o arquivo
+  # data/client/ItemList.bin) e as marcas de guilda.
   admin:
     build: { context: ., args: { CMD: admin } }
     image: wyd-admin

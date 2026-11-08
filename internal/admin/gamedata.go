@@ -135,7 +135,7 @@ func (s *Server) saveItem(w http.ResponseWriter, r *http.Request) {
 	it.ReqCon = f.int("req_con", "CON", -32768, 32767)
 	it.Price = f.int("price", "Preço", 0, 2000000000)
 	it.Unique = f.int("unique_type", "Unique", -32768, 32767)
-	it.Pos = f.int("pos", "Posição", 0, 65535)
+	it.Pos = f.int("pos", "Posição", 0, 1<<31-1)
 	it.Extreme = f.int("extreme", "Extreme", -32768, 32767)
 	it.Grade = f.int("grade", "Grade", -32768, 32767)
 	it.Mesh1 = f.int("mesh1", "Mesh 1", -32768, 32767)

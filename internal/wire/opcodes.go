@@ -68,6 +68,7 @@ const (
 	OpAdminEdit              = 0xC11 // Go only: staff edit of a player in game
 	OpItemDeliveryReturn     = 0xC12 // Go only: TMSRV could not place a 0xC0F item
 	OpSecurityAlert          = 0xC13 // Go only: TMSRV -> DBSRV, shown in the admin panel
+	OpRankUpdate             = 0xC14 // Go only: TMSRV -> DBSRV, one character's ranking row
 	OpPutInSealSuccess       = 3135  // 0xC3F
 	OpCNFCharacterLoginExtra = 0x820
 	OpNumericPasswordWrong   = 0xFDF

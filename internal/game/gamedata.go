@@ -39,7 +39,7 @@ func ReadLegacyGameData(dir string) (gd *store.GameData, skipped []string, err e
 		row := store.Item{
 			ID: id, Name: wire.DecodeGame(it.Name), Mesh1: int(it.Mesh1), Mesh2: int(it.Mesh2),
 			Level: int(it.Level), ReqStr: int(it.Str), ReqInt: int(it.Int), ReqDex: int(it.Dex), ReqCon: int(it.Con),
-			Price: int(it.Price), Unique: int(it.Unique), Pos: int(it.Pos), Extreme: int(it.Extreme), Grade: int(it.Grade),
+			Price: int(it.Price), Unique: int(it.Unique), Pos: int(it.FullPos), Extreme: int(it.Extreme), Grade: int(it.Grade),
 		}
 		for e := range it.Effect {
 			row.Effects[e] = store.ItemEffect{Effect: int(it.Effect[e].Index), Value: int(it.Effect[e].Value)}
@@ -116,7 +116,7 @@ func (d *Data) ApplyGameData(gd *store.GameData) error {
 		it := ItemData{
 			Name: wire.EncodeGame(r.Name), Mesh1: int16(r.Mesh1), Mesh2: int32(r.Mesh2), Level: int16(r.Level),
 			Str: int16(r.ReqStr), Int: int16(r.ReqInt), Dex: int16(r.ReqDex), Con: int16(r.ReqCon),
-			Price: int32(r.Price), Unique: int16(r.Unique), Pos: uint16(r.Pos), Extreme: int16(r.Extreme), Grade: int16(r.Grade),
+			Price: int32(r.Price), Unique: int16(r.Unique), Pos: uint16(r.Pos), FullPos: int32(r.Pos), Extreme: int16(r.Extreme), Grade: int16(r.Grade),
 		}
 		for e, ef := range r.Effects {
 			it.Effect[e].Index, it.Effect[e].Value = int16(ef.Effect), int16(ef.Value)

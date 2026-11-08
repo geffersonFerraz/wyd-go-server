@@ -313,6 +313,173 @@ type SecurityAlert struct {
 	Detail   [64]byte // Windows-1252, like the rest of the game text
 }
 
+// RankUpdate (Go only, 0xC14): one character's ranking row and profile.
+// DBSRV stores it, so every channel shows the same ranking.
+type RankUpdate struct {
+	Header    Header
+	Name      [16]byte
+	Level     int32 // as shown: Status.Level + 1
+	Class     int32
+	Evolution int32
+	Guild     int32
+	Patent    int32
+	Kingdom   int32
+	Frags     int32
+	Power     int32
+	Fame      int32
+	Citizen   int32
+	PvPKill   int32
+	PvMKill   int32
+	Mantle    int32
+	Exp       int64
+	Equip     [20]Item
+}
+
+// HpMode is 0x292 (p292), corrects the client's HP and state.
+type HpMode struct {
+	Header Header
+	CurHP  int32
+	Status int16
+	_      [2]byte
+}
+
+// RankRow is SRankTable, one line of the ranking window.
+type RankRow struct {
+	Player      [16]byte
+	Level       int32
+	Class       int32
+	Evolution   int32
+	Guild       int32
+	Patent      int32
+	Kingdom     int32
+	Frags       int32
+	GuildName   [20]byte
+	Exp         int64
+	Power       int32
+	CurrentPage int32
+	TotalPage   int32
+	_           [4]byte
+}
+
+// RankList is p528 (0x528 level, 0x529 PvP, 0x530 power).
+type RankList struct {
+	Header     Header
+	SceneIndex int32
+	Update     uint8
+	_          [7]byte
+	Rank       [20]RankRow
+}
+
+// CharProfile is p487, the character profile window.
+type CharProfile struct {
+	Header     Header
+	Name       [16]byte
+	Evolution  int32
+	Level      int32
+	GuildName  [20]byte
+	GuildIndex int32
+	Citizen    int32
+	Fame       int32
+	PvPKill    int32
+	PvMKill    int32
+	Mantle     int32
+	Equip      [20]Item
+}
+
+// DropMob is one monster of the drop window.
+type DropMob struct {
+	Name  [64]byte
+	X, Y  int16
+	Exp   int32
+	Gold  int32
+	Carry [64]Item
+}
+
+// DropList is p2568 (0xA08): the drop window.
+type DropList struct {
+	Header Header
+	Amount int32
+	Drop   [50]DropMob
+}
+
+// FilterDropMsg is MSG_pFilterDrop as the client has it (24 items; the
+// C++ server declared 64, which only moved Type).
+type FilterDropMsg struct {
+	Header    Header
+	Code      int32
+	IsEnabled uint8
+	_         uint8
+	Items     [24]Item
+	_         [2]byte
+	Type      int32
+}
+
+// RollItem is MSG_RollItem (0xF06): the 20 prizes the wheel shows.
+type RollItem struct {
+	Header Header
+	Level  int16
+	Slot   int16
+	Evol   int16
+	Item   [20]Item
+	Rare   [20]int16
+}
+
+// EssencePacket is MSG_ESSENCEPACKET (0x473).
+type EssencePacket struct {
+	Header Header
+	Slot   int32
+	Amount int32
+}
+
+// CashShopRequest is MSG_ReqPremiumStore (0xAF3).
+type CashShopRequest struct {
+	Header Header
+	Aba    int16
+	Page   int16
+}
+
+// CashShopInfo is MSG_CASHSHOPINFO (0xAF1 to the client).
+type CashShopInfo struct {
+	Header     Header
+	Name       [32]byte
+	Item       [65]Item
+	Price      [65]int16
+	Amount     [65]int16
+	Promo      [65]int16
+	SlotFree   [65]int16
+	Aba        int16
+	Page       int16
+	LastUpdate ItemDate
+}
+
+// CashShopBuy is MSG_BuyPremiumStore (0xF03).
+type CashShopBuy struct {
+	Header    Header
+	Slot      int16
+	Price     int16
+	Item      Item
+	Quant     int16
+	_         [2]byte
+	Aba       int32
+	Page      int32
+	Categoria [128]byte
+	Nickname  [16]byte
+}
+
+// HonorShopList is p17CF: the Honor Market window.
+type HonorShopList struct {
+	Header Header
+	NPC    int32
+	Item   [27]Item
+	Taxes  int32
+}
+
+// SignalNick is pMsgSignalChar: a request naming a character.
+type SignalNick struct {
+	Header Header
+	Nick   [16]byte
+}
+
 // Security alert kinds.
 const (
 	AlertWPE = 1 // the client's protection saw WPE (packet editor)

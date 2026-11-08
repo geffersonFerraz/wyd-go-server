@@ -36,6 +36,7 @@ const (
 	OpSrvKickedOther = 0x11D
 	OpSrvRemoveMob   = 0x165
 	OpSrvItem        = 0x182
+	OpSrvHpMode      = 0x292
 	OpSrvScore       = 0x336
 	OpSrvEtc         = 0x337
 	OpSrvCreateMob   = 0x364

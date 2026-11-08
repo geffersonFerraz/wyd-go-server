@@ -115,6 +115,15 @@ type RouletteBox struct {
 	KeyID        int8
 	ShowSlots    [11]int8
 	Roll         [maxRouletteItem]wire.Item
+	Meta         [maxRouletteItem]RollMeta // odds and flags of each Roll
+}
+
+// RollMeta is the rest of a roulette line: chance, announce to the server,
+// rarity shown, is a prize of the super drop, bar gained.
+type RollMeta struct {
+	Chance               int
+	SendMsg, Rare, Super int
+	EvolBar              int
 }
 
 // ---- loaders ----
@@ -336,6 +345,17 @@ func (d *Data) loadRoulette(path string) error {
 			b.Roll[last] = wire.Item{Index: uint16(v[0]), Effect: [3]wire.ItemEffect{
 				{Index: uint8(v[1]), Value: uint8(v[2])}, {Index: uint8(v[3]), Value: uint8(v[4])}, {Index: uint8(v[5]), Value: uint8(v[6])},
 			}}
+			var m [5]int
+			for i := range m {
+				if m[i], err = strconv.Atoi(f[i+1]); err != nil {
+					ok = false
+				}
+			}
+			if !ok {
+				b.Roll[last] = wire.Item{}
+				continue
+			}
+			b.Meta[last] = RollMeta{Chance: m[0], SendMsg: m[1], Rare: m[2], Super: m[3], EvolBar: m[4]}
 			last++
 		}
 	}
@@ -591,30 +611,43 @@ func (g *Game) roletaCommand(u *User) {
 		if box <= 0 {
 			continue
 		}
-		g.sendItem(u, wire.SlotInv, i, it)
-		if box >= maxRouletteBox || !g.data.Roulette[box].Status {
-			g.clientMessage(u, "Roleta desativada temporariamente")
-			return
-		}
-		b := &g.data.Roulette[box]
-		p := RollInfo{Header: wire.NewHeader(opRollInfo, wire.ClientIDSystem), BoxID: int8(box), KeyID: b.KeyID, Evol: -1}
-		if b.HasSuperDrop {
-			p.Evol = 0 // DropRoll.evol: the spin system is not ported yet
-		}
-		for k, s := range b.ShowSlots {
-			switch {
-			case s == -1:
-			case s == -2:
-				p.Item[k].Index = 5900
-			case s == -3:
-				p.Item[k].Index = 5901
-			case s == -4:
-				p.Item[k].Index = 5902
-			case s >= 0 && int(s) < maxRouletteItem:
-				p.Item[k] = b.Roll[s]
-			}
-		}
-		g.queue(u, &p)
+		g.openRoulette(u, i)
 		return
 	}
+}
+
+// openRoulette is RequestOpenRoulette: shows the box in inventory slot i.
+// Fixed: the C++ indexed ItemRoll with any EF_INFORMATION value.
+func (g *Game) openRoulette(u *User, i int) {
+	m := &g.mobs[u.id].info
+	it := &m.Player.Inventory[i]
+	box := g.data.itemAbility(it, efInformation)
+	g.sendItem(u, wire.SlotInv, i, it)
+	if box < 0 || box >= maxRouletteBox || !g.data.Roulette[box].Status {
+		g.clientMessage(u, "Roleta desativada temporariamente")
+		return
+	}
+	if u.rouletteReward.Index != 0 {
+		g.getRouletteReward(u)
+	}
+	b := &g.data.Roulette[box]
+	p := RollInfo{Header: wire.NewHeader(opRollInfo, wire.ClientIDSystem), BoxID: int8(box), KeyID: b.KeyID, Evol: -1}
+	if b.HasSuperDrop {
+		p.Evol = u.rouletteEvol[box]
+	}
+	for k, s := range b.ShowSlots {
+		switch {
+		case s == -1:
+		case s == -2:
+			p.Item[k].Index = 5900
+		case s == -3:
+			p.Item[k].Index = 5901
+		case s == -4:
+			p.Item[k].Index = 5902
+		case s >= 0 && int(s) < maxRouletteItem:
+			p.Item[k] = b.Roll[s]
+		}
+	}
+	g.queue(u, &p)
+	m.Roleta.BauSlot = int8(i)
 }

@@ -109,7 +109,7 @@ func (g *Game) requestMotion(u *User, pkt protocol.Packet) {
 	}
 	m := &g.mobs[u.id]
 	if u.status != userPlay || m.info.Player.Status.CurHP == 0 {
-		g.sendSetHpMp(u) // SendHpMode
+		g.sendHpMode(u)
 		return
 	}
 	switch p.Motion {

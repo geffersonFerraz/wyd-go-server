@@ -44,7 +44,11 @@ func (g *Game) requestOpenShop(u *User, pkt protocol.Packet) {
 	if wire.Unmarshal(pkt.Raw, &p) != nil {
 		return
 	}
-	// TODO(phase E): the "Honra" shop and the RvR shops (generators 384/385).
+	// TODO(phase E): the RvR shops (generators 384/385).
+	if wire.CString(p.FindName[:]) == honorShopName {
+		g.openHonorMarket(u)
+		return
+	}
 	id := int(p.NpcID)
 	if !isNPC(id) || g.mobs[id].mode == 0 {
 		return
@@ -133,6 +137,10 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 		return
 	}
 	pl := &g.mobs[u.id].info.Player
+	if u.honorMarket || (mobID >= firstNPC && wire.CString(g.mobs[mobID].info.Player.Name[:]) == honorShopName) {
+		g.buyHonorMarket(u, mobID, sellSlot, invSlot)
+		return
+	}
 	if mobID < firstNPC {
 		g.buyBack(u, sellSlot)
 		return
@@ -346,7 +354,7 @@ func (g *Game) requestGoldToInv(u *User, pkt protocol.Packet) {
 	}
 	pl := &g.mobs[u.id].info.Player
 	if pl.Status.CurHP <= 0 {
-		return // TODO(phase C): SendHpMode
+		return
 	}
 	g.removeTrade(u.id)
 	gold := uint32(p.Value)

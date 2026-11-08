@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"dbsrv/internal/protocol"
 	"dbsrv/internal/wire"
 )
@@ -116,8 +118,15 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 		resend()
 		return
 	}
-	// TODO(phase E): the 169 ms anti-spam and CheckIfIsTooFast logging.
 	vol := g.data.itemAbility(src, EF_VOLATILE)
+	if vol != 1 && vol != 15 && vol != 191 { // only logged, as in the C++
+		now := time.Now()
+		if now.Sub(u.lastUsedItem) < 169*time.Millisecond {
+			g.log.Warn("items used too fast", "slot", u.id, "account", wire.CString(u.account.Username[:]),
+				"ms", now.Sub(u.lastUsedItem).Milliseconds(), "item", src.Index)
+		}
+		u.lastUsedItem = now
+	}
 	if vol != 2 && vol != 15 && g.locked(u, lockUnequip, "Bloqueio de uso de itens ativo!") {
 		resend()
 		return
@@ -310,6 +319,11 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 	}
 
 	if g.useItemByID(u, &p, src, vol) {
+		return
+	}
+
+	if src.Index == itemRouletteBox && p.SrcType == wire.SlotInv && p.SrcSlot >= 0 && p.SrcSlot < 60 {
+		g.openRoulette(u, int(p.SrcSlot))
 		return
 	}
 

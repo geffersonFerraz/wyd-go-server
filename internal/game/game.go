@@ -64,11 +64,18 @@ type User struct {
 	repurchase     [10]wire.Item // last items sold to NPCs
 	repurchaseLast int
 
-	trade       wire.Trade // own offer; trade.ClientID = partner, 0 = none
-	attackRange int
-	dropKills   map[string]map[int]int // kill counters of the drop table
-	lastAttack  time.Time
-	skillUsed   [256]time.Time // last use per skill (cooldowns)
+	trade                        wire.Trade // own offer; trade.ClientID = partner, 0 = none
+	attackRange                  int
+	dropKills                    map[string]map[int]int // kill counters of the drop table
+	lastAttack                   time.Time
+	lastDropList, lastDropSearch time.Time
+	lastUsedItem                 time.Time
+	honorMarket                  bool // MarketHonra: buying goes to the Honor Market
+	cashShopOpens                time.Time
+	// Roulette (CMob.DropRoll): the prize of the last spin and the bar of each box.
+	rouletteReward wire.Item
+	rouletteEvol   [maxRouletteBox]int16
+	skillUsed      [256]time.Time // last use per skill (cooldowns)
 
 	potionHP, potionMP int32 // Potion.CountHp/CountMp: pending HP/MP
 	quaff              bool  // Potion.bQuaff: apply on the next tick
@@ -140,6 +147,8 @@ type Game struct {
 	start  time.Time
 
 	chargedGuilds [10][5]int32
+	griffinNPC    int                      // cached id of the Mestre Grifo
+	rankTable     *rankBoard               // nil until the first read from the database
 	sealCache     map[int32]sealCacheEntry // sServer.SealCache
 	guilds        map[int]*Guild           // g_pGuild (SetGuilds, then DBSRV broadcasts)
 	guildAlly     map[int]int              // g_pGuildAlly
@@ -167,6 +176,7 @@ type event struct {
 	conn *clientConn
 	pkt  protocol.Packet
 	gd   *store.GameData
+	rank *rankBoard
 }
 
 type eventKind int
@@ -179,6 +189,7 @@ const (
 	evDBUp
 	evDBDown
 	evGameData
+	evRanking
 )
 
 func New(cfg Config, data *Data, log *slog.Logger) *Game {
@@ -272,6 +283,8 @@ func (g *Game) handleEvent(ev event) {
 	case evDBDown:
 		g.dbUp = false
 		g.log.Error("lost DBSRV connection")
+	case evRanking:
+		g.rankTable = ev.rank
 	case evGameData:
 		if err := g.data.ApplyGameData(ev.gd); err != nil {
 			g.log.Error("game data reload refused, keeping the current tables", "err", err)

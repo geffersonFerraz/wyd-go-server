@@ -41,3 +41,31 @@ func TestNoticeDelivery(t *testing.T) {
 		t.Fatalf("empty notice result %q", r)
 	}
 }
+
+// TMSRV's ranking rows are stored; deleted characters drop out of the list.
+func TestRankUpdate(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	tm := h.connect()
+	send := func(name string, level int32) {
+		p := wire.RankUpdate{Header: wire.NewHeader(wire.OpRankUpdate, 0), Level: level, Power: 7}
+		wire.PutGameString(p.Name[:], name)
+		p.Equip[15].Index = 543
+		tm.send(&p)
+	}
+	rec, err := h.st.LoadAccount(ctx, "TESTER")
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := wire.GameString(rec.Account.Mob[0].Player.Name[:])
+	if name == "" {
+		t.Fatal("harness account without a character")
+	}
+	send(name, 50)
+	send(name, 51) // overwrites
+	send("NaoExiste", 99)
+	waitFor(t, func() bool {
+		list, err := h.st.Ranking(ctx)
+		return err == nil && len(list) == 1 && list[0].Name == name && list[0].Level == 51 && list[0].Equip[15].Index == 543
+	})
+}

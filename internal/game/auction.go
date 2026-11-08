@@ -150,6 +150,12 @@ type autoTrade struct {
 
 // loadStoreBase reads npc/Base, the store NPC template (ReadMob "Base").
 func (d *Data) loadStoreBase(dir string) {
+	if b, err := os.ReadFile(filepath.Join(dir, "npc", "Vinha")); err == nil {
+		var m wire.Mob
+		if wire.Unmarshal(b, &m) == nil {
+			d.Thorn = &m
+		}
+	}
 	if b, err := os.ReadFile(filepath.Join(dir, "npc", "Base")); err == nil {
 		var m wire.Mob
 		if wire.Unmarshal(b, &m) == nil {

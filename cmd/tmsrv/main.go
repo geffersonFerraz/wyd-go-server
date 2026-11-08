@@ -120,6 +120,7 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 		return fmt.Errorf("guilds: %w", err)
 	}
 	g.ConnectDB(ctx)
+	go refreshRanking(ctx, st, g, log)
 	// Live reload: edits to the gamedata tables (admin panel, SQL, a new
 	// import) reach the running server about a second later.
 	go st.ListenGameData(ctx, time.Second, log, func() {
@@ -147,6 +148,25 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 // loadGuilds reads the guild table and alliances/wars (written by DBSRV);
 // the C++ TMSRV read ..\DBsrv\guilds.txt instead. Later changes arrive as
 // DBSRV broadcasts.
+// refreshRanking reads the ranking every channel shares (DBSRV stores it
+// from the 0xC14 of all channels).
+func refreshRanking(ctx context.Context, st *store.Store, g *game.Game, log *slog.Logger) {
+	tick := time.NewTicker(30 * time.Second)
+	defer tick.Stop()
+	for {
+		if list, err := st.Ranking(ctx); err == nil {
+			g.SetRanking(list)
+		} else if ctx.Err() == nil {
+			log.Warn("ranking", "err", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+	}
+}
+
 func loadGuilds(ctx context.Context, st *store.Store, g *game.Game, log *slog.Logger) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()

@@ -75,7 +75,8 @@ func (g *Game) requestAddPoint(u *User, pkt protocol.Packet) {
 	m := &g.mobs[u.id]
 	pl := &m.info.Player
 	if u.status != userPlay || pl.Status.CurHP <= 0 {
-		return // TODO(phase C): SendHpMode
+		g.sendHpMode(u)
+		return
 	}
 	info := int(p.Info)
 	switch p.Mode {
@@ -260,7 +261,8 @@ func (g *Game) requestDeleteItem(u *User, pkt protocol.Packet) {
 		return
 	}
 	if u.status != userPlay {
-		return // TODO(phase C): SendHpMode
+		g.sendHpMode(u)
+		return
 	}
 	pl := &g.mobs[u.id].info.Player
 	it := &pl.Inventory[slot]

@@ -72,6 +72,7 @@ func (g *Game) requestTrade(u *User, pkt protocol.Packet) {
 	}
 	me := &g.mobs[u.id].info.Player
 	if u.status != userPlay || me.Status.CurHP <= 0 {
+		g.sendHpMode(u)
 		g.removeTrade(u.id)
 		return
 	}

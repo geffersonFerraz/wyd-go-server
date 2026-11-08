@@ -262,3 +262,31 @@ func TestExtraction(t *testing.T) {
 		t.Fatalf("failed extraction left %+v", pl.Inventory[0])
 	}
 }
+
+// The belts 5706..5725 are not costumes.
+func TestEhreRefusesBeltsAsCostume(t *testing.T) {
+	for _, belt := range []uint16{5706, 5714, 5718, 5721, 5725} {
+		g := worldGame(t)
+		u := placePlayer(g, 2112, 2042, 0)
+		pl := &g.mobs[1].info.Player
+		pl.Gold = 5_000_000
+		pl.Inventory[0] = wire.Item{Index: 2361}
+		pl.Inventory[1] = wire.Item{Index: belt}
+		pl.Inventory[2] = wire.Item{Index: 412}
+		p := window(g, u, opCliEhre, 0, 1, 2)
+		g.requestEhre(u, packet(&p))
+		if pl.Inventory[1].Index != belt || pl.Gold != 5_000_000 {
+			t.Fatalf("belt %d eaten: item %d, gold %d", belt, pl.Inventory[1].Index, pl.Gold)
+		}
+	}
+}
+
+// A belt in the accessory slot counts for the character's attributes.
+func TestArcaneBeltCountsInAttributes(t *testing.T) {
+	g := worldGame(t)
+	var mob wire.Mob
+	mob.Equip[17] = wire.Item{Index: 5715} // EF_HPADD 20, EF_AC 80
+	if got := g.data.mobAbility(&mob, EF_HPADD); got != 20 {
+		t.Fatalf("EF_HPADD %d", got)
+	}
+}
