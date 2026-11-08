@@ -28,12 +28,17 @@ where go >nul 2>nul || set "PATH=%PATH%;C:\Program Files\Go\bin;C:\Program Files
 rem Valores padrao, sobrescritos pelo .env.
 set "DATABASE_URL=postgres://dbsrv:dbsrv@127.0.0.1:5432/dbsrv"
 set "ADMIN_LISTEN=127.0.0.1:8080"
+rem Porta publica do admin para o cliente do jogo: serv00.htm (contagem de
+rem online por canal, URL em serverlist.bin) e marcas de guild. Vazio = desliga.
+set "PUBLIC_LISTEN=:80"
 if exist ".env" (
   for /f "usebackq eol=# tokens=1* delims==" %%a in (".env") do if not "%%b"=="" set "%%a=%%b"
 )
 
 set "CMD=%~1"
 if "%CMD%"=="" set "CMD=start"
+set "ADMIN_PUBLIC="
+if not "%PUBLIC_LISTEN%"=="" set "ADMIN_PUBLIC=-public-listen %PUBLIC_LISTEN%"
 
 if /i "%CMD%"=="build"       goto :build_only
 if /i "%CMD%"=="start"       goto :start
@@ -65,10 +70,11 @@ call :running tmsrv.exe && echo TMSRV ja esta rodando. || (
   start "TMSRV" /D "%ROOT%" cmd /k ""%BIN%\tmsrv.exe" %TMSRV_ARGS%"
 )
 call :running admin.exe && echo Painel admin ja esta rodando. || (
-  start "ADMIN" /D "%ROOT%" cmd /k ""%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_ARGS%"
+  start "ADMIN" /D "%ROOT%" cmd /k ""%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_PUBLIC% %ADMIN_ARGS%"
 )
 echo.
 echo Servidor iniciado. Painel admin: http://%ADMIN_LISTEN%
+if defined ADMIN_PUBLIC echo Lista de canais do cliente: http://^<este IP^>%PUBLIC_LISTEN%/serv00.htm
 if not defined ADMIN_PASSWORD_HASH echo Senha do painel: servidor senha-admin
 exit /b 0
 
@@ -76,7 +82,7 @@ exit /b 0
 call :build || exit /b 1
 if /i "%CMD%"=="dbsrv" "%BIN%\dbsrv.exe" %DBSRV_ARGS%
 if /i "%CMD%"=="tmsrv" "%BIN%\tmsrv.exe" %TMSRV_ARGS%
-if /i "%CMD%"=="admin" "%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_ARGS%
+if /i "%CMD%"=="admin" "%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_PUBLIC% %ADMIN_ARGS%
 exit /b %errorlevel%
 
 :stop

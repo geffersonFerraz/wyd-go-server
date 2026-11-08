@@ -151,6 +151,39 @@ func (s *Store) Heartbeat(ctx context.Context, protocol int) error {
 	return err
 }
 
+// ReportChannels records the online count of each channel (-1 when its
+// TMSRV is not connected), sent by dbsrv with its heartbeat.
+func (s *Store) ReportChannels(ctx context.Context, online []int) error {
+	counts := make([]int32, len(online))
+	for i, n := range online {
+		counts[i] = int32(n)
+	}
+	_, err := s.pool.Exec(ctx, `UPDATE server_state SET channel_online = $1 WHERE id = 1`, counts)
+	return err
+}
+
+// ChannelStatus returns the last ReportChannels counts and the age of
+// dbsrv's heartbeat (-1 when it never beat), measured by the database clock.
+func (s *Store) ChannelStatus(ctx context.Context) (online []int, age time.Duration, err error) {
+	var counts []int32
+	var ageSec *float64
+	err = s.pool.QueryRow(ctx, `
+		SELECT channel_online, EXTRACT(EPOCH FROM now() - dbsrv_seen_at)::float8
+		FROM server_state WHERE id = 1`).Scan(&counts, &ageSec)
+	if err != nil {
+		return nil, 0, err
+	}
+	age = -1
+	if ageSec != nil {
+		age = time.Duration(*ageSec * float64(time.Second))
+	}
+	online = make([]int, len(counts))
+	for i, n := range counts {
+		online[i] = int(n)
+	}
+	return online, age, nil
+}
+
 // DBSRVStatus returns dbsrv's last heartbeat (seenAt nil if never) and
 // how long ago it was, measured by the database clock.
 func (s *Store) DBSRVStatus(ctx context.Context) (protocol int, seenAt *time.Time, age time.Duration, err error) {

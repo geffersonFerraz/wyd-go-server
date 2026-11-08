@@ -10,10 +10,16 @@
 //
 // The panel only queues changes; dbsrv must be running to apply them.
 //
-// Guild marks uploaded in the panel are saved to -guildmark-dir. With
-// -guildmark-listen (e.g. ":80"), they are also served read-only at
-// /guild/img_guilds/b0100000<id>.bmp, the URL the game client downloads
-// (GameURLMark in the client's TMPaths.h must point at that host).
+// With -public-listen (e.g. ":80"), a second, unauthenticated listener
+// serves what the game client downloads over plain HTTP:
+//
+//   - /servNN.htm: online count per channel for the server list (the URL in
+//     serverlist.bin, entry [group][0], must point at this host);
+//   - /guild/img_guilds/b0100000<id>.bmp: guild marks uploaded in the panel
+//     and saved to -guildmark-dir (GameURLMark in the client's TMPaths.h
+//     must point at this host).
+//
+// -guildmark-listen is the old name of -public-listen.
 package main
 
 import (
@@ -58,11 +64,15 @@ func main() {
 	secure := flag.Bool("secure-cookie", false, "mark the session cookie Secure (use behind HTTPS)")
 	markDir := flag.String("guildmark-dir", "guildmarks", `where guild marks are saved ("" disables the upload)`)
 	tmsrvDir := flag.String("tmsrv-dir", "data/tmsrv", `TMSRV folder (its Cache\LockAccount holds the in-game account locks; "" hides the lock tools)`)
-	markListen := flag.String("guildmark-listen", "", `public address serving the marks to the game client at `+admin.GuildMarkPath+` (e.g. ":80"; "" = don't serve)`)
+	publicListen := flag.String("public-listen", "", `public address serving the game client servNN.htm and the guild marks at `+admin.GuildMarkPath+` (e.g. ":80"; "" = don't serve)`)
+	markListen := flag.String("guildmark-listen", "", "old name of -public-listen")
 	flag.Parse()
+	if *publicListen == "" {
+		publicListen = markListen
+	}
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, markListen: *markListen, tmsrvDir: *tmsrvDir}
+	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, tmsrvDir: *tmsrvDir}
 	if err := run(log, opts); err != nil {
 		log.Error("fatal", "err", err)
 		os.Exit(1)
@@ -79,7 +89,7 @@ func envOr(k, def string) string {
 type options struct {
 	listen, dsn, user, pwFile string
 	secure                    bool
-	markDir, markListen       string
+	markDir, publicListen     string
 	tmsrvDir                  string
 }
 
@@ -128,27 +138,30 @@ func run(log *slog.Logger, o options) error {
 	if err != nil {
 		return err
 	}
-	// The marks go on their own listener: the game client downloads them
-	// over plain HTTP from anywhere, while the panel stays private.
-	if o.markListen != "" {
-		if o.markDir == "" {
-			return errors.New("-guildmark-listen needs -guildmark-dir")
+	// What the game client downloads goes on its own listener: the client
+	// fetches it over plain HTTP from anywhere, while the panel stays private.
+	if o.publicListen != "" {
+		mux := http.NewServeMux()
+		mux.Handle("/", admin.ServerStatusHandler(st, log))
+		if o.markDir != "" {
+			mux.Handle(admin.GuildMarkPath, admin.GuildMarkHandler(o.markDir))
 		}
-		marks := &http.Server{
-			Addr:              o.markListen,
-			Handler:           admin.GuildMarkHandler(o.markDir),
+		public := &http.Server{
+			Addr:              o.publicListen,
+			Handler:           mux,
 			ReadHeaderTimeout: 5 * time.Second,
 			ReadTimeout:       10 * time.Second,
 			WriteTimeout:      10 * time.Second,
 		}
 		go func() {
 			<-ctx.Done()
-			_ = marks.Close()
+			_ = public.Close()
 		}()
 		go func() {
-			log.Info("guild marks", "url", "http://"+o.markListen+admin.GuildMarkPath, "dir", o.markDir)
-			if err := marks.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-				log.Error("guild mark server", "err", err)
+			log.Info("public files", "status", "http://"+o.publicListen+"/serv00.htm",
+				"guild_marks", "http://"+o.publicListen+admin.GuildMarkPath, "dir", o.markDir)
+			if err := public.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				log.Error("public server", "err", err)
 			}
 		}()
 	}

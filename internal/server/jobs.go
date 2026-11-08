@@ -27,6 +27,9 @@ func (s *Server) runJobs(ctx context.Context) {
 		if err := s.st.Heartbeat(ctx, store.DeliveryProtocol); err != nil && ctx.Err() == nil {
 			s.log.Warn("heartbeat", "err", err)
 		}
+		if err := s.st.ReportChannels(ctx, s.channelCounts()); err != nil && ctx.Err() == nil {
+			s.log.Warn("channel status", "err", err)
+		}
 	}
 	beat()
 
@@ -61,12 +64,8 @@ func (s *Server) runJobs(ctx context.Context) {
 // count*4/3 + rand()%3; this writes the real count.
 func (s *Server) writeStatusFile() {
 	var b strings.Builder
-	for i := 0; i < maxServerGroup; i++ {
-		if i < len(s.cfg.ChannelIPs) && s.channel(i) != nil {
-			fmt.Fprintf(&b, "%d ", s.sess.count(i))
-		} else {
-			b.WriteString("-1 ")
-		}
+	for _, n := range s.channelCounts() {
+		fmt.Fprintf(&b, "%d ", n)
 	}
 	tmp := s.cfg.StatusFile + ".tmp"
 	if err := os.WriteFile(tmp, []byte(b.String()), 0o644); err == nil {
@@ -77,6 +76,20 @@ func (s *Server) writeStatusFile() {
 	} else {
 		s.log.Warn("status file", "err", err)
 	}
+}
+
+// channelCounts returns, for each server group slot, how many accounts are
+// online on that channel, or -1 when its TMSRV is not connected.
+func (s *Server) channelCounts() []int {
+	out := make([]int, maxServerGroup)
+	for i := range out {
+		if i < len(s.cfg.ChannelIPs) && s.channel(i) != nil {
+			out[i] = s.sess.count(i)
+		} else {
+			out[i] = -1
+		}
+	}
+	return out
 }
 
 // ValidNumericPassword reports whether s is usable as the numeric second
