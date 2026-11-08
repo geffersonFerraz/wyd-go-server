@@ -9,6 +9,7 @@ rem    servidor build           so compila (bin\dbsrv.exe, tmsrv.exe, admin.exe)
 rem    servidor stop            fecha DBSRV, TMSRV e admin
 rem    servidor restart         stop + start
 rem    servidor dbsrv|tmsrv|admin   compila e inicia so aquele, nesta janela
+rem    servidor tmsrv 2         idem, o canal 2
 rem    servidor db              sobe so o Postgres (docker compose up -d)
 rem    servidor senha-admin     mostra a senha gerada do painel
 rem
@@ -16,6 +17,13 @@ rem  Configuracao: variaveis do arquivo .env (copie de .env.example), por
 rem  exemplo DATABASE_URL, ADMIN_USER, ADMIN_PASSWORD_HASH,
 rem  DBSRV_MASTER_PASSWORD_HASH. Opcoes extras de cada programa:
 rem  DBSRV_ARGS, TMSRV_ARGS, ADMIN_ARGS (ex.: set TMSRV_ARGS=-debug).
+rem
+rem  Canais: TMSRV_CHANNELS lista os canais a abrir (padrao "1"; ex. "1 2"),
+rem  um tmsrv.exe por canal, cada um na sua janela. TMSRV_CONFIG e o arquivo
+rem  de configuracao (padrao tmsrv.yaml). Os IPs dos canais no tmsrv.yaml
+rem  sao os do docker-compose (172.30.87.x); para rodar no Windows, copie-o
+rem  para tmsrv.local.yaml com 127.0.0.1, 127.0.0.2... (um IP por canal: o
+rem  DBSRV reconhece o canal pelo IP) e use TMSRV_CONFIG=tmsrv.local.yaml.
 rem ==========================================================================
 setlocal EnableExtensions
 cd /d "%~dp0"
@@ -31,6 +39,8 @@ set "ADMIN_LISTEN=127.0.0.1:8080"
 rem Porta publica do admin para o cliente do jogo: serv00.htm (contagem de
 rem online por canal, URL em serverlist.bin) e marcas de guild. Vazio = desliga.
 set "PUBLIC_LISTEN=:80"
+set "TMSRV_CHANNELS=1"
+set "TMSRV_CONFIG=tmsrv.yaml"
 if exist ".env" (
   for /f "usebackq eol=# tokens=1* delims==" %%a in (".env") do if not "%%b"=="" set "%%a=%%b"
 )
@@ -63,26 +73,28 @@ exit /b 0
 call :database || goto :fail
 call :build || goto :fail
 call :running dbsrv.exe && echo DBSRV ja esta rodando. || (
-  start "DBSRV" /D "%ROOT%" cmd /k ""%BIN%\dbsrv.exe" %DBSRV_ARGS%"
+  start "DBSRV" /D "%ROOT%" cmd /k ""%BIN%\dbsrv.exe" -config "%TMSRV_CONFIG%" %DBSRV_ARGS%"
   call :wait_port 7514 "DBSRV" || goto :fail
 )
 call :running tmsrv.exe && echo TMSRV ja esta rodando. || (
-  start "TMSRV" /D "%ROOT%" cmd /k ""%BIN%\tmsrv.exe" %TMSRV_ARGS%"
+  for %%c in (%TMSRV_CHANNELS%) do start "TMSRV %%c" /D "%ROOT%" cmd /k ""%BIN%\tmsrv.exe" -config "%TMSRV_CONFIG%" -channel %%c %TMSRV_ARGS%"
 )
 call :running admin.exe && echo Painel admin ja esta rodando. || (
-  start "ADMIN" /D "%ROOT%" cmd /k ""%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_PUBLIC% %ADMIN_ARGS%"
+  start "ADMIN" /D "%ROOT%" cmd /k ""%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_PUBLIC% -config "%TMSRV_CONFIG%" %ADMIN_ARGS%"
 )
 echo.
 echo Servidor iniciado. Painel admin: http://%ADMIN_LISTEN%
-if defined ADMIN_PUBLIC echo Lista de canais do cliente: http://^<este IP^>%PUBLIC_LISTEN%/serv00.htm
+if defined ADMIN_PUBLIC echo Lista de canais do cliente: http://^<este IP^>%PUBLIC_LISTEN%/serv00.htm e /serverlist.bin
 if not defined ADMIN_PASSWORD_HASH echo Senha do painel: servidor senha-admin
 exit /b 0
 
 :one
 call :build || exit /b 1
-if /i "%CMD%"=="dbsrv" "%BIN%\dbsrv.exe" %DBSRV_ARGS%
-if /i "%CMD%"=="tmsrv" "%BIN%\tmsrv.exe" %TMSRV_ARGS%
-if /i "%CMD%"=="admin" "%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_PUBLIC% %ADMIN_ARGS%
+set "ONE_CHANNEL=%~2"
+if "%ONE_CHANNEL%"=="" for %%c in (%TMSRV_CHANNELS%) do if not defined ONE_CHANNEL set "ONE_CHANNEL=%%c"
+if /i "%CMD%"=="dbsrv" "%BIN%\dbsrv.exe" -config "%TMSRV_CONFIG%" %DBSRV_ARGS%
+if /i "%CMD%"=="tmsrv" "%BIN%\tmsrv.exe" -config "%TMSRV_CONFIG%" -channel %ONE_CHANNEL% %TMSRV_ARGS%
+if /i "%CMD%"=="admin" "%BIN%\admin.exe" -listen %ADMIN_LISTEN% %ADMIN_PUBLIC% -config "%TMSRV_CONFIG%" %ADMIN_ARGS%
 exit /b %errorlevel%
 
 :stop

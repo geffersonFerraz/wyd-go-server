@@ -540,6 +540,15 @@ Kept in the repo so the knowledge survives between sessions.
     this repository (`data/tmsrv`, `data/dbsrv`); only `xml-import` still
     reads `../Release Servidor/DBSRV`. `Roleta.txt` moved from `../Conf` to
     `data/tmsrv/Conf`.
+  - 2026-11-08: multiple channels. tmsrv.yaml lists every channel
+    (`serverlist`, `channels`; `network.listen_*` and `channel` are gone)
+    and each TMSRV picks one with -channel; DBSRV reads the same list
+    (serverlist.txt removed) and accepts 10 channels (C++ MAX_SERVER 3);
+    the admin panel serves the client's serverlist.bin
+    (internal/cluster). In-game channel change ("srv507 N"): TMSRV ->
+    0x814 -> DBSRV single-use key "*N token" bound to channel and slot ->
+    0x52A -> client reconnects -> DBSRV logs it straight into the world at
+    the saved position (0x417 WorldPos). The C++ TempKey path is gone.
 
 ## What is still missing (2026-11-06)
 

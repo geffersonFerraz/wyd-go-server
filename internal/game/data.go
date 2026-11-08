@@ -9,7 +9,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"dbsrv/internal/cluster"
 	"dbsrv/internal/wire"
 )
 
@@ -77,37 +79,57 @@ type Data struct {
 // plus the TMSRV data folder. serverip.txt and dataserver.txt are no
 // longer read (they stay for the C++ server).
 type Config struct {
-	ListenIP     string
-	ListenPort   int
-	DBIP         string
-	DBPort       int
-	Channel      int // 1-based
-	NewbieZone   int
-	StatSapphire int // sapphires the Mestre das Habilidades charges
-	MobAI        MobAISettings
-	Login        LoginSettings
-	Missions     MissionSettings
-	Store        StoreSettings
-	CacheDir     string // per-account files shared with the C++ (locks, daily)
+	ListenIP   string
+	ListenPort int
+	DBIP       string
+	DBPort     int
+	Channel    int            // 1-based
+	Cluster    cluster.Config // every channel (in-game channel change)
+	// ChangeChannelCooldown: minimum time between channel changes.
+	ChangeChannelCooldown time.Duration
+	NewbieZone            int
+	StatSapphire          int // sapphires the Mestre das Habilidades charges
+	MobAI                 MobAISettings
+	Login                 LoginSettings
+	Missions              MissionSettings
+	Store                 StoreSettings
+	CacheDir              string // per-account files shared with the C++ (locks, daily)
 }
 
-// ApplySettings copies tmsrv.yaml values into the config.
-func (c *Config) ApplySettings(s Settings) {
-	c.ListenIP, c.ListenPort = s.Network.ListenIP, s.Network.ListenPort
+// ApplySettings copies tmsrv.yaml values into the config, for channel
+// (1-based; 0 = the only channel of the file).
+func (c *Config) ApplySettings(s Settings, channel int) error {
+	cl := s.Cluster()
+	if channel == 0 {
+		if len(cl.Channels) != 1 {
+			return fmt.Errorf("%d channels configured: choose one with -channel (or TMSRV_CHANNEL)", len(cl.Channels))
+		}
+		channel = 1
+	}
+	ch, ok := cl.Channel(channel)
+	if !ok {
+		return fmt.Errorf("channel %d is not in the settings (channels 1..%d)", channel, len(cl.Channels))
+	}
+	c.ListenIP, c.ListenPort = ch.IP, ch.Port
+	c.Channel, c.Cluster = channel, cl
+	c.ChangeChannelCooldown = time.Duration(s.ChangeChannel.CooldownSeconds) * time.Second
 	c.DBIP, c.DBPort = s.Network.DBSRVIP, s.Network.DBSRVPort
-	c.Channel, c.NewbieZone, c.MobAI = s.Channel, s.NewbieZone, s.MobAI
+	c.NewbieZone, c.MobAI = s.NewbieZone, s.MobAI
 	c.StatSapphire = s.StatSapphire
 	c.Login, c.Missions, c.Store = s.Login, s.Missions, s.Store
 	if s.CacheDir != "" {
 		c.CacheDir = s.CacheDir
 	}
+	return nil
 }
 
 // LoadConfig is the config of a TMSRV data folder with the C++ values (tests
 // use it; the server applies tmsrv.yaml on top with ApplySettings).
 func LoadConfig(dir string) (Config, error) {
 	var c Config
-	c.ApplySettings(CppSettings())
+	if err := c.ApplySettings(CppSettings(), 1); err != nil {
+		return c, err
+	}
 	c.CacheDir = filepath.Join(dir, "Cache")
 	return c, nil
 }

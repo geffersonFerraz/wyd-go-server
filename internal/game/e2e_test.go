@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"dbsrv/internal/auth"
+	"dbsrv/internal/cluster"
 	"dbsrv/internal/game"
 	"dbsrv/internal/protocol"
 	"dbsrv/internal/server"
@@ -29,10 +30,15 @@ var loc = time.FixedZone("BRT", -3*3600)
 type chain struct {
 	t      *testing.T
 	st     *store.Store
-	tmAddr string
+	tmAddr string   // channel 1
+	addrs  []string // every channel, index = number-1
 }
 
-func newChain(t *testing.T) *chain {
+func newChain(t *testing.T) *chain { return newChainN(t, 1) }
+
+// newChainN runs one DBSRV and n TMSRVs (channel i on 127.0.0.i, which
+// DBSRV tells apart by that source IP).
+func newChainN(t *testing.T, n int) *chain {
 	t.Helper()
 	dsn := os.Getenv("DBSRV_TEST_DSN")
 	if dsn == "" {
@@ -79,25 +85,16 @@ func newChain(t *testing.T) *chain {
 	if err != nil {
 		t.Fatal(err)
 	}
-	db := server.New(server.Config{ChannelIPs: []string{"127.0.0.1"}, Loc: loc, DeliveryInterval: time.Hour}, st, base, 8, log)
+	layout := cluster.Config{ServerList: cluster.ServerList{Group: 1, PublicIP: "127.0.0.1", StatusURL: "http://127.0.0.1/serv00.htm"}}
+	for i := 1; i <= n; i++ {
+		layout.Channels = append(layout.Channels, cluster.Channel{Number: i, IP: fmt.Sprintf("127.0.0.%d", i), Port: 8280 + i})
+	}
+	db := server.New(server.Config{ChannelIPs: layout.ChannelIPs(), Loc: loc, DeliveryInterval: time.Hour}, st, base, 8, log)
 	if err := db.LoadWorld(ctx); err != nil {
 		t.Fatal(err)
 	}
 	go func() { _ = db.Serve(ctx, dbLn) }()
 
-	// TMSRV
-	cfg, err := game.LoadConfig(tmsrvDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cfg.ListenIP = "127.0.0.1"
-	host, port, _ := net.SplitHostPort(dbLn.Addr().String())
-	cfg.DBIP = host
-	fmt.Sscan(port, &cfg.DBPort)
-	data, err := game.LoadData(tmsrvDir)
-	if err != nil {
-		t.Fatal(err)
-	}
 	// Game data goes through Postgres like in production.
 	gd, _, err := game.ReadLegacyGameData(tmsrvDir)
 	if err != nil {
@@ -110,29 +107,53 @@ func newChain(t *testing.T) *chain {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := data.ApplyGameData(back); err != nil {
-		t.Fatal(err)
-	}
-	g := game.New(cfg, data, log)
-	g.ConnectDB(ctx)
-	tmLn, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	go func() { _ = g.ServeClients(ctx, tmLn) }()
-	done := make(chan struct{})
-	go func() { g.Run(ctx); close(done) }()
-	t.Cleanup(func() { cancel(); <-done })
-	c.tmAddr = tmLn.Addr().String()
 
-	// Wait for the TMSRV -> DBSRV link.
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if on := db.Online(); len(on) > 0 {
-			break
+	// TMSRVs
+	var running []chan struct{}
+	for i, chn := range layout.Channels {
+		cfg, err := game.LoadConfig(tmsrvDir)
+		if err != nil {
+			t.Fatal(err)
 		}
-		time.Sleep(20 * time.Millisecond)
+		cfg.ListenIP, cfg.Channel, cfg.Cluster = chn.IP, chn.Number, layout
+		host, port, _ := net.SplitHostPort(dbLn.Addr().String())
+		cfg.DBIP = host
+		fmt.Sscan(port, &cfg.DBPort)
+		data, err := game.LoadData(tmsrvDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := data.ApplyGameData(back); err != nil {
+			t.Fatal(err)
+		}
+		g := game.New(cfg, data, log)
+		g.ConnectDB(ctx)
+		tmLn, err := net.Listen("tcp", net.JoinHostPort(chn.IP, "0"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		go func() { _ = g.ServeClients(ctx, tmLn) }()
+		done := make(chan struct{})
+		go func() { g.Run(ctx); close(done) }()
+		running = append(running, done)
+		c.addrs = append(c.addrs, tmLn.Addr().String())
+
+		// Wait for this TMSRV's DBSRV link.
+		deadline := time.Now().Add(5 * time.Second)
+		for !db.ChannelConnected(i) && time.Now().Before(deadline) {
+			time.Sleep(20 * time.Millisecond)
+		}
+		if !db.ChannelConnected(i) {
+			t.Fatalf("channel %d did not link to DBSRV", chn.Number)
+		}
 	}
+	t.Cleanup(func() {
+		cancel()
+		for _, d := range running {
+			<-d
+		}
+	})
+	c.tmAddr = c.addrs[0]
 	time.Sleep(200 * time.Millisecond)
 	return c
 }
@@ -166,9 +187,12 @@ type client struct {
 	c  *protocol.Conn
 }
 
-func (ch *chain) connect() *client {
+func (ch *chain) connect() *client { return ch.connectTo(1) }
+
+// connectTo opens a game client connection to channel n.
+func (ch *chain) connectTo(n int) *client {
 	ch.t.Helper()
-	nc, err := net.Dial("tcp", ch.tmAddr)
+	nc, err := net.Dial("tcp", ch.addrs[n-1])
 	if err != nil {
 		ch.t.Fatal(err)
 	}

@@ -94,6 +94,9 @@ type User struct {
 	store         autoTrade // AutoTrade: the auction store
 	lastAuction   time.Time // delayLeilaoBusca
 
+	changeChannelTo int       // channel asked of DBSRV (0 = none pending)
+	changeChannelAt time.Time // last channel change request
+
 	snd           string // SNDMessage: the "/snd" away message shown to whisperers
 	summonedUser  int    // SummonedUser: who this player called with "/summon"
 	partyPass     string // PartyPassword (group finder)

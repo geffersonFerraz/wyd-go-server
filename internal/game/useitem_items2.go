@@ -481,6 +481,52 @@ func (g *Game) useQuestBox(u *User, p *wire.UseItem, src *wire.Item) {
 	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	g.clientMessage(u, ".+++ %d de Experiência +++", exp)
 	resend()
+	g.shareQuestBoxExp(u, q, exp)
+}
+
+// shareQuestBoxExp gives the party members near the user the same exp the
+// quest box gave, under the box's own rules: online, alive, mortal, inside
+// the box's level range, and capped at the end of that range.
+func (g *Game) shareQuestBoxExp(u *User, q int, exp int64) {
+	if exp <= 0 {
+		return
+	}
+	pos := g.mobs[u.id].target
+	for _, id := range g.partyMembers(u.id) {
+		if id == u.id {
+			continue
+		}
+		mu := g.player(id)
+		if mu == nil || mu.status != userPlay {
+			continue
+		}
+		m := &g.mobs[id]
+		pl := &m.info.Player
+		if pl.Status.CurHP == 0 || evolution(pl) != evoMortal {
+			continue
+		}
+		p := m.target
+		if int(pos.X) < int(p.X)-halfGrid || int(pos.X) > int(p.X)+halfGrid ||
+			int(pos.Y) < int(p.Y)-halfGrid || int(pos.Y) > int(p.Y)+halfGrid {
+			continue
+		}
+		level := int(pl.BStatus.Level)
+		if level < questLevel[q][0] || level >= questLevel[q][1] {
+			continue
+		}
+		limit := nextLevel[evoMortal][max(questLevel[q][1]-1, level+1)]
+		gain := min(exp, limit-pl.Exp)
+		if gain <= 0 {
+			continue
+		}
+		pl.Exp += gain
+		g.getCurrentScore(id)
+		g.checkGetLevel(mu)
+		g.sendScore(id)
+		g.sendEtc(mu)
+		g.sendEmotion(id, 14, 3)
+		g.clientMessage(mu, ".+++ %d de Experiência (grupo) +++", gain)
+	}
 }
 
 // useMysteryStone is item 4148: in town, swap the Celestial and the

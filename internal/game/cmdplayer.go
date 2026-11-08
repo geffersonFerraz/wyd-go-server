@@ -59,6 +59,7 @@ func (g *Game) playerCommand(u *User, cmd, value string, p *wire.Command) bool {
 	}
 	switch cmd {
 	case "srv507":
+		g.requestChangeChannel(u, value)
 	case "daily":
 		g.sendDailyRewardInfo(u)
 	case "roleta":

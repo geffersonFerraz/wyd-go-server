@@ -184,7 +184,9 @@ func (ch *channel) sendCharList(client uint16, op uint16, a *wire.Account) {
 }
 
 // sendCharacterLogin sends 0x820 then 0x417 for the selected slot.
-func (ch *channel) sendCharacterLogin(client uint16, sess *session, withAccountExtras bool) {
+// pos, when not zero, is where the character appears (channel change);
+// otherwise TMSRV picks the spawn point.
+func (ch *channel) sendCharacterLogin(client uint16, sess *session, withAccountExtras bool, pos wire.Position) {
 	a := &sess.rec.Account
 	c := &a.Mob[sess.slot]
 
@@ -197,6 +199,7 @@ func (ch *channel) sendCharacterLogin(client uint16, sess *session, withAccountE
 
 	login := wire.CNFCharacterLogin{
 		Header:    wire.NewHeader(wire.OpCNFCharacterLogin, client),
+		WorldPos:  pos,
 		Mob:       c.Player,
 		SlotIndex: int16(sess.slot),
 		Affect:    c.Affects,

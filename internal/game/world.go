@@ -53,21 +53,26 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	u.movementPacket = wire.OpCliMoveStop
 	u.movementTS = 0xE0A1ACA
 
-	// Spawn point: the character's city, the guild area of a city its
-	// guild holds, the training area for low mortals, or Armia.
-	city := int(pl.Info >> 6) // Info.CityID
-	c := g.data.Cities[city]
-	x, y := int(c.CityX)+rnd()%14, int(c.CityY)+rnd()%14
-	if gi := int32(pl.GuildIndex); gi != 0 {
-		for zone := range 5 {
-			if gi == g.chargedGuilds[g.cfg.Channel-1][zone] {
-				x, y = int(g.data.Cities[zone].AreaGuildX), int(g.data.Cities[zone].AreaGuildY)
-				break
+	// Spawn point: where the character stood on its previous channel (a
+	// channel change, if this channel lets it be there), else its city,
+	// the guild area of a city its guild holds, the training area for low
+	// mortals, or Armia.
+	x, y := int(p.WorldPos.X), int(p.WorldPos.Y)
+	if x == 0 && y == 0 || x < 128 || x >= gridSize || y < 128 || y >= gridSize || g.areaRule(pl, x, y) != 0 {
+		city := int(pl.Info >> 6) // Info.CityID
+		c := g.data.Cities[city]
+		x, y = int(c.CityX)+rnd()%14, int(c.CityY)+rnd()%14
+		if gi := int32(pl.GuildIndex); gi != 0 {
+			for zone := range 5 {
+				if gi == g.chargedGuilds[g.cfg.Channel-1][zone] {
+					x, y = int(g.data.Cities[zone].AreaGuildX), int(g.data.Cities[zone].AreaGuildY)
+					break
+				}
 			}
 		}
-	}
-	if pl.Equip[0].Effect[1].Value == evoMortal && int(pl.BStatus.Level) < g.cfg.NewbieZone {
-		x, y = 2112, 2042
+		if pl.Equip[0].Effect[1].Value == evoMortal && int(pl.BStatus.Level) < g.cfg.NewbieZone {
+			x, y = 2112, 2042
+		}
 	}
 	if x < 128 || x >= gridSize || y < 128 || y >= gridSize {
 		x, y = 2100+rnd()%14, 2100+rnd()%14

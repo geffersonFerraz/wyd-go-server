@@ -11,19 +11,45 @@
 
 # Endereços de rede.
 network:
-  # IP e porta em que a TMSRV escuta. No docker-compose é o IP fixo do
-  # container tmsrv na rede wyd; os jogadores conectam na porta publicada no
-  # host. O mesmo IP é a origem da conexão com o DBSRV, que reconhece o canal
-  # por ele: tem de ser o IP do canal em data/dbsrv/serverlist.txt.
-  # C++: serverip.txt.
-  listen_ip: 172.30.87.12
-  listen_port: 8281
   # Onde está o DBSRV (IP do container dbsrv). C++: dataserver.txt.
   dbsrv_ip: 172.30.87.11
   dbsrv_port: 7514
 
-# Canal deste servidor (1..10).
-channel: 1
+# Lista de servidores do cliente (serverlist.bin). O painel admin gera o
+# arquivo a partir daqui: http://<host>/serverlist.bin, ou
+# "admin serverlist -o serverlist.bin".
+serverlist:
+  # Grupo (mundo) no cliente, 1..10: o número do grupo no sn.bin.
+  group: 1
+  # IP público que os jogadores usam para chegar aos canais. Tem de ser um
+  # IPv4: o cliente não resolve nomes.
+  public_ip: 192.168.77.191
+  # Contagem de online por canal (servNN.htm, servido pela porta pública do
+  # painel admin). Até 63 caracteres.
+  status_url: http://192.168.77.191/serv00.htm
+
+# Canais: um TMSRV (um container no docker-compose) por canal. Cada TMSRV
+# escolhe o seu com -channel N (ou TMSRV_CHANNEL). Substitui o serverip.txt
+# do C++ e o data/dbsrv/serverlist.txt do DBSRV.
+#   number: numerados 1..N, em ordem e sem buracos (o cliente usa a posição
+#           na lista como número do canal). Máximo 10.
+#   ip:     IP em que a TMSRV escuta. É também a origem da conexão com o
+#           DBSRV, que reconhece o canal por ele, então cada canal tem o seu.
+#           No docker-compose, é o IP fixo do container na rede wyd.
+#   port:   porta em que a TMSRV escuta e em que os jogadores conectam (o
+#           docker-compose publica a mesma porta no host). Na porta 8281 o
+#           serverlist.bin leva só o IP (cliente original); nas outras leva
+#           "ip:porta", o que exige o cliente com suporte a porta.
+channels:
+  - { number: 1, ip: 172.30.87.21, port: 8281 }
+  - { number: 2, ip: 172.30.87.22, port: 8282 }
+  - { number: 3, ip: 172.30.87.23, port: 8283 }
+  - { number: 4, ip: 172.30.87.24, port: 8284 }
+
+# Troca de canal dentro do jogo (lista de canais no jogo / comando "srv507").
+change_channel:
+  # Segundos mínimos entre duas trocas do mesmo jogador.
+  cooldown_seconds: 10
 
 # Pasta dos arquivos por conta compartilhados com o C++ (bloqueio de conta,
 # recompensa diária). Vazio = a pasta Cache dentro da pasta da TMSRV (-dir).

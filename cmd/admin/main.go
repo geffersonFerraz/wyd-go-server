@@ -7,6 +7,8 @@
 // and kept in -password-file (default .admin-password, git-ignored).
 //
 //	admin hash-password      # reads a password from stdin, prints its hash
+//	admin serverlist [-config tmsrv.yaml] [-o serverlist.bin]
+//	                         # writes the client's serverlist.bin
 //
 // The panel only queues changes; dbsrv must be running to apply them.
 //
@@ -15,6 +17,8 @@
 //
 //   - /servNN.htm: online count per channel for the server list (the URL in
 //     serverlist.bin, entry [group][0], must point at this host);
+//   - /serverlist.bin: the client's server list, built from the channels of
+//     -config (tmsrv.yaml) on every request;
 //   - /guild/img_guilds/b0100000<id>.bmp: guild marks uploaded in the panel
 //     and saved to -guildmark-dir (GameURLMark in the client's TMPaths.h
 //     must point at this host).
@@ -56,6 +60,13 @@ func main() {
 		fmt.Println(h)
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "serverlist" {
+		if err := writeServerList(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	listen := flag.String("listen", "127.0.0.1:8080", "address to serve the panel on")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres connection string (or DATABASE_URL)")
@@ -64,7 +75,8 @@ func main() {
 	secure := flag.Bool("secure-cookie", false, "mark the session cookie Secure (use behind HTTPS)")
 	markDir := flag.String("guildmark-dir", "guildmarks", `where guild marks are saved ("" disables the upload)`)
 	tmsrvDir := flag.String("tmsrv-dir", "data/tmsrv", `TMSRV folder (its Cache\LockAccount holds the in-game account locks; "" hides the lock tools)`)
-	publicListen := flag.String("public-listen", "", `public address serving the game client servNN.htm and the guild marks at `+admin.GuildMarkPath+` (e.g. ":80"; "" = don't serve)`)
+	publicListen := flag.String("public-listen", "", `public address serving the game client servNN.htm, `+admin.ServerListPath+` and the guild marks at `+admin.GuildMarkPath+` (e.g. ":80"; "" = don't serve)`)
+	config := flag.String("config", "tmsrv.yaml", `TMSRV settings, source of `+admin.ServerListPath+` ("" = don't serve it)`)
 	markListen := flag.String("guildmark-listen", "", "old name of -public-listen")
 	flag.Parse()
 	if *publicListen == "" {
@@ -72,7 +84,7 @@ func main() {
 	}
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, tmsrvDir: *tmsrvDir}
+	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, tmsrvDir: *tmsrvDir, config: *config}
 	if err := run(log, opts); err != nil {
 		log.Error("fatal", "err", err)
 		os.Exit(1)
@@ -91,6 +103,7 @@ type options struct {
 	secure                    bool
 	markDir, publicListen     string
 	tmsrvDir                  string
+	config                    string
 }
 
 func run(log *slog.Logger, o options) error {
@@ -143,6 +156,12 @@ func run(log *slog.Logger, o options) error {
 	if o.publicListen != "" {
 		mux := http.NewServeMux()
 		mux.Handle("/", admin.ServerStatusHandler(st, log))
+		if o.config != "" {
+			if _, err := admin.BuildServerList(o.config); err != nil {
+				return fmt.Errorf("serverlist.bin: %w", err)
+			}
+			mux.Handle("GET "+admin.ServerListPath, admin.ServerListHandler(o.config, log))
+		}
 		if o.markDir != "" {
 			mux.Handle(admin.GuildMarkPath, admin.GuildMarkHandler(o.markDir))
 		}
@@ -158,7 +177,7 @@ func run(log *slog.Logger, o options) error {
 			_ = public.Close()
 		}()
 		go func() {
-			log.Info("public files", "status", "http://"+o.publicListen+"/serv00.htm",
+			log.Info("public files", "status", "http://"+o.publicListen+"/serv00.htm", "serverlist", "http://"+o.publicListen+admin.ServerListPath,
 				"guild_marks", "http://"+o.publicListen+admin.GuildMarkPath, "dir", o.markDir)
 			if err := public.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				log.Error("public server", "err", err)
@@ -182,6 +201,23 @@ func run(log *slog.Logger, o options) error {
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
+	return nil
+}
+
+// writeServerList is "admin serverlist": serverlist.bin from tmsrv.yaml.
+func writeServerList(args []string) error {
+	fs := flag.NewFlagSet("serverlist", flag.ExitOnError)
+	config := fs.String("config", "tmsrv.yaml", "TMSRV settings (serverlist and channels sections)")
+	out := fs.String("o", "serverlist.bin", "output file (the client reads ./serverlist.bin)")
+	_ = fs.Parse(args)
+	b, err := admin.BuildServerList(*config)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(*out, b, 0o644); err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "%s: %d bytes\n", *out, len(b))
 	return nil
 }
 

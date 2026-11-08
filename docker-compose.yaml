@@ -6,19 +6,43 @@
 #   docker compose down -v          # stop and DELETE all data
 #
 # Rede própria "wyd" (172.30.87.0/24), IP fixo por container:
-#   172.30.87.10 postgres   172.30.87.11 dbsrv   172.30.87.12 tmsrv   172.30.87.13 admin
-# O DBSRV reconhece o canal pelo IP de origem da TMSRV: o IP da tmsrv tem de
-# bater com data/dbsrv/serverlist.txt e com network.listen_ip do tmsrv.yaml.
+#   172.30.87.10 postgres   172.30.87.11 dbsrv   172.30.87.13 admin
+#   172.30.87.21..30 tmsrv1..tmsrv10 (um container por canal)
+#
+# Canais: a fonte é a lista "channels" do tmsrv.yaml. Cada canal é um serviço
+# tmsrvN abaixo (copie um bloco para adicionar), com o IP, a porta e o
+# "-channel N" iguais aos do yaml. O DBSRV reconhece o canal pelo IP de
+# origem, e o serverlist.bin (http://<host>/serverlist.bin) leva a porta de
+# cada um. O teste internal/cluster TestComposeMatchesSettings confere que
+# este arquivo e o tmsrv.yaml batem. Ao renomear/remover canais:
+#   docker compose up -d --remove-orphans
 #
 # Portas publicadas no host:
-#   8281 tmsrv (jogadores, aberta)      80 admin público: servNN.htm + marcas de guilda (aberta)
-#   8080 painel admin (127.0.0.1)       5432 postgres (127.0.0.1)       7514 dbsrv: não publicada
+#   8281, 8282... tmsrvN (jogadores, abertas)   80 admin público: servNN.htm, serverlist.bin e marcas de guilda (aberta)
+#   8080 painel admin (127.0.0.1)               5432 postgres (127.0.0.1)       7514 dbsrv: não publicada
 #
 # Connection strings from the host (defaults; override in .env, see .env.example):
 #   app:   postgres://dbsrv:dbsrv@localhost:5432/dbsrv
 #   tests: postgres://dbsrv:dbsrv@localhost:5432/dbsrv_test   (wiped by every test run)
 
 name: dbsrv
+
+# Tudo o que os canais têm em comum; cada tmsrvN só muda IP, porta e canal.
+x-tmsrv: &tmsrv
+  build: { context: ., args: { CMD: tmsrv } }
+  image: wyd-tmsrv
+  user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+  restart: unless-stopped
+  # Tempo para salvar os jogadores no DBSRV ao parar.
+  stop_grace_period: 30s
+  environment:
+    DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
+  volumes:
+    - ./data:/app/data
+    - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+  depends_on:
+    postgres: { condition: service_healthy }
+    dbsrv: { condition: service_started }
 
 services:
   postgres:
@@ -50,7 +74,7 @@ services:
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     restart: unless-stopped
     # Só a TMSRV conecta no DBSRV, pela rede wyd: a porta não é publicada.
-    command: ["-listen", "172.30.87.11:7514"]
+    command: ["-listen", "172.30.87.11:7514", "-config", "tmsrv.yaml"]
     networks:
       wyd: { ipv4_address: 172.30.87.11 }
     environment:
@@ -58,40 +82,53 @@ services:
       DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
     volumes:
       - ./data:/app/data
-    depends_on:
-      postgres: { condition: service_healthy }
-
-  tmsrv:
-    build: { context: ., args: { CMD: tmsrv } }
-    image: wyd-tmsrv
-    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
-    restart: unless-stopped
-    # Tempo para salvar os jogadores no DBSRV ao parar.
-    stop_grace_period: 30s
-    networks:
-      wyd: { ipv4_address: 172.30.87.12 }
-    ports:
-      - "${TMSRV_PORT:-8281}:8281"
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
-    volumes:
-      - ./data:/app/data
       - ./tmsrv.yaml:/app/tmsrv.yaml:ro
     depends_on:
       postgres: { condition: service_healthy }
-      dbsrv: { condition: service_started }
+
+  tmsrv1:
+    <<: *tmsrv
+    command: ["-channel", "1"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.21 }
+    ports:
+      - "8281:8281"
+
+  tmsrv2:
+    <<: *tmsrv
+    command: ["-channel", "2"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.22 }
+    ports:
+      - "8282:8282"
+
+  tmsrv3:
+    <<: *tmsrv
+    command: ["-channel", "3"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.23 }
+    ports:
+      - "8283:8283"
+
+  tmsrv4:
+    <<: *tmsrv
+    command: ["-channel", "4"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.24 }
+    ports:
+      - "8284:8284"
 
   # Painel web da equipe, publicado só em 127.0.0.1 (ADMIN_LISTEN). Senha:
   # ADMIN_PASSWORD_HASH no .env, ou a gerada em .admin-state/.admin-password.
   # A porta pública (PUBLIC_PORT, padrão 80, sem login) serve ao cliente do
-  # jogo o servNN.htm (online por canal, URL do serverlist.bin) e as marcas
-  # de guilda.
+  # jogo o servNN.htm (online por canal, URL do serverlist.bin), o
+  # serverlist.bin (gerado do tmsrv.yaml) e as marcas de guilda.
   admin:
     build: { context: ., args: { CMD: admin } }
     image: wyd-admin
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     restart: unless-stopped
-    command: ["-listen", "172.30.87.13:8080", "-password-file", ".admin-state/.admin-password", "-public-listen", "172.30.87.13:80"]
+    command: ["-listen", "172.30.87.13:8080", "-password-file", ".admin-state/.admin-password", "-public-listen", "172.30.87.13:80", "-config", "tmsrv.yaml"]
     networks:
       wyd: { ipv4_address: 172.30.87.13 }
     ports:
@@ -105,6 +142,7 @@ services:
       - ./data:/app/data
       - ./guildmarks:/app/guildmarks
       - ./.admin-state:/app/.admin-state
+      - ./tmsrv.yaml:/app/tmsrv.yaml:ro
     depends_on:
       postgres: { condition: service_healthy }
 

@@ -243,13 +243,6 @@ func (s *Store) reserveNameOnce(ctx context.Context, accountID int64, name strin
 	return inserted, owner, err
 }
 
-// ClearTempKey removes the legacy change-server key without rewriting the
-// rest of the account (another channel may hold it online).
-func (s *Store) ClearTempKey(ctx context.Context, accountID int64) error {
-	_, err := s.pool.Exec(ctx, `UPDATE accounts SET data = data - 'TempKey', updated_at = now() WHERE id = $1`, accountID)
-	return err
-}
-
 // SetNumericPassHash stores the numeric second password (0xFDE).
 func (s *Store) SetNumericPassHash(ctx context.Context, accountID int64, hash string) error {
 	_, err := s.pool.Exec(ctx, `UPDATE accounts SET numeric_pass_hash = $2, updated_at = now() WHERE id = $1`, accountID, hash)

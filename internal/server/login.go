@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"errors"
-	"strconv"
+	"fmt"
 	"strings"
 	"time"
 
@@ -51,17 +51,17 @@ func (s *Server) handleAccountLogin(ctx context.Context, ch *channel, pkt protoc
 		}
 	}
 
-	// Legacy change-server key: "server enc0..enc7 slot" put in TempKey.
-	changeServer := false
-	if tk, unk := wire.CString(a.TempKey[:]), wire.CString(p.Unknow[:]); tk != "" && unk != "" {
-		if err := s.st.ClearTempKey(ctx, rec.ID); err != nil {
-			log.Error("clear temp key", "err", err)
+	// Channel change (0x814 -> 0x52A): the client reconnects to the new
+	// channel and sends "*N token" in Unknow with an empty password.
+	changeSlot := -1
+	if unk := wire.CString(p.Unknow[:]); strings.HasPrefix(unk, "*") {
+		slot, ok := s.sess.consumeToken(login, changeTokenOf(unk), ch.idx)
+		if !ok {
+			log.Warn("channel change token rejected")
+			ch.signal(client, wire.OpWrongPassword)
+			return
 		}
-		if !strings.HasPrefix(unk, tk) {
-			log.Warn("change-server key mismatch")
-			return // C++ sends nothing here either
-		}
-		changeServer = true
+		changeSlot = slot
 	}
 
 	master := false
@@ -81,17 +81,16 @@ func (s *Server) handleAccountLogin(ctx context.Context, ch *channel, pkt protoc
 		return
 	}
 
-	if !changeServer && !master {
-		ok := s.sess.consumeToken(login, pw)
-		if !ok {
-			ok, err = auth.Verify(rec.PasswordHash, pw)
+	if !master {
+		if changeSlot < 0 {
+			ok, err := auth.Verify(rec.PasswordHash, pw)
 			if err != nil {
 				log.Error("password hash", "err", err)
 			}
-		}
-		if !ok {
-			ch.signal(client, wire.OpWrongPassword)
-			return
+			if !ok {
+				ch.signal(client, wire.OpWrongPassword)
+				return
+			}
 		}
 		// The C++ kept these states as a password prefix, so a status
 		// account could never pass the comparison above.
@@ -112,7 +111,16 @@ func (s *Server) handleAccountLogin(ctx context.Context, ch *channel, pkt protoc
 	if cur := s.sess.get(key); cur != nil && cur.username == login {
 		return // C++: idxName == idx, already logged in on this client
 	}
-	if other, ok := s.sess.claim(sess); !ok {
+	other, ok := s.sess.claim(sess)
+	if !ok && changeSlot >= 0 {
+		// The old channel's save-and-quit may still be in flight: it was
+		// sent before the client was told to reconnect, but on another link.
+		for deadline := time.Now().Add(changeWait); !ok && time.Now().Before(deadline); {
+			time.Sleep(20 * time.Millisecond)
+			other, ok = s.sess.claim(sess)
+		}
+	}
+	if !ok {
 		if other == nil || p.Unknow84 == 0 { // nil: a delivery is writing it right now
 
 			ch.signal(client, wire.OpAlreadyPlaying)
@@ -158,21 +166,30 @@ func (s *Server) handleAccountLogin(ctx context.Context, ch *channel, pkt protoc
 	wire.PutCString(reply.UserName[:], login)
 	ch.send(&reply)
 	ch.sendAdditionalInfo(client, sess)
-	log.Info("login", "master", master)
+	log.Info("login", "master", master, "channel_change", changeSlot >= 0)
 
-	if changeServer {
-		// Unknow = "server enc0 .. enc7 slot"
-		f := strings.Fields(wire.CString(p.Unknow[:]))
-		if len(f) < 10 {
+	if changeSlot >= 0 {
+		if a.Mob[changeSlot].Player.Name[0] == 0 {
 			return
 		}
-		slot, err := strconv.Atoi(f[9])
-		if err != nil || slot < 0 || slot > 3 || a.Mob[slot].Player.Name[0] == 0 {
-			return
-		}
-		sess.slot = slot
-		ch.sendCharacterLogin(client, sess, true)
+		// Straight into the world, where the old channel saved the
+		// character (no character list, no numeric password).
+		sess.slot = changeSlot
+		ch.sendCharacterLogin(client, sess, true, a.Position)
 	}
+}
+
+// changeWait bounds how long a channel-change login waits for the old
+// channel's save-and-quit.
+const changeWait = 5 * time.Second
+
+// changeTokenOf returns the token of a "*N token" channel-change key.
+func changeTokenOf(unk string) string {
+	f := strings.Fields(unk)
+	if len(f) != 2 {
+		return ""
+	}
+	return f[1]
 }
 
 // banActive reports whether a timed ban is still running.
@@ -223,7 +240,7 @@ func (s *Server) handleCharacterLogin(_ context.Context, ch *channel, pkt protoc
 		return
 	}
 	sess.slot = int(p.CharIndex)
-	ch.sendCharacterLogin(pkt.Header.ClientID, sess, false)
+	ch.sendCharacterLogin(pkt.Header.ClientID, sess, false, wire.Position{})
 }
 
 // handleNoNeedSave is _MSG_DBNoNeedSave (0x805): logout without saving.
@@ -234,26 +251,47 @@ func (s *Server) handleNoNeedSave(_ context.Context, ch *channel, pkt protocol.P
 	}
 }
 
-// handleServerChange is 0x814. The C++ answered 0x52A carrying the plain
-// password so TMSRV could replay it as 0x803 (and noted the feature never
-// worked). Passwords are hashed now, so 0x52A carries a one-time token that
-// 0x803 accepts in place of the password.
+// handleServerChange is 0x814: a player asks to move to channel
+// NewServerID. The C++ answered 0x52A carrying the plain password so TMSRV
+// could replay it (and noted the feature never worked). Here 0x52A carries,
+// in Unknow, the key "*N token" the client sends back from the new channel
+// in place of the password; the token is single-use, short-lived and only
+// valid on channel N. An empty Unknow means the change was refused.
 func (s *Server) handleServerChange(_ context.Context, ch *channel, pkt protocol.Packet) {
 	var p wire.ServerChange
 	if !decode(ch, pkt, &p) {
 		return
 	}
 	client := pkt.Header.ClientID
-	if client == 0 || client >= MaxClients || p.NewServerID <= 0 || p.NewServerID > MaxChannels {
+	if client == 0 || client >= MaxClients {
 		return
 	}
 	sess := s.sess.get(keyOf(ch, pkt))
 	if sess == nil {
 		return
 	}
-	tok := s.sess.issueToken(sess.username, s.cfg.ChangeServerTokenTTL)
+	sess.mu.Lock()
+	slot := sess.slot
+	sess.mu.Unlock()
+
 	reply := wire.AccountLogin{Header: wire.NewHeader(wire.OpReLoginForChange, client)}
 	wire.PutCString(reply.Login[:], sess.username)
-	wire.PutCString(reply.Password[:], tok)
+	n := int(p.NewServerID)
+	target := n - 1
+	log := ch.log.With("client", client, "account", sess.username, "to", n)
+	switch {
+	case n < 1 || n > len(s.cfg.ChannelIPs):
+		log.Warn("channel change refused: no such channel")
+	case target == ch.idx:
+		log.Info("channel change refused: already there")
+	case s.channel(target) == nil:
+		log.Info("channel change refused: channel offline")
+	case slot < 0 || slot > 3:
+		log.Warn("channel change refused: not playing")
+	default:
+		tok := s.sess.issueToken(sess.username, target, slot, s.cfg.ChangeServerTokenTTL)
+		wire.PutCString(reply.Unknow[:], fmt.Sprintf("*%d %s", n, tok))
+		log.Info("channel change")
+	}
 	ch.send(&reply)
 }

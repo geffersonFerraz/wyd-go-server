@@ -31,8 +31,12 @@ type session struct {
 	master bool // logged in with the master password (C++ "IsBanned")
 }
 
+// changeToken lets an account log into another channel without its
+// password, straight into the world (0x814 / 0x52A).
 type changeToken struct {
 	token   string
+	channel int // index of the channel it is valid on
+	slot    int // character to enter the world with
 	expires time.Time
 }
 
@@ -148,30 +152,32 @@ func (m *sessions) count(ch int) int {
 	return n
 }
 
-// issueToken creates the one-time password sent in 0x52A. It fits the
-// 12-byte p20D.Password field (11 chars + NUL).
-func (m *sessions) issueToken(username string, ttl time.Duration) string {
-	var b [7]byte
+// issueToken creates the single-use key of a channel change to channel
+// (index) with character slot, replacing any pending one of the account.
+func (m *sessions) issueToken(username string, channel, slot int, ttl time.Duration) string {
+	var b [20]byte
 	_, _ = rand.Read(b[:])
-	tok := "~" + strings.ToLower(base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(b[:]))[:10]
+	tok := strings.ToLower(base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(b[:]))
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.tokens[username] = changeToken{token: tok, expires: time.Now().Add(ttl)}
+	m.tokens[username] = changeToken{token: tok, channel: channel, slot: slot, expires: time.Now().Add(ttl)}
 	return tok
 }
 
-// consumeToken reports whether pw is the account's pending token, and
-// removes it either way once presented.
-func (m *sessions) consumeToken(username, pw string) bool {
+// consumeToken checks tok against the account's pending channel change
+// arriving on channel (index) and returns its slot. A presented token is
+// removed whether or not it matched, so it cannot be guessed at.
+func (m *sessions) consumeToken(username, tok string, channel int) (slot int, ok bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	t, ok := m.tokens[username]
-	if !ok {
-		return false
-	}
-	if subtle.ConstantTimeCompare([]byte(t.token), []byte(pw)) != 1 {
-		return false
+	t, found := m.tokens[username]
+	if !found {
+		return -1, false
 	}
 	delete(m.tokens, username)
-	return time.Now().Before(t.expires)
+	if tok == "" || subtle.ConstantTimeCompare([]byte(t.token), []byte(tok)) != 1 ||
+		t.channel != channel || !time.Now().Before(t.expires) {
+		return -1, false
+	}
+	return t.slot, true
 }

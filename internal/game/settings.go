@@ -6,25 +6,31 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net"
 	"os"
 	"reflect"
 	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"dbsrv/internal/cluster"
 )
 
 // Settings is tmsrv.yaml, the only source of the Go server's options: the
-// network addresses (formerly serverip.txt / dataserver.txt), the channel
-// and the gameplay values that used to be fixed in code or in the C++
-// gameconfig.txt.
+// network addresses (formerly serverip.txt / dataserver.txt), the channels
+// (formerly DBSRV's serverlist.txt; also the source of the client's
+// serverlist.bin) and the gameplay values that used to be fixed in code or
+// in the C++ gameconfig.txt. One file describes every channel; each TMSRV
+// picks its own with -channel.
 //
 // Every key must be present in the file: nothing silently falls back to a
 // value in the code (LoadSettings names the missing keys).
 type Settings struct {
-	Network NetworkSettings `yaml:"network"`
-	Channel int             `yaml:"channel"`
+	Network    NetworkSettings    `yaml:"network"`
+	ServerList cluster.ServerList `yaml:"serverlist"`
+	Channels   []cluster.Channel  `yaml:"channels"`
+	// ChangeChannel: in-game channel change (client "srv507").
+	ChangeChannel ChangeChannelSettings `yaml:"change_channel"`
 	// CacheDir: per-account files shared with the C++ server (account
 	// locks, daily reward); "" = <TMSRV folder>/Cache.
 	CacheDir   string `yaml:"cache_dir"`
@@ -38,15 +44,17 @@ type Settings struct {
 	MobAI        MobAISettings   `yaml:"mob_ai"`
 }
 
-// NetworkSettings is where the TMSRV listens and where DBSRV is.
+// NetworkSettings is where DBSRV is. Where each TMSRV listens comes from
+// its entry in channels.
 type NetworkSettings struct {
-	// ListenIP / ListenPort: the address the game client connects to. The
-	// IP is also the source address of the DBSRV link (DBSRV tells the
-	// channels apart by it); 0.0.0.0 listens on every interface.
-	ListenIP   string `yaml:"listen_ip"`
-	ListenPort int    `yaml:"listen_port"`
-	DBSRVIP    string `yaml:"dbsrv_ip"`
-	DBSRVPort  int    `yaml:"dbsrv_port"`
+	DBSRVIP   string `yaml:"dbsrv_ip"`
+	DBSRVPort int    `yaml:"dbsrv_port"`
+}
+
+// ChangeChannelSettings tunes the in-game channel change.
+type ChangeChannelSettings struct {
+	// CooldownSeconds: minimum time between two requests of a player.
+	CooldownSeconds int `yaml:"cooldown_seconds"`
 }
 
 // LoginSettings limits logins.
@@ -92,13 +100,16 @@ type MobAISettings struct {
 // values a test Config leaves at zero.
 func CppSettings() Settings {
 	return Settings{
-		Network:      NetworkSettings{ListenIP: "127.0.0.1", ListenPort: 8281, DBSRVIP: "127.0.0.1", DBSRVPort: 7514},
-		Channel:      1,
-		NewbieZone:   35,
-		StatSapphire: 30,
-		Login:        LoginSettings{MaxAccountsPerComputer: 3},
-		Missions:     MissionSettings{OfferEverySeconds: 1152, TimeToCompleteSeconds: 1152},
-		Store:        StoreSettings{HonorEverySeconds: 600},
+		Network: NetworkSettings{DBSRVIP: "127.0.0.1", DBSRVPort: 7514},
+		ServerList: cluster.ServerList{Group: 1, PublicIP: "127.0.0.1",
+			StatusURL: "http://127.0.0.1/serv00.htm"},
+		Channels:      []cluster.Channel{{Number: 1, IP: "127.0.0.1", Port: 8281}},
+		ChangeChannel: ChangeChannelSettings{CooldownSeconds: 10},
+		NewbieZone:    35,
+		StatSapphire:  30,
+		Login:         LoginSettings{MaxAccountsPerComputer: 3},
+		Missions:      MissionSettings{OfferEverySeconds: 1152, TimeToCompleteSeconds: 1152},
+		Store:         StoreSettings{HonorEverySeconds: 600},
 		MobAI: MobAISettings{
 			IdleThinkSeconds:   3,
 			BattleThinkSeconds: 2,
@@ -158,19 +169,18 @@ func missingKeys(t reflect.Type, tree map[string]any, prefix string) []string {
 
 func (s *Settings) validate() error {
 	n := &s.Network
-	if net.ParseIP(n.ListenIP) == nil {
-		return fmt.Errorf("network.listen_ip must be an IP address, got %q", n.ListenIP)
-	}
 	if n.DBSRVIP == "" {
 		return errors.New("network.dbsrv_ip is empty")
 	}
-	for name, p := range map[string]int{"network.listen_port": n.ListenPort, "network.dbsrv_port": n.DBSRVPort} {
-		if p < 1 || p > 65535 {
-			return fmt.Errorf("%s must be 1..65535, got %d", name, p)
-		}
+	if n.DBSRVPort < 1 || n.DBSRVPort > 65535 {
+		return fmt.Errorf("network.dbsrv_port must be 1..65535, got %d", n.DBSRVPort)
 	}
-	if s.Channel < 1 || s.Channel > 10 {
-		return fmt.Errorf("channel must be 1..10, got %d", s.Channel)
+	cl := s.Cluster()
+	if err := cl.Validate(); err != nil {
+		return err
+	}
+	if c := s.ChangeChannel.CooldownSeconds; c < 0 || c > 3600 {
+		return fmt.Errorf("change_channel.cooldown_seconds must be 0..3600, got %d", c)
 	}
 	if s.NewbieZone < 0 {
 		return fmt.Errorf("newbie_zone must be >= 0, got %d", s.NewbieZone)
@@ -197,6 +207,11 @@ func (s *Settings) validate() error {
 		return fmt.Errorf("mob_ai.min_attack_chance must be 0..100, got %d", ai.MinAttackChance)
 	}
 	return nil
+}
+
+// Cluster is the channel layout (shared with DBSRV and the admin panel).
+func (s *Settings) Cluster() cluster.Config {
+	return cluster.Config{ServerList: s.ServerList, Channels: s.Channels}
 }
 
 // ticks converts seconds to 500 ms server ticks.

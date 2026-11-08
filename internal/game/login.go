@@ -521,6 +521,8 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 		}
 	case wire.OpCNFCharacterLogin: // 0x417
 		g.enterWorld(u, pkt)
+	case wire.OpReLoginForChange: // 0x52A: channel change key
+		g.channelChangeReply(u, pkt)
 	case wire.OpSavingQuit: // 0x40A
 		var p wire.SavingQuit
 		_ = wire.Unmarshal(pkt.Raw, &p)

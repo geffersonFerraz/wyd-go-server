@@ -218,6 +218,15 @@ type SavingQuit struct {
 	Mode        int32
 }
 
+// CNFRemoveServer mirrors the client's MSG_CNFRemoveServer (80 bytes),
+// 0x52A to the client: reconnect to channel N of TID "*N key" and log in
+// with the key.
+type CNFRemoveServer struct {
+	Header      Header
+	AccountName [16]byte
+	TID         [52]byte
+}
+
 // ServerChange mirrors MSG_DBServerChange (20 bytes), 0x814.
 type ServerChange struct {
 	Header      Header

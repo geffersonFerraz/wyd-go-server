@@ -1,12 +1,17 @@
 // Command tmsrv is the Go port of the C++ TMSRV (game server).
 //
-//	tmsrv -dir data/tmsrv -dsn postgres://...
+//	tmsrv -dir data/tmsrv -dsn postgres://... -channel 2
+//
+// tmsrv.yaml lists every channel; -channel (or TMSRV_CHANNEL) says which one
+// this process is: it listens on that channel's ip:port and connects to
+// DBSRV from that IP (DBSRV identifies the channel by it). With a single
+// channel in the file, -channel may be left out.
 //
 // Items, skills, drops and teleports come from Postgres (schema gamedata,
 // filled once by cmd/gamedata-import; -dsn or DATABASE_URL). From -dir it
 // still reads serverip.txt, dataserver.txt, guild_zone.txt, Language.txt,
 // NPCGener.txt (+ npc/) and the height/attribute maps. Its own options come
-// from -config (tmsrv.yaml: channel, newbie zone, mob AI); the C++
+// from -config (tmsrv.yaml: channels, newbie zone, mob AI); the C++
 // gameconfig.txt is not read.
 package main
 
@@ -18,6 +23,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -30,6 +36,7 @@ func main() {
 	listen := flag.String("listen", "", "override network.listen_ip/listen_port of the settings (host:port)")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres with the gamedata tables (or DATABASE_URL)")
 	config := flag.String("config", "tmsrv.yaml", "server settings (YAML, required: every option comes from it)")
+	channel := flag.Int("channel", envInt("TMSRV_CHANNEL"), "channel of this TMSRV in the settings (or TMSRV_CHANNEL; 0 = the only one)")
 	debug := flag.Bool("debug", false, "debug logging")
 	flag.Parse()
 
@@ -38,13 +45,18 @@ func main() {
 		level = slog.LevelDebug
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
-	if err := run(log, *dir, *listen, *config, *dsn); err != nil {
+	if err := run(log, *dir, *listen, *config, *dsn, *channel); err != nil {
 		log.Error("fatal", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(log *slog.Logger, dir, listen, configPath, dsn string) error {
+func envInt(k string) int {
+	n, _ := strconv.Atoi(os.Getenv(k))
+	return n
+}
+
+func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) error {
 	cfg, err := game.LoadConfig(dir)
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
@@ -53,7 +65,9 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string) error {
 	if err != nil {
 		return fmt.Errorf("settings: %w", err)
 	}
-	cfg.ApplySettings(settings)
+	if err := cfg.ApplySettings(settings, channel); err != nil {
+		return fmt.Errorf("settings: %w", err)
+	}
 	log.Info("settings", "path", configPath, "listen", net.JoinHostPort(cfg.ListenIP, fmt.Sprint(cfg.ListenPort)),
 		"dbsrv", net.JoinHostPort(cfg.DBIP, fmt.Sprint(cfg.DBPort)), "channel", cfg.Channel,
 		"newbie_zone", cfg.NewbieZone, "mob_ai", fmt.Sprintf("%+v", cfg.MobAI))

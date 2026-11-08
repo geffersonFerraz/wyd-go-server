@@ -411,27 +411,89 @@ func TestBanAndStatus(t *testing.T) {
 	tm.loginOK(1, "TESTER", "secret")
 }
 
-func TestServerChangeToken(t *testing.T) {
-	h := newHarness(t)
-	ch1, ch2 := h.connect(), h.connect()
-	ch1.loginOK(11, "TESTER", "secret")
+// changeLogin is the client's login on the new channel: the 0x52A key in
+// Unknow, no password, kick flag set (TMFieldScene::OnPacketCNFRemoveServer).
+func (tm *tmsrv) changeLogin(client uint16, user, key string) {
+	p := wire.AccountLogin{Header: wire.NewHeader(wire.OpAccountLogin, client), Unknow84: 1}
+	wire.PutCString(p.Login[:], user)
+	wire.PutCString(p.Unknow[:], key)
+	tm.send(&p)
+}
 
-	ch1.send(&wire.ServerChange{Header: wire.NewHeader(wire.OpServerChange, 11), NewServerID: 2})
-	var relogin wire.AccountLogin
-	ch1.expect(wire.OpReLoginForChange, &relogin)
-	tok := wire.CString(relogin.Password[:])
-	if tok == "" || tok == "secret" {
-		t.Fatalf("0x52A must carry a token, not the password: %q", tok)
+func (tm *tmsrv) askChange(client uint16, to int32) string {
+	tm.t.Helper()
+	tm.send(&wire.ServerChange{Header: wire.NewHeader(wire.OpServerChange, client), NewServerID: to})
+	var r wire.AccountLogin
+	tm.expect(wire.OpReLoginForChange, &r)
+	if wire.CString(r.Login[:]) != "TESTER" || wire.CString(r.Password[:]) != "" {
+		tm.t.Fatalf("0x52A must carry the account and no password: %+v", r)
+	}
+	return wire.CString(r.Unknow[:])
+}
+
+func TestChannelChange(t *testing.T) {
+	h := newHarness(t)
+	ch1, ch2 := h.connect(), h.connect() // channels 1 and 2 (indexes 0, 1)
+	ch1.loginOK(11, "TESTER", "secret")
+	if key := ch1.askChange(11, 2); key != "" {
+		t.Fatalf("change from the character list accepted: %q", key)
+	}
+	ch1.send(&wire.CharacterLogin{Header: wire.NewHeader(wire.OpCharacterLogin, 11), CharIndex: 0})
+	var extra wire.CNFCharacterLoginExtra
+	ch1.expect(wire.OpCNFCharacterLoginExtra, &extra)
+	ch1.expect(wire.OpCNFCharacterLogin, nil)
+
+	for _, to := range []int32{1, 3, 0, -1} { // own channel, not configured, invalid
+		if key := ch1.askChange(11, to); key != "" {
+			t.Errorf("change to %d accepted: %q", to, key)
+		}
+	}
+	key := ch1.askChange(11, 2)
+	if len(key) < 30 || key[:3] != "*2 " {
+		t.Fatalf("key %q, want \"*2 <token>\"", key)
 	}
 
-	ch1.send(&wire.Signal{Header: wire.NewHeader(wire.OpNoNeedSave, 11)})
-	waitFor(t, func() bool { return h.srv.sess.byName("TESTER") == nil })
+	// The client reconnects before the old channel's save-and-quit lands:
+	// the login waits for it instead of failing as "already playing".
+	ch2.changeLogin(21, "TESTER", key)
+	time.Sleep(100 * time.Millisecond)
+	extra.Mob.Player.Gold = 4321
+	p := wire.SaveCharacter{Header: wire.NewHeader(wire.OpSaveMobQuit, 11), Mob: extra.Mob, Position: wire.Position{X: 2150, Y: 2077}}
+	wire.PutCString(p.User[:], "TESTER")
+	ch1.send(&p)
+	ch1.expect(wire.OpSaveQuitDone, nil)
 
-	ch2.loginOK(12, "TESTER", tok) // token accepted once
-	ch2.send(&wire.Signal{Header: wire.NewHeader(wire.OpNoNeedSave, 12)})
+	ch2.expect(wire.OpCNFAccountLogin, nil)
+	ch2.expect(wire.OpAdditionalAccountInfo, nil)
+	var extra2 wire.CNFCharacterLoginExtra
+	ch2.expect(wire.OpCNFCharacterLoginExtra, &extra2)
+	var cl wire.CNFCharacterLogin
+	ch2.expect(wire.OpCNFCharacterLogin, &cl)
+	if cl.WorldPos != (wire.Position{X: 2150, Y: 2077}) || cl.SlotIndex != 0 || cl.Mob.Gold != 4321 {
+		t.Errorf("entered with pos %+v slot %d gold %d", cl.WorldPos, cl.SlotIndex, cl.Mob.Gold)
+	}
+	if on, _ := h.st.Online(context.Background(), "TESTER"); on == nil || on.Channel != 1 {
+		t.Errorf("online row %+v, want channel index 1", on)
+	}
+
+	// The key works once.
+	ch2.send(&wire.Signal{Header: wire.NewHeader(wire.OpNoNeedSave, 21)})
 	waitFor(t, func() bool { return h.srv.sess.byName("TESTER") == nil })
-	ch2.login(12, "TESTER", tok, false)
-	ch2.expect(wire.OpWrongPassword, nil) // and only once
+	ch2.changeLogin(21, "TESTER", key)
+	ch2.expect(wire.OpWrongPassword, nil)
+
+	// A key for channel 2 is refused on channel 1, and is then gone.
+	ch2.loginOK(22, "TESTER", "secret")
+	ch2.send(&wire.CharacterLogin{Header: wire.NewHeader(wire.OpCharacterLogin, 22), CharIndex: 0})
+	ch2.expect(wire.OpCNFCharacterLoginExtra, nil)
+	ch2.expect(wire.OpCNFCharacterLogin, nil)
+	key = ch2.askChange(22, 1)
+	ch2.send(&wire.Signal{Header: wire.NewHeader(wire.OpNoNeedSave, 22)})
+	waitFor(t, func() bool { return h.srv.sess.byName("TESTER") == nil })
+	ch2.changeLogin(23, "TESTER", "*2 "+key[3:])
+	ch2.expect(wire.OpWrongPassword, nil)
+	ch1.changeLogin(12, "TESTER", key)
+	ch1.expect(wire.OpWrongPassword, nil)
 }
 
 func waitFor(t *testing.T, cond func() bool) {

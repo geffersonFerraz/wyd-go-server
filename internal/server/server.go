@@ -241,6 +241,9 @@ func (ch *channel) signal(client uint16, op uint16) {
 }
 
 // Online reports how many accounts are logged in on each channel.
+// ChannelConnected reports whether channel i (index) has its TMSRV linked.
+func (s *Server) ChannelConnected(i int) bool { return s.channel(i) != nil }
+
 func (s *Server) Online() []int {
 	out := make([]int, len(s.cfg.ChannelIPs))
 	for i := range out {

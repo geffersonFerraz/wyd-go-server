@@ -50,6 +50,7 @@ func TestSizes(t *testing.T) {
 		{SaveCharacter{}, 4048},
 		{SavingQuit{}, 32},
 		{ServerChange{}, 20},
+		{CNFRemoveServer{}, 80},
 		{NumericPassword{}, 32},
 		{CreateSubCele{}, 52},
 		{GuildZoneReport{}, 32},

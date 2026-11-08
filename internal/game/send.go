@@ -198,6 +198,12 @@ func (g *Game) sendScore(id int) {
 		p.Score.Merchant = p.Score.Merchant&^0x0F | 1
 	}
 	g.multicast2(int(m.target.X), int(m.target.Y), &p, 0)
+	// The C++ SendScore ended with SendAffect: the client counts the buff
+	// timers down from the 0x3B9 list, so without it an expired buff stays
+	// on screen with a negative time.
+	if u := g.player(id); u != nil {
+		g.sendAffect(u)
+	}
 }
 
 // sendEtc is SendEtc: gold, exp, learned skills, points.

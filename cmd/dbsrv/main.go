@@ -1,7 +1,7 @@
 // Command dbsrv is the Go + PostgreSQL replacement for the C++ DBSRV.
 //
 //	dbsrv -dsn postgres://dbsrv:dbsrv@localhost:5432/dbsrv \
-//	      -serverlist data/dbsrv/serverlist.txt \
+//	      -config tmsrv.yaml \
 //	      -npc data/dbsrv/npc
 //
 // Environment: DATABASE_URL (instead of -dsn), DBSRV_MASTER_PASSWORD_HASH
@@ -21,6 +21,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"dbsrv/internal/cluster"
 	"dbsrv/internal/server"
 	"dbsrv/internal/store"
 	"dbsrv/internal/wire"
@@ -29,8 +30,7 @@ import (
 func main() {
 	listen := flag.String("listen", ":7514", "address TMSRV connects to")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres connection string (or DATABASE_URL)")
-	serverList := flag.String("serverlist", "data/dbsrv/serverlist.txt", "serverlist.txt with the channel IPs")
-	group := flag.Int("group", 0, "server group (first column of serverlist.txt)")
+	config := flag.String("config", "tmsrv.yaml", "TMSRV settings: their channels section lists the channel IPs (formerly serverlist.txt)")
 	npcDir := flag.String("npc", "data/dbsrv/npc", "folder with the TK, FM, BM, HT class templates")
 	tz := flag.String("tz", "America/Sao_Paulo", "game time zone")
 	statusFile := flag.String("status-file", "", "write online counts here every 30s (C++: C:\\xampp\\htdocs\\servNN.htm)")
@@ -42,13 +42,13 @@ func main() {
 		level = slog.LevelDebug
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
-	if err := run(log, *listen, *dsn, *serverList, *group, *npcDir, *tz, *statusFile); err != nil {
+	if err := run(log, *listen, *dsn, *config, *npcDir, *tz, *statusFile); err != nil {
 		log.Error("fatal", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(log *slog.Logger, listen, dsn, serverList string, group int, npcDir, tz, statusFile string) error {
+func run(log *slog.Logger, listen, dsn, configPath, npcDir, tz, statusFile string) error {
 	if dsn == "" {
 		return fmt.Errorf("no -dsn or DATABASE_URL")
 	}
@@ -56,10 +56,11 @@ func run(log *slog.Logger, listen, dsn, serverList string, group int, npcDir, tz
 	if err != nil {
 		return err
 	}
-	channels, err := server.ReadServerList(serverList, group)
+	layout, err := cluster.Load(configPath)
 	if err != nil {
 		return err
 	}
+	channels := layout.ChannelIPs()
 	base, err := LoadBaseMobs(npcDir)
 	if err != nil {
 		return err

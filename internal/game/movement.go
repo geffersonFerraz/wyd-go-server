@@ -89,20 +89,28 @@ func (g *Game) teleportar(id, x, y int) {
 // areaDenied applies RequestAction's map-attribute rules to a destination
 // and recalls the player when the area is off limits.
 func (g *Game) areaDenied(u *User, x, y int) bool {
-	pl := &g.mobs[u.id].info.Player
+	msg := g.areaRule(&g.mobs[u.id].info.Player, x, y)
+	if msg == 0 {
+		return false
+	}
+	g.clientMessage(u, "%s", g.lang(msg))
+	g.doRecall(u.id)
+	return true
+}
+
+// areaRule returns the message of the map-attribute rule that keeps pl out
+// of (x, y), or 0 when it may be there: the newbie zone and, on this
+// channel, the guild area of a city its guild does not hold.
+func (g *Game) areaRule(pl *wire.Mob, x, y int) int {
 	attr := g.data.attribute(x, y)
 	level := int(pl.Status.Level)
 	if attr&attrNewbie != 0 && ((level > g.cfg.NewbieZone && level < 1000) || pl.Equip[0].Effect[1].Value != evoMortal) {
-		g.clientMessage(u, "%s", g.lang(nnNewbieZone))
-		g.doRecall(u.id)
-		return true
+		return nnNewbieZone
 	}
 	if attr&attrGuild != 0 && level < 400 {
 		if v := g.data.village(x, y); v >= 0 && v < 5 && int32(pl.GuildIndex) != g.chargedGuilds[g.cfg.Channel-1][v] {
-			g.clientMessage(u, "%s", g.lang(nnOnlyGuildMembers))
-			g.doRecall(u.id)
-			return true
+			return nnOnlyGuildMembers
 		}
 	}
-	return false
+	return 0
 }
