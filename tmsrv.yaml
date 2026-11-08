@@ -11,15 +11,15 @@
 
 # Endereços de rede.
 network:
-  # IP e porta em que os jogadores conectam. 127.0.0.1 só aceita conexões
-  # desta máquina; para jogadores de fora, use o IP da máquina na rede (ou
-  # 0.0.0.0 para todas as interfaces). O mesmo IP é usado como origem da
-  # conexão com o DBSRV, que reconhece o canal por ele (serverlist.txt).
+  # IP e porta em que a TMSRV escuta. No docker-compose é o IP fixo do
+  # container tmsrv na rede wyd; os jogadores conectam na porta publicada no
+  # host. O mesmo IP é a origem da conexão com o DBSRV, que reconhece o canal
+  # por ele: tem de ser o IP do canal em data/dbsrv/serverlist.txt.
   # C++: serverip.txt.
-  listen_ip: 127.0.0.1
+  listen_ip: 172.30.87.12
   listen_port: 8281
-  # Onde está o DBSRV. C++: dataserver.txt.
-  dbsrv_ip: 127.0.0.1
+  # Onde está o DBSRV (IP do container dbsrv). C++: dataserver.txt.
+  dbsrv_ip: 172.30.87.11
   dbsrv_port: 7514
 
 # Canal deste servidor (1..10).

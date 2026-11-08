@@ -10,10 +10,12 @@ COPY internal ./internal
 RUN CGO_ENABLED=0 go build -trimpath -o /out/app ./cmd/${CMD}
 
 FROM alpine:3.22
-RUN apk add --no-cache tzdata ca-certificates
+RUN apk add --no-cache tzdata ca-certificates libcap
 ENV TZ=America/Sao_Paulo
 # Os programas usam caminhos relativos (data/..., tmsrv.yaml): a raiz do
 # repositório é montada em /app pelo docker-compose.
 WORKDIR /app
 COPY --from=build /out/app /usr/local/bin/app
+# Permite abrir portas < 1024 (admin -public-listen :80) sem rodar como root.
+RUN setcap cap_net_bind_service=+ep /usr/local/bin/app
 ENTRYPOINT ["/usr/local/bin/app"]
