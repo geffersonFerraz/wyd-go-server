@@ -1,6 +1,7 @@
 package game
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -258,6 +259,9 @@ func (g *Game) sendClientInfo(u *User) {
 	}
 	p := ClientInfo{Header: wire.NewHeader(opClientInfo, uint16(u.id)),
 		Cash: int32(u.account.Cash), Honra: int32(u.account.Honra)}
+	if slices.Contains(g.arena.registered, u.id) {
+		p.UsersRegister = 1
+	}
 	wire.PutCString(p.Password[:7], u.partyPass)
 	g.queue(u, &p)
 }

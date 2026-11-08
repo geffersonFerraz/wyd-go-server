@@ -531,3 +531,18 @@ level_items:
   - { evolution: 2, level: 1, class: 3, type: 0, item: 1659, effects: [[43, 6]] } # Botas Rake
   # GLOBAL PREMIO - Ovo do Intermediário
   - { evolution: 2, level: 99, class: 0, type: -1, item: 4642, effects: [] } # ?
+
+# Arena Real (registro com o Odin nos 5 primeiros minutos das horas abaixo,
+# luta a partir do minuto 5). Para mudar, edite e reinicie os canais.
+#   hours:             horas em que o registro abre, no horário do servidor.
+#   winner_items:      prêmio de cada membro da equipe vencedora.
+#   top_kill_items:    prêmio de quem mais matou (empate: ninguém recebe).
+#   participant_items: prêmio de quem matou ao menos um e não foi o top kill.
+#   amount:            quantidade do item; 0 = um item sem contador.
+arena:
+  hours: [11, 14, 16, 18, 20, 23]
+  winner_items: []
+  top_kill_items:
+    - {item: 3251, amount: 3}
+  participant_items:
+    - {item: 3251, amount: 0}

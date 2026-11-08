@@ -122,6 +122,12 @@ func (g *Game) createMobPacket(id int) wire.CreateMob {
 	if (pl.Status.Level >= 69 && evo == evoMortal) || evo >= evoArch {
 		p.Tab = m.tab
 	}
+	if tag, ok := g.arenaTag(id); ok {
+		p.GuildIndex, p.GuildMemberType = 0, 0
+		p.ItemRefine[15], p.AnctCode[15] = 0, 0
+		p.Tab = [26]byte{}
+		wire.PutGameString(p.Tab[:], tag)
+	}
 	// Arena of the guild war (2604x1708 - 2648x1744) hides guild and cape.
 	if m.target.X >= 2604 && m.target.Y >= 1708 && m.target.X <= 2648 && m.target.Y <= 1744 {
 		p.GuildIndex, p.GuildMemberType = 0, 0

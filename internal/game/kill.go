@@ -87,6 +87,9 @@ func (g *Game) mobKilled(target, killer int) {
 	if target <= 0 || target >= MaxMob || killer <= 0 || killer >= MaxMob || g.mobs[target].mode == 0 {
 		return
 	}
+	if g.arenaMobKilled(target, killer) {
+		return
+	}
 	dead := &g.mobs[target]
 	// A summon's kill counts for its owner (and trains a baby mount).
 	if owner := g.summonOwner(killer); owner != 0 && target >= MaxPlayer {

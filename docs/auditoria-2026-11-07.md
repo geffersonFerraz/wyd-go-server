@@ -275,14 +275,18 @@ Hoje o Go ignora esses pacotes (só registra "unhandled" com `-debug`).
 (0xAAF1), painel de guildas (0x766), essência (0x473), reconexão (0xAF5) e o
 eco 0x3776. O aviso de WPE (0x634) já tinha sido feito no B10.
 
-**Sem efeito hoje, de propósito:** 0x655/0x656 e 0x1495 só respondem a uma
-pergunta que o servidor faz ao cliente (anti-hack e reCaptcha), e o Go não
-pergunta.
+**Sem efeito hoje, de propósito:** 0x655/0x656 só respondem a uma pergunta
+que o servidor faz ao cliente (anti-hack), e o Go não pergunta. O 0x1495
+(reCaptcha) passou a valer em 08/11, na entrada das Lanhouse.
 
 Mestre Grifo (0xAD9, 0x632) feito em 08/11.
 
-**Ainda faltam:** desafio da cidade (0x28E, 0x3A0), declarar guerra (0xED7),
-Pesadelo (0x631) e Quiz (0x2C7).
+**Ainda faltam:** desafio da cidade (0x28E, 0x3A0), declarar guerra (0xED7) e
+Pesadelo (0x631).
+
+**Quiz (0x2C7): não será portado.** No C++ nada registra jogador no `CQuiz`:
+os tickets das Lanhouse, que o usavam, passaram para o reCaptcha. Sem jogador
+registrado, nenhuma pergunta é enviada, e o `Quiz.txt` não tem uso.
 
 Decisões que diferem do C++:
 
@@ -345,19 +349,27 @@ item volta ([useitem.go:319](../internal/game/useitem.go)).
 
 | Item | Região no C++ (`RequestUseItem.cpp`) |
 |---|---|
-| Pacotes de itens (volátil 210) | `PAC ITENS` — depende de `ReadPacItens` |
+| ~~Pacotes de itens (volátil 210)~~ | **Sem dados:** o `PacItem.txt` não existe e nenhum item do `ItemList.csv` tem volátil 210 |
 | Pergaminhos de Pesadelo (volátil 173) | `PESADELOS` — depende do sistema de Pesadelo |
 | ~~Roleta (5381)~~ | **Feito (08/11)** |
-| Masmorras Lanhouse (4111, 4112, 4113) | `LANHOUSE (MASMORRA N/M/A)` |
+| ~~Masmorras Lanhouse (4111, 4112, 4113)~~ | **Feito (08/11)** |
 | Recusa de Guerra (4031) | `RECUSA DE GUERRA` — depende das guerras |
-| Cartas de Duelo (3172, 1731, 3171) | `CARTA DE DUELO` — evento `DuelLetter` |
+| ~~Cartas de Duelo (3172, 1731, 3171)~~ | **Feito (08/11)** |
 
 As demais regiões ativas do C++ já existem no Go.
 
+Decisões que diferem do C++ nas Lanhouse:
+
+- O código do reCaptcha só vale com a janela aberta. No C++ ele ainda era
+  aceito depois dos 30 s.
+- Um segundo ticket com o reCaptcha aberto é recusado, sem gastar o item.
+- Fica na área sem tempo restante só quem tem nível de acesso de GM. O C++
+  isentava por nível 1000, a mesma regra retirada no [B3](#b3).
+
 ### 3.3 Eventos e sistemas inteiros
 
-- Eventos do `CEventManager`: **Quiz**, **Arena** (Odin, `/registerbattle`)
-  e **Carta de Duelo**. (A **Missão diária** foi portada nesta sessão.)
+- Eventos do `CEventManager`: todos resolvidos. **Missão diária**, **Carta de
+  Duelo** e **Arena** foram portadas; o **Quiz** não tem uso (ver 3.1).
 - Guerras: torre, castelo, RvR, Kefra (área, bônus, renascimento), Coliseu,
   Pesadelo (Nightmare), Água (`Water.cpp`, alimenta `/countwater`); semana
   de guerra (WeekMode / CastleState); `isWarTime` hoje é sempre falso.
@@ -368,12 +380,32 @@ As demais regiões ativas do C++ já existem no Go.
 - ~~Recompensas por nível (`LevelItem.txt`)~~ **Feito (08/11).**
 - Lojas "Honra" e de RvR, itens especiais de evento nas lojas de NPC.
 
+**Arena (08/11):** registro com o Odin ou `/registerbattle`, 4 equipes por
+poder, até 15 minutos, meta de 15 pontos mais 10 a cada 4 jogadores acima de
+12. Horários e prêmios ficam na seção `arena` do `tmsrv.yaml`, porque o
+`arenaconfig.xml` não existe; o C++ tinha os horários fixos no código. O
+`docker-compose` passou a definir `TZ` nos canais, senão os horários seriam
+UTC.
+
+- O cliente não trata os pacotes de placar 0x690/0x691, então eles não são
+  enviados. A pontuação aparece na etiqueta "Grupo X (kills)" sobre o jogador.
+- O prêmio do grupo vencedor do C++ (item 4132, quantidade 2) nunca era
+  entregue: a variável que o liberava jamais recebia valor. Por isso
+  `winner_items` começa vazio.
+- Diferenças do C++: empate no top kill não tira o prêmio de participante do
+  primeiro empatado; a guilda volta a aparecer no fim da luta, sem precisar
+  reconectar; morte causada por monstro não soma ponto (o C++ lia fora da
+  tabela de usuários); só quem está na luta acumula kills.
+- Prêmio com o inventário cheio se perde, como no C++, com aviso ao jogador e
+  registro no log.
+
 ### 3.4 Arquivos de dados do C++ que o Go não lê
 
-`ReadBlockedItem`, `ReadPacItens`,
+`ReadBlockedItem`,
 `ReadRanking`, `ReadBoss` (chefes:
-renascimento e fama), `ReadArenaConfig`, `ReadBanList` (banimento por
-IP/MAC), `ReadScheduled` (tarefas agendadas), `LoadQuiz`.
+renascimento e fama), `ReadBanList` (banimento por
+IP/MAC), `ReadScheduled` (tarefas agendadas). `ReadPacItens` e `LoadQuiz` não
+serão portados (ver 3.1 e 3.2).
 
 ### 3.5 Combate e detalhes pendentes (TODO no código)
 
@@ -479,3 +511,13 @@ Depois de `servidor restart`:
 6. **Rei**: mortal 300 sem capa, com Pedra da Imortalidade e Sephirot →
    vira Arch. Líder de guilda sem capa → pega a capa do outro reino e a
    guilda muda junto (membros online trocam de capa).
+7. **Lanhouse**: mortal usa o ticket 4111 em qualquer lugar, confere o
+   reCaptcha, entra e vê a contagem de 10 minutos; ao zerar, volta à cidade.
+   Testar também a segunda conta do mesmo computador na área.
+8. **Carta de Duelo**: líder do grupo no Altar de Thor (1046, 1690) usa a
+   carta; matar as salas e conferir a troca de sala, o contador de monstros e
+   as runas no chão. Sem o Símbolo de Coragem o grupo para na terceira sala.
+9. **Arena**: com 4 contas em computadores diferentes, registrar no Odin
+   (2122, 2149) nos 5 primeiros minutos de uma hora da seção `arena`. No
+   minuto 5 conferir equipes, grupo, etiqueta "Grupo X (kills)", respawn ao
+   morrer e o fim com prêmios.

@@ -93,6 +93,12 @@ type User struct {
 	lastDelete    time.Time   // Times.LastDeletedItem (logged when < 400 ms)
 	lastMoveItem  time.Time   // delayMoveItem (stack split, 700 ms)
 	questAccess   int         // QuestAccess: newbie quest entered (1..5)
+	questTime     int         // CheckQuestTime: seconds left in a Lanhouse
+	captchaCode   string      // passCaptcha: the digits being asked
+	captchaTime   int         // TimeCaptcha: seconds until the window closes
+	captchaTicket uint16      // QuestsCaptcha: the Lanhouse ticket being used
+	arenaTeam     int         // Arena.GroupIndex + 1; 0 = not fighting
+	arenaKills    int         // Arena.Kills
 	regenTurns    int         // CharLoginTime: RegenMob turns since login
 	lock          accountLock // User.Block
 	challengeTo   int         // Challenger.Index: the player invited to a duel
@@ -158,6 +164,8 @@ type Game struct {
 	saveCursor    int
 
 	genCount   []int // MobCount per generator
+	duel       duelLetter
+	arena      arenaState
 	minCounter int
 	npcCursor  int
 
@@ -354,6 +362,9 @@ func (g *Game) secTimer() {
 	if g.secCounter%2 == 0 {
 		g.storeTimer()
 		g.missionTimer()
+		g.lanhouseTimer()
+		g.duelLetterTimer()
+		g.arenaTimer()
 	}
 	for range MaxPlayer {
 		g.saveCursor++

@@ -322,6 +322,10 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 		return
 	}
 
+	if g.useLanhouseTicket(u, &p, src) || g.useDuelLetter(u, &p, src) {
+		return
+	}
+
 	if src.Index == itemRouletteBox && p.SrcType == wire.SlotInv && p.SrcSlot >= 0 && p.SrcSlot < 60 {
 		g.openRoulette(u, int(p.SrcSlot))
 		return

@@ -123,7 +123,7 @@ func (g *Game) playerCommand(u *User, cmd, value string, p *wire.Command) bool {
 		// it and answered "not connected" (a whisper to nobody).
 		g.sendPartyEvocation(u.id)
 	case "registerbattle":
-		g.clientMessage(u, "Evento associado com este NPC não encontrado") // the arena event is not ported
+		g.clientMessage(u, "%s", g.arenaRegister(u, time.Now()))
 	default:
 		return false
 	}

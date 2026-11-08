@@ -177,8 +177,7 @@ func (g *Game) requestMerchantNPC(u *User, pkt protocol.Packet) {
 		g.npcEvent(u, npc)
 		return
 	case level == 63:
-		// TODO(phase E): the Odin arena event (TOD_Arena registration).
-		g.clientMessage(u, "Evento associado com este NPC não encontrado")
+		g.sendSay(npc, "%s", g.arenaRegister(u, time.Now()))
 		return
 	}
 

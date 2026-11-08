@@ -85,6 +85,7 @@ type Config struct {
 	LevelItems  []LevelItem   // level_items of tmsrv.yaml
 	CashShop    []CashShopTab // cash_shop of tmsrv.yaml
 	HonorMarket []HonorItem   // honor_market of tmsrv.yaml
+	Arena       ArenaSettings // arena of tmsrv.yaml
 	ListenIP    string
 	ListenPort  int
 	DBIP        string
@@ -124,6 +125,7 @@ func (c *Config) ApplySettings(s Settings, channel int) error {
 	c.StatSapphire = s.StatSapphire
 	c.CashShop, c.HonorMarket = s.cashShopTabs(), s.honorMarketItems()
 	c.NoCPAreas, c.LevelItems = s.NoCPAreas, s.levelItems()
+	c.Arena = s.Arena
 	c.Login, c.Missions, c.Store = s.Login, s.Missions, s.Store
 	if s.CacheDir != "" {
 		c.CacheDir = s.CacheDir

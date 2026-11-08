@@ -56,6 +56,9 @@ func (g *Game) lang(i int) string { return g.data.Lang[i] }
 // area of a city its guild holds.
 // TODO(phase E): RvR area and quest-time recalls.
 func (g *Game) doRecall(id int) {
+	if id > 0 && id < MaxPlayer {
+		g.clearQuestTime(g.users[id])
+	}
 	m := &g.mobs[id]
 	pl := &m.info.Player
 	city := int(pl.Info>>6) & 3

@@ -14,6 +14,8 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	u.dropKills = nil
 	u.partyInvite = 0
 	u.pkMode = false
+	g.clearQuestTime(u)
+	u.captchaCode, u.captchaTime, u.captchaTicket = "", 0, 0
 	g.mobs[u.id].npc = npcState{} // no party carried over from a previous session
 	var p wire.CNFCharacterLogin
 	if wire.Unmarshal(pkt.Raw, &p) != nil {
@@ -500,6 +502,7 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 // charLogout is CharLogOut (0x215): back to the character list.
 func (g *Game) charLogout(u *User) {
 	g.cancelTrade(u)
+	g.arenaUnregister(u)
 	if u.status == userPlay {
 		g.removeParty(u.id)
 	}
@@ -572,6 +575,7 @@ func (g *Game) saveUser(u *User, arg2 uint32) {
 // A playing slot stays reserved (USER_SAVING4QUIT) until DBSRV confirms
 // the save with 0x40B.
 func (g *Game) closeUser(u *User) {
+	g.arenaUnregister(u)
 	if u.status == userPlay {
 		g.settleRouletteReward(u)
 		g.cancelTrade(u)

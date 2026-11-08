@@ -424,6 +424,15 @@ type RollItem struct {
 	Rare   [20]int16
 }
 
+// Recaptcha is MSG_pRecaptcha (5269), the same both ways.
+type Recaptcha struct {
+	Header Header
+	Parm   int32
+	Code   int32
+	Pass   [5]byte
+	_      [3]byte
+}
+
 // EssencePacket is MSG_ESSENCEPACKET (0x473).
 type EssencePacket struct {
 	Header Header

@@ -50,6 +50,39 @@ type Settings struct {
 	// NoCPAreas and LevelItems replace Data/NonCP.txt and Data/LevelItem.txt.
 	NoCPAreas  []NoCPArea          `yaml:"no_cp_areas"`
 	LevelItems []LevelItemSettings `yaml:"level_items"`
+	Arena      ArenaSettings       `yaml:"arena"`
+}
+
+// ArenaSettings: when the Arena Real opens and what it pays.
+type ArenaSettings struct {
+	Hours            []int               `yaml:"hours"`
+	WinnerItems      []ArenaItemSettings `yaml:"winner_items"`
+	TopKillItems     []ArenaItemSettings `yaml:"top_kill_items"`
+	ParticipantItems []ArenaItemSettings `yaml:"participant_items"`
+}
+
+// ArenaItemSettings is a prize; Amount 0 is a single item without a count.
+type ArenaItemSettings struct {
+	Item   int `yaml:"item"`
+	Amount int `yaml:"amount"`
+}
+
+func (a *ArenaSettings) validate() error {
+	seen := map[int]bool{}
+	for _, h := range a.Hours {
+		if h < 0 || h > 23 || seen[h] {
+			return fmt.Errorf("arena.hours: %d repeated or not 0..23", h)
+		}
+		seen[h] = true
+	}
+	for _, list := range [][]ArenaItemSettings{a.WinnerItems, a.TopKillItems, a.ParticipantItems} {
+		for _, it := range list {
+			if it.Item < 1 || it.Item >= MaxItemList || it.Amount < 0 || it.Amount > 255 {
+				return fmt.Errorf("arena: invalid prize item %d amount %d", it.Item, it.Amount)
+			}
+		}
+	}
+	return nil
 }
 
 // NoCPArea is a map rectangle where a kill costs the killer no CP.
@@ -170,6 +203,8 @@ func CppSettings() Settings {
 		HonorMarket: []HonorItemSettings{},
 		NoCPAreas:   []NoCPArea{},
 		LevelItems:  []LevelItemSettings{},
+		Arena: ArenaSettings{Hours: []int{11, 14, 16, 18, 20, 23}, WinnerItems: []ArenaItemSettings{},
+			TopKillItems: []ArenaItemSettings{{Item: 3251, Amount: 3}}, ParticipantItems: []ArenaItemSettings{{Item: 3251}}},
 	}
 }
 
@@ -263,6 +298,9 @@ func (s *Settings) validate() error {
 		return fmt.Errorf("mob_ai.min_attack_chance must be 0..100, got %d", ai.MinAttackChance)
 	}
 	if err := s.validateLevels(); err != nil {
+		return err
+	}
+	if err := s.Arena.validate(); err != nil {
 		return err
 	}
 	return s.validateShops()

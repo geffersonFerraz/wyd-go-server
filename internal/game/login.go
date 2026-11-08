@@ -244,6 +244,8 @@ func (g *Game) handleClient(u *User, pkt protocol.Packet) {
 		if u.status == userPlay {
 			g.sendDB(&wire.Signal{Header: wire.NewHeader(wire.OpPanelGuildList, uint16(u.id))})
 		}
+	case opRecaptcha:
+		g.requestRecaptcha(u, pkt)
 	case opEssenceUse:
 		g.requestEssenceUse(u, pkt)
 	case opEchoMoveItem: // the C++ answers with the same packet
