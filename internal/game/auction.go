@@ -1,8 +1,6 @@
 package game
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -152,22 +150,6 @@ type autoTrade struct {
 	list  [maxListings]Listing
 	timer int // AutotradeTimer
 	hide  bool
-}
-
-// loadStoreBase reads npc/Base, the store NPC template (ReadMob "Base").
-func (d *Data) loadStoreBase(dir string) {
-	if b, err := os.ReadFile(filepath.Join(dir, "npc", "Vinha")); err == nil {
-		var m wire.Mob
-		if wire.UnmarshalLegacyMob(b, &m) == nil {
-			d.Thorn = &m
-		}
-	}
-	if b, err := os.ReadFile(filepath.Join(dir, "npc", "Base")); err == nil {
-		var m wire.Mob
-		if wire.UnmarshalLegacyMob(b, &m) == nil {
-			d.StoreBase = &m
-		}
-	}
 }
 
 // storeFunds is AtualizarSaldoLeilao (0xBF1): cash, gold and bars held.

@@ -98,10 +98,11 @@ func (d *Data) ApplyCityOwners(channel int, owners []store.CityOwner) {
 	}
 }
 
-// ReadRateDrops reads the monsters' inventories from the npc/ files of the
-// generators: the first import of the drops by chance.
-func ReadRateDrops(dir string) ([]store.Drop, error) {
-	tmp := &Data{}
+// ReadRateDrops reads the monsters' inventories from the templates of the
+// generators (dir is the config folder): the first import of the drops by
+// chance.
+func ReadRateDrops(dir string, w *store.WorldAssets) ([]store.Drop, error) {
+	tmp := &Data{npcFiles: w.TemplatesOf(store.TemplateNPC)}
 	if err := tmp.loadGeners(dir); err != nil {
 		return nil, err
 	}

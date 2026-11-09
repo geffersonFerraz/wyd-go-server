@@ -9,6 +9,9 @@
 //	admin hash-password      # reads a password from stdin, prints its hash
 //	admin serverlist [-config tmsrv.yaml] [-o serverlist.bin]
 //	                         # writes the client's serverlist.bin
+//	admin world-import [-heightmap f] [-attributemap f] [-itemlist f]
+//	                   [-npc dir] [-npc-base dir] [-class dir]
+//	                         # puts binary world files into the database
 //
 // The panel only queues changes; dbsrv must be running to apply them.
 //
@@ -19,8 +22,7 @@
 //     serverlist.bin, entry [group][0], must point at this host);
 //   - /serverlist.bin: the client's server list, built from the channels of
 //     -config (tmsrv.yaml) on every request;
-//   - /itemlist.bin: the client's item list, the file given by -itemlist
-//     as it is on disk;
+//   - /itemlist.bin: the client's item list, as it is in the database;
 //   - /guild/img_guilds/b0100000<id>.bmp: guild marks uploaded in the panel
 //     and saved to -guildmark-dir (GameURLMark in the client's TMPaths.h
 //     must point at this host).
@@ -64,6 +66,13 @@ func main() {
 		fmt.Println(h)
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "world-import" {
+		if err := worldImport(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "serverlist" {
 		if err := writeServerList(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -78,11 +87,10 @@ func main() {
 	pwFile := flag.String("password-file", ".admin-password", "where a generated password is kept when ADMIN_PASSWORD_HASH is unset")
 	secure := flag.Bool("secure-cookie", false, "mark the session cookie Secure (use behind HTTPS)")
 	markDir := flag.String("guildmark-dir", "guildmarks", `where guild marks are saved ("" disables the upload)`)
-	tmsrvDir := flag.String("tmsrv-dir", "data/tmsrv", `TMSRV folder (its Cache\LockAccount holds the in-game account locks; "" hides the lock tools)`)
+	configDir := flag.String("config-dir", "config", "folder with the big YAML tables of the TMSRV (server export and import)")
 	publicListen := flag.String("public-listen", "", `public address serving the game client servNN.htm, `+admin.ServerListPath+` and the guild marks at `+admin.GuildMarkPath+` (e.g. ":80"; "" = don't serve)`)
 	config := flag.String("config", "tmsrv.yaml", `TMSRV settings, source of `+admin.ServerListPath+` ("" = don't serve it)`)
 	markListen := flag.String("guildmark-listen", "", "old name of -public-listen")
-	itemList := flag.String("itemlist", "data/client/ItemList.bin", `the game client's ItemList.bin, served at `+admin.ItemListPath+` ("" = don't serve it)`)
 	logDir := flag.String("log-dir", envOr("LOG_DIR", "logs"), `folder of the daily log files (or LOG_DIR; "" = console only)`)
 	logDays := flag.Int("log-days", 90, "days of log files to keep (0 = all)")
 	flag.Parse()
@@ -95,7 +103,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, tmsrvDir: *tmsrvDir, config: *config, itemList: *itemList}
+	opts := options{listen: *listen, dsn: *dsn, user: *user, pwFile: *pwFile, secure: *secure, markDir: *markDir, publicListen: *publicListen, configDir: *configDir, config: *config}
 	if err := run(log, opts); err != nil {
 		log.Error("fatal", "err", err)
 		closeLog()
@@ -115,8 +123,7 @@ type options struct {
 	listen, dsn, user, pwFile string
 	secure                    bool
 	markDir, publicListen     string
-	itemList                  string
-	tmsrvDir                  string
+	configDir                 string
 	config                    string
 }
 
@@ -146,7 +153,8 @@ func run(log *slog.Logger, o options) error {
 	}
 
 	var channels []int
-	if settings, err := game.LoadSettings(o.config); err == nil {
+	settings, settingsErr := game.LoadSettings(o.config)
+	if err := settingsErr; err == nil {
 		for _, c := range settings.Channels {
 			channels = append(channels, c.Number)
 		}
@@ -155,19 +163,19 @@ func run(log *slog.Logger, o options) error {
 	}
 
 	// City owners: the database is the only source; the first start copies
-	// the owners of guild_zone.txt for the cities not set yet.
-	if o.tmsrvDir != "" {
-		n, err := admin.SeedCityOwners(ctx, st, filepath.Join(o.tmsrvDir, "guild_zone.txt"))
+	// the owners of tmsrv.yaml for the cities not set yet.
+	if settingsErr == nil {
+		n, err := admin.SeedCityOwners(ctx, st, settings.Cities)
 		if err != nil {
-			log.Warn("city owners not seeded from guild_zone.txt", "err", err)
+			log.Warn("city owners not seeded from the settings", "err", err)
 		} else if n > 0 {
-			log.Info("city owners copied from guild_zone.txt", "cities", n)
+			log.Info("city owners copied from the settings", "cities", n)
 		}
 	}
 
 	// Drops by chance: the first start copies the monsters' inventories.
-	if o.tmsrvDir != "" {
-		if n, err := admin.SeedRateDrops(ctx, st, o.tmsrvDir); err != nil {
+	if o.configDir != "" {
+		if n, err := admin.SeedRateDrops(ctx, st, o.configDir); err != nil {
 			log.Warn("drops by chance not imported", "err", err)
 		} else if n > 0 {
 			log.Info("drops by chance imported", "lines", n)
@@ -179,8 +187,8 @@ func run(log *slog.Logger, o options) error {
 			return fmt.Errorf("guildmark dir: %w", err)
 		}
 	}
-	panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: o.markDir, LockDir: lockDir(o.tmsrvDir), Channels: channels,
-		SettingsPath: o.config, DataDir: dataDirOf(o.tmsrvDir), StateDir: filepath.Dir(pwFile)}, st, log)
+	panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: o.markDir, Channels: channels,
+		SettingsPath: o.config, ConfigDir: o.configDir, StateDir: filepath.Dir(pwFile)}, st, log)
 	if err != nil {
 		return err
 	}
@@ -195,12 +203,7 @@ func run(log *slog.Logger, o options) error {
 			}
 			mux.Handle("GET "+admin.ServerListPath, admin.ServerListHandler(o.config, log))
 		}
-		if o.itemList != "" {
-			if _, err := os.Stat(o.itemList); err != nil {
-				return fmt.Errorf("itemlist.bin: %w", err)
-			}
-			mux.Handle("GET "+admin.ItemListPath, admin.ItemListHandler(o.itemList, log))
-		}
+		mux.Handle("GET "+admin.ItemListPath, admin.ItemListHandler(st, log))
 		if o.markDir != "" {
 			mux.Handle(admin.GuildMarkPath, admin.GuildMarkHandler(o.markDir))
 		}
@@ -261,14 +264,6 @@ func writeServerList(args []string) error {
 	return nil
 }
 
-// lockDir is <TMSRV>/Cache/LockAccount ("" when no TMSRV folder).
-func lockDir(tmsrv string) string {
-	if tmsrv == "" {
-		return ""
-	}
-	return filepath.Join(tmsrv, "Cache", "LockAccount")
-}
-
 // generatedPasswordHash reads (or creates) a random admin password in pwFile.
 func generatedPasswordHash(log *slog.Logger, pwFile string) (string, error) {
 	raw, err := os.ReadFile(pwFile)
@@ -297,12 +292,4 @@ func generatedPasswordHash(log *slog.Logger, pwFile string) (string, error) {
 		return "", fmt.Errorf("%s is empty", pwFile)
 	}
 	return auth.Hash(pw)
-}
-
-// dataDirOf is the data folder that holds the TMSRV folder.
-func dataDirOf(tmsrv string) string {
-	if tmsrv == "" {
-		return ""
-	}
-	return filepath.Dir(tmsrv)
 }

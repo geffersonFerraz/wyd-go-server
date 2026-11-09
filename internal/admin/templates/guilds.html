@@ -34,8 +34,8 @@
         <input type="hidden" name="csrf" value="{{$.CSRF}}">
         <input type="hidden" name="channel" value="{{$.Channel}}">
         <label>{{.Name}}
-          <input name="guild" value="{{if .Set}}{{.GuildID}}{{end}}" placeholder="{{if .Set}}sem dono{{else}}definido no guild_zone.txt{{end}}" list="guild-names">
-          <small>{{if .Set}}{{if .GuildID}}{{.GuildName}} (#{{.GuildID}}){{else}}sem dono{{end}} · por {{.ChangedBy}} em {{.ChangedAt}}{{else}}ainda não definido no painel (vale o guild_zone.txt){{end}}</small></label>
+          <input name="guild" value="{{if .Set}}{{.GuildID}}{{end}}" placeholder="{{if .Set}}sem dono{{else}}definido no tmsrv.yaml{{end}}" list="guild-names">
+          <small>{{if .Set}}{{if .GuildID}}{{.GuildName}} (#{{.GuildID}}){{else}}sem dono{{end}} · por {{.ChangedBy}} em {{.ChangedAt}}{{else}}ainda não definido no painel (vale o tmsrv.yaml){{end}}</small></label>
         <button class="primary">Salvar</button>
       </form>
       {{end}}

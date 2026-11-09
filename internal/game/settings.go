@@ -34,10 +34,7 @@ type Settings struct {
 	Channels   []cluster.Channel  `yaml:"channels"`
 	// ChangeChannel: in-game channel change (client "srv507").
 	ChangeChannel ChangeChannelSettings `yaml:"change_channel"`
-	// CacheDir: per-account files shared with the C++ server (account
-	// locks, daily reward); "" = <TMSRV folder>/Cache.
-	CacheDir   string `yaml:"cache_dir"`
-	NewbieZone int    `yaml:"newbie_zone"`
+	NewbieZone    int                   `yaml:"newbie_zone"`
 	// StatSapphire: sapphires the Mestre das Habilidades (stat reset NPC)
 	// charges (gameconfig.txt StatSapphire, 30 in the shipped file).
 	StatSapphire int             `yaml:"stat_sapphire"`
@@ -55,6 +52,13 @@ type Settings struct {
 	Wars       WarSettings         `yaml:"wars"`
 	// Bosses replaces Data/Boss.xml.
 	Bosses []BossSettings `yaml:"bosses"`
+	// The world tables of the C++ text files (see worldconfig.go).
+	Cities      []CitySettings        `yaml:"cities"`
+	InitItems   []InitItemSettings    `yaml:"init_items"`
+	NPCEvents   []NPCEventSettings    `yaml:"npc_events"`
+	DailyReward []DailyRewardSettings `yaml:"daily_reward"`
+	Roulette    []RouletteSettings    `yaml:"roulette"`
+	ExpBonus    ExpBonus              `yaml:"exp_bonus"`
 }
 
 // BossSettings is a boss that comes back by itself at one of its generators.
@@ -233,6 +237,8 @@ type MobAISettings struct {
 // values a test Config leaves at zero.
 func CppSettings() Settings {
 	return Settings{
+		Cities:    []CitySettings{{City: 0}, {City: 1}, {City: 2}, {City: 3}, {City: 4}},
+		InitItems: []InitItemSettings{}, NPCEvents: []NPCEventSettings{}, DailyReward: []DailyRewardSettings{}, Roulette: []RouletteSettings{},
 		Network: NetworkSettings{DBSRVIP: "127.0.0.1", DBSRVPort: 7514},
 		ServerList: cluster.ServerList{Group: 1, PublicIP: "127.0.0.1",
 			StatusURL: "http://127.0.0.1/serv00.htm"},
@@ -363,6 +369,9 @@ func (s *Settings) validate() error {
 		}
 	}
 	if err := s.Arena.validate(); err != nil {
+		return err
+	}
+	if err := s.validateWorldTables(); err != nil {
 		return err
 	}
 	return s.validateShops()

@@ -43,7 +43,7 @@ x-tmsrv: &tmsrv
     TZ: America/Sao_Paulo
     DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
   volumes:
-    - ./data:/app/data
+    - ./config:/app/config:ro
     - ./logs:/app/logs
     - ./tmsrv.yaml:/app/tmsrv.yaml:ro
   depends_on:
@@ -87,7 +87,6 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
       DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
     volumes:
-      - ./data:/app/data
       - ./logs:/app/logs
       - ./tmsrv.yaml:/app/tmsrv.yaml:ro
     depends_on:
@@ -169,8 +168,8 @@ services:
   # ADMIN_PASSWORD_HASH no .env, ou a gerada em .admin-state/.admin-password.
   # A porta pública (PUBLIC_PORT, padrão 80, sem login) serve ao cliente do
   # jogo o servNN.htm (online por canal, URL do serverlist.bin), o
-  # serverlist.bin (gerado do tmsrv.yaml), o itemlist.bin (o arquivo
-  # data/client/ItemList.bin) e as marcas de guilda.
+  # serverlist.bin (gerado do tmsrv.yaml), o itemlist.bin (guardado no banco)
+  # e as marcas de guilda.
   admin:
     build: { context: ., args: { CMD: admin } }
     image: wyd-admin
@@ -187,7 +186,7 @@ services:
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
     volumes:
-      - ./data:/app/data
+      - ./config:/app/config
       - ./guildmarks:/app/guildmarks
       - ./logs:/app/logs
       - ./.admin-state:/app/.admin-state

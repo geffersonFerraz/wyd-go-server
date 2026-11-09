@@ -1,6 +1,6 @@
 package wire
 
-// The NPC and class template files (data/tmsrv/npc, npc_base, data/dbsrv/npc)
+// The NPC and class template files (gamedata.mob_templates)
 // were written by the C++ servers and keep the 32-bit layout of STRUCT_MOB.
 // They are read through these structs and never written back.
 

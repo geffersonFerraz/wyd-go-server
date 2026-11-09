@@ -2,11 +2,11 @@ package game
 
 import (
 	"encoding/binary"
-	"os"
 	"slices"
 	"testing"
 
 	"dbsrv/internal/protocol"
+	"dbsrv/internal/store"
 	"dbsrv/internal/wire"
 )
 
@@ -140,10 +140,7 @@ func TestIllusionCostsMana(t *testing.T) {
 
 // Every item of the client's ItemList.bin must exist on the server.
 func TestClientItemsExistOnServer(t *testing.T) {
-	raw, err := os.ReadFile("../../data/client/ItemList.bin")
-	if err != nil {
-		t.Skip("no data/client/ItemList.bin")
-	}
+	raw := WorldFixture(t).Asset(store.AssetItemList)
 	const size = 156
 	if len(raw) != MaxItemList*size {
 		t.Fatalf("%d bytes", len(raw))

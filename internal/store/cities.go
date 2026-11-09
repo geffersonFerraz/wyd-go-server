@@ -18,7 +18,7 @@ type CityOwner struct {
 	ChangedAt time.Time
 }
 
-// MaxCity is the number of cities (guild_zone.txt rows 0..4).
+// MaxCity is the number of cities (the cities section of tmsrv.yaml).
 const MaxCity = 5
 
 func scanCityOwner(r pgx.CollectableRow) (CityOwner, error) {

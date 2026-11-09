@@ -23,7 +23,7 @@ import (
 // Full chain: fake game client -> Go TMSRV -> Go DBSRV (TCP) -> Postgres.
 // Needs DBSRV_TEST_DSN and the C++ TMSRV data folder (ItemList.csv etc.).
 
-const tmsrvDir = "../../data/tmsrv"
+const tmsrvDir = game.ConfigDir
 
 var loc = time.FixedZone("BRT", -3*3600)
 
@@ -43,9 +43,6 @@ func newChainN(t *testing.T, n int) *chain {
 	dsn := os.Getenv("DBSRV_TEST_DSN")
 	if dsn == "" {
 		t.Skip("DBSRV_TEST_DSN not set")
-	}
-	if _, err := os.Stat(filepath.Join(tmsrvDir, "NPCGener.txt")); err != nil {
-		t.Skipf("TMSRV data not available: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
@@ -108,7 +105,7 @@ func newChainN(t *testing.T, n int) *chain {
 	// TMSRVs
 	var running []chan struct{}
 	for i, chn := range layout.Channels {
-		cfg, err := game.LoadConfig(tmsrvDir)
+		cfg, err := game.LoadConfig()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -116,7 +113,7 @@ func newChainN(t *testing.T, n int) *chain {
 		host, port, _ := net.SplitHostPort(dbLn.Addr().String())
 		cfg.DBIP = host
 		fmt.Sscan(port, &cfg.DBPort)
-		data, err := game.LoadData(tmsrvDir)
+		data, err := game.LoadData(tmsrvDir, game.RealSettings(t), game.WorldFixture(t))
 		if err != nil {
 			t.Fatal(err)
 		}

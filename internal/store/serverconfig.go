@@ -13,14 +13,17 @@ var errDryRun = errors.New("dry run")
 
 // ImportServerConfig replaces all the game configuration in one transaction:
 // the gamedata tables, the drop slots and blocked items, the city owners and
-// the computer bans. With dryRun everything runs and is then undone, so the
-// database itself checks the data.
-func (s *Store) ImportServerConfig(ctx context.Context, gd *GameData, macBans [][8]byte, by string, dryRun bool) error {
+// the computer bans and the binary world files. With dryRun everything runs
+// and is then undone, so the database itself checks the data.
+func (s *Store) ImportServerConfig(ctx context.Context, gd *GameData, world *WorldAssets, macBans [][8]byte, by string, dryRun bool) error {
 	if len(gd.DropSlots) != 64 {
 		return fmt.Errorf("drop slots: %d, want 64", len(gd.DropSlots))
 	}
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		if err := importGameTables(ctx, tx, gd, by); err != nil {
+			return err
+		}
+		if err := replaceWorldAssets(ctx, tx, world); err != nil {
 			return err
 		}
 		for _, q := range []string{`DELETE FROM gamedata.drop_slots`, `DELETE FROM gamedata.blocked_drop_items`,

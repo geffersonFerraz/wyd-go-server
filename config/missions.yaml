@@ -1,0 +1,1379 @@
+# Missões (antigo Data/Missions.xml). classes: 1 Mortal, 2 Arch, 3 Celestial,
+# 4 Sub-Celestial. level [min, max] limita os mortais.
+missions:
+  - id: 1
+    name: Gremlins Malditos.
+    classes: [1]
+    level: [0, 115]
+    mobs:
+      - {slot: 0, name: Gremlin, total: 3}
+      - {slot: 1, name: Krill, total: 3}
+    gold: 1100000
+    exp: 15000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+      - {slot: 3, item: 4016, amount: 1, effects: [[0, 30]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+      - {slot: 3, item: 4016, amount: 1, effects: [[61, 60]]}
+  - id: 2
+    name: Lago Sombrio.
+    classes: [1]
+    level: [1, 250]
+    mobs:
+      - {slot: 0, name: Krill, total: 3}
+      - {slot: 1, name: Lizard, total: 3}
+      - {slot: 2, name: Orc Arqueiro, total: 3}
+    gold: 1200000
+    exp: 16000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 3
+    name: Assassine os Orcs.
+    classes: [1]
+    level: [100, 200]
+    mobs:
+      - {slot: 0, name: Meio Orc, total: 100}
+      - {slot: 1, name: Orc Lord, total: 1}
+    gold: 1300000
+    exp: 17000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 4
+    name: CaÃ§ada Infernal.
+    classes: [1]
+    level: [100, 200]
+    mobs:
+      - {slot: 0, name: Javali, total: 30}
+      - {slot: 1, name: Rei Gremlin, total: 50}
+    gold: 1400000
+    exp: 18000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 5
+    name: AlcatÃ©ia e Orcs.
+    classes: [1]
+    level: [100, 200]
+    mobs:
+      - {slot: 0, name: Lobo, total: 50}
+      - {slot: 1, name: Orc Arqueiro, total: 30}
+    gold: 1500000
+    exp: 15000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 6
+    name: O DragÃ£o perdido.
+    classes: [1]
+    level: [115, 230]
+    mobs:
+      - {slot: 0, name: Dragao Menor, total: 50}
+      - {slot: 1, name: Orc Cavaleiro, total: 30}
+    gold: 1600000
+    exp: 15000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 7
+    name: A invasÃ£o dos trolls - I
+    classes: [1]
+    level: [110, 230]
+    mobs:
+      - {slot: 0, name: Troll, total: 250}
+    gold: 1700000
+    exp: 15000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 8
+    name: A invasÃ£o dos trolls - II
+    classes: [1]
+    level: [115, 230]
+    mobs:
+      - {slot: 0, name: Cacador Troll, total: 100}
+      - {slot: 1, name: Meio Orc, total: 50}
+    gold: 1800000
+    exp: 18000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 9
+    name: A caÃ§ada.
+    classes: [1]
+    level: [115, 230]
+    mobs:
+      - {slot: 0, name: Cacador Troll, total: 100}
+      - {slot: 1, name: Meio Orc, total: 50}
+    gold: 1900000
+    exp: 18000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 10
+    name: O rei das areias do deserto.
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Tauron, total: 15}
+      - {slot: 1, name: Tauron Bandido, total: 5}
+    gold: 2000000
+    exp: 30000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 420, amount: 1}
+  - id: 11
+    name: Gelo e Fogo!
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Tauron, total: 30}
+      - {slot: 1, name: Lobo Polar, total: 5}
+    gold: 2100000
+    exp: 31000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 12
+    name: Deserto de Kult
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Manticora, total: 5}
+      - {slot: 1, name: Aranha Dourada, total: 40}
+    gold: 2200000
+    exp: 32000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 13
+    name: O lado negro da forÃ§a!
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Elfo Negro, total: 100}
+      - {slot: 1, name: Morlock, total: 30}
+    gold: 2300000
+    exp: 32000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 14
+    name: Deslizamento de pedra!
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Golem de Pedra, total: 100}
+      - {slot: 1, name: Grim Lock, total: 75}
+    gold: 2400000
+    exp: 32000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 15
+    name: Caveiras Sinistras.
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Arq Caveira, total: 75}
+      - {slot: 1, name: Caveira Lanc, total: 150}
+    gold: 2500000
+    exp: 25000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 16
+    name: A morte lhe espera.
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Troll Zumbi, total: 100}
+      - {slot: 1, name: Caveira Lanc, total: 24}
+    gold: 2600000
+    exp: 25000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 17
+    name: Areia movediÃ§a.
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Tauron, total: 75}
+    gold: 2700000
+    exp: 33000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 18
+    name: DragÃ£o Esqueleto.
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Tauron, total: 75}
+    gold: 2800000
+    exp: 31000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 19
+    name: A caÃ§ada pelo Rei.
+    classes: [1]
+    level: [250, 400]
+    mobs:
+      - {slot: 0, name: Minotaur, total: 150}
+    gold: 2900000
+    exp: 25000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 20
+    name: Caolho.
+    classes: [1]
+    level: [100, 200]
+    mobs:
+      - {slot: 0, name: Dreadtaurs, total: 80}
+      - {slot: 1, name: Ciclope, total: 60}
+    gold: 3000000
+    exp: 25000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1}
+      - {slot: 3, item: 412, amount: 1}
+  - id: 21
+    name: O coelho da pÃ¡scoa?
+    classes: [1]
+    level: [100, 200]
+    mobs:
+      - {slot: 0, name: Chefe Ghoul, total: 50}
+      - {slot: 1, name: Carbunkle, total: 200}
+    gold: 3100000
+    exp: 30000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 22
+    name: Chamas da EscuridÃ£o.
+    classes: [1]
+    level: [100, 250]
+    mobs:
+      - {slot: 0, name: Basilisco Ifrit, total: 30}
+      - {slot: 1, name: Dracorich, total: 5}
+    gold: 3200000
+    exp: 22000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 23
+    name: Derrote o minotuaro!
+    classes: [1]
+    level: [100, 250]
+    mobs:
+      - {slot: 0, name: Minotaur, total: 75}
+    gold: 3300000
+    exp: 18000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 24
+    name: Derrote os Carbunkles!
+    classes: [1]
+    level: [100, 250]
+    mobs:
+      - {slot: 0, name: Carbunkle, total: 100}
+      - {slot: 1, name: Ghoul, total: 150}
+    gold: 3400000
+    exp: 17000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 25
+    name: Ghoul, o consumidor de carne humana!
+    classes: [1]
+    level: [100, 250]
+    mobs:
+      - {slot: 1, name: Ghoul, total: 200}
+    gold: 3500000
+    exp: 18000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 26
+    name: Ã�rvores tem coraÃ§Ã£o?
+    classes: [1]
+    level: [200, 400]
+    mobs:
+      - {slot: 1, name: Treant, total: 35}
+    gold: 3600000
+    exp: 26000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 27
+    name: Calor Infernal - I
+    classes: [1]
+    level: [200, 400]
+    mobs:
+      - {slot: 1, name: Aranha Inferno, total: 100}
+    gold: 3700000
+    exp: 28000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 28
+    name: PrÃªmios do Deserto - II
+    classes: [1]
+    level: [230, 400]
+    mobs:
+      - {slot: 1, name: Tauron, total: 100}
+    gold: 3800000
+    exp: 29000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 29
+    name: A grande caÃ§ada - I
+    classes: [1]
+    level: [300, 400]
+    mobs:
+      - {slot: 0, name: Lugefer, total: 2}
+      - {slot: 1, name: Cav. Lugefer, total: 5}
+    gold: 3900000
+    exp: 29000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 30
+    name: A grande caÃ§ada - II
+    classes: [1]
+    level: [300, 400]
+    mobs:
+      - {slot: 0, name: WriggleSwarm, total: 50}
+      - {slot: 1, name: Aranha Dourada, total: 100}
+    gold: 4000000
+    exp: 29000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
+  - id: 31
+    name: A grande caÃ§ada - II
+    classes: [1]
+    level: [300, 400]
+    mobs:
+      - {slot: 0, name: XenoCropper, total: 50}
+      - {slot: 1, name: FunerMomenter, total: 15}
+    gold: 4100000
+    exp: 29000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 32
+    name: Conhecendo a LanHouse
+    classes: [1]
+    level: [200, 350]
+    mobs:
+      - {slot: 0, name: 'Golem de Fogo  ', total: 40}
+      - {slot: 1, name: 'Elfo Negro   ', total: 40}
+      - {slot: 2, name: Morlock Mage, total: 40}
+      - {slot: 3, name: 'Guer Caveira ', total: 40}
+    gold: 4200000
+    exp: 29000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 33
+    name: Conhecendo a LanHouse
+    classes: [1]
+    level: [300, 400]
+    mobs:
+      - {slot: 0, name: Adamant Tauron, total: 15}
+      - {slot: 1, name: Lugefer, total: 3}
+    gold: 4300000
+    exp: 29000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 34
+    name: Krill Maldito - I
+    classes: [1]
+    level: [60, 115]
+    mobs:
+      - {slot: 0, name: Krill, total: 120}
+    gold: 4400000
+    exp: 13000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 35
+    name: Krill Maldito - II
+    classes: [1]
+    level: [60, 115]
+    mobs:
+      - {slot: 0, name: Krill, total: 150}
+    gold: 4500000
+    exp: 18000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 36
+    name: Lagartos me mordam - I
+    classes: [1]
+    level: [60, 115]
+    mobs:
+      - {slot: 0, name: Lizard, total: 75}
+    gold: 4600000
+    exp: 14000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 37
+    name: Lagartos me mordam - II
+    classes: [1]
+    level: [60, 115]
+    mobs:
+      - {slot: 0, name: Lizard, total: 120}
+    gold: 4700000
+    exp: 18000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 38
+    name: DragÃµes Gigantes - I
+    classes: [1]
+    level: [115, 230]
+    mobs:
+      - {slot: 0, name: Dragao Menor, total: 70}
+    gold: 4800000
+    exp: 13000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 39
+    name: DragÃµes Gigantes - II
+    classes: [1]
+    level: [115, 230]
+    mobs:
+      - {slot: 0, name: Dragao Menor, total: 100}
+    gold: 4900000
+    exp: 17000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 40
+    name: Treinando a Pontaria - I
+    classes: [1]
+    level: [100, 200]
+    mobs:
+      - {slot: 0, name: Orc Arqueiro, total: 100}
+    gold: 5000000
+    exp: 14000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 419, amount: 1, effects: [[61, 20]]}
+      - {slot: 3, item: 420, amount: 1, effects: [[61, 20]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
+  - id: 41
+    name: Treinando a Pontaria - II
+    classes: [1]
+    level: [100, 200]
+    mobs:
+      - {slot: 0, name: Orc Arqueiro, total: 100}
+    gold: 1300000
+    exp: 14000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 42
+    name: Calor Infernal - II
+    classes: [1]
+    level: [300, 400]
+    mobs:
+      - {slot: 0, name: Cav. Lugefer, total: 1}
+      - {slot: 1, name: Lugefer, total: 3}
+    gold: 2500000
+    exp: 31000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 43
+    name: Calor Infernal - III
+    classes: [1]
+    level: [300, 400]
+    mobs:
+      - {slot: 0, name: Cav. Lugefer, total: 2}
+      - {slot: 1, name: Lugefer, total: 5}
+    gold: 2700000
+    exp: 31000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 44
+    name: Jogos de Gelo - I
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Lobo Polar, total: 100}
+    gold: 3000000
+    exp: 5100000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 45
+    name: Jogos de Gelo - II
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Lobo Polar, total: 75}
+      - {slot: 1, name: Urso Polar, total: 25}
+    gold: 3000000
+    exp: 5100000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 46
+    name: Jogos de Gelo - III
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Troll de Gelo, total: 75}
+      - {slot: 1, name: Urso Polar, total: 50}
+    gold: 3000000
+    exp: 6200000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 47
+    name: Jogos de Gelo - IV
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Ent Anciao, total: 15}
+      - {slot: 1, name: Lobo Polar, total: 50}
+    gold: 3000000
+    exp: 6200000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 48
+    name: Jogos de Gelo - V
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Grande Lobo, total: 15}
+      - {slot: 1, name: Ent Anciao, total: 15}
+    gold: 3000000
+    exp: 6400000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 49
+    name: Jogos de Gelo - VI
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Grande Lobo, total: 15}
+      - {slot: 1, name: Soldado Amon, total: 30}
+    gold: 3000000
+    exp: 6500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 50
+    name: Jogos de Gelo - VII
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Homem Kalintz, total: 15}
+      - {slot: 1, name: Soldado Amon, total: 20}
+    gold: 3000000
+    exp: 6500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 5]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 5]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 10]]}
+  - id: 51
+    name: Garras Assassinas!
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Homem Kalintz, total: 25}
+      - {slot: 1, name: Mulher Kalintz, total: 25}
+    gold: 3000000
+    exp: 6500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 52
+    name: O casal assustador.
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Homem Kalintz, total: 25}
+      - {slot: 1, name: Mulher Kalintz, total: 25}
+    gold: 3000000
+    exp: 6600000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 53
+    name: O poderoso chefÃ£o.
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Chefe Amon, total: 30}
+    gold: 3000000
+    exp: 6700000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 54
+    name: Soldados do Gelo.
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Chefe Amon, total: 10}
+      - {slot: 1, name: Berserker Ref, total: 5}
+    gold: 3000000
+    exp: 6800000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 55
+    name: Caveiras do mundo inferior
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Arq Caveira, total: 10}
+      - {slot: 1, name: Caveira Lanc, total: 5}
+    gold: 3000000
+    exp: 4500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 56
+    name: Areia calor e PvP...Ops Tauron.
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Tauron, total: 125}
+    gold: 3000000
+    exp: 4900000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 57
+    name: Coelho da pÃ¡scoa?
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Chefe Ghoul, total: 50}
+      - {slot: 1, name: Carbunkle, total: 100}
+    gold: 3000000
+    exp: 4500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 58
+    name: Nevasca - I
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Lobo Polar, total: 50}
+    gold: 3000000
+    exp: 4500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 59
+    name: Presa de Gelo
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Lobo Polar, total: 20}
+      - {slot: 1, name: Urso Polar, total: 25}
+    gold: 3000000
+    exp: 4500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 60
+    name: Presa de Gelo
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Troll de Gelo, total: 10}
+      - {slot: 1, name: Urso Polar, total: 25}
+    gold: 3000000
+    exp: 4500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 10]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 10]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+  - id: 61
+    name: Nevasca - II
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Troll de Gelo, total: 10}
+      - {slot: 1, name: Urso Polar, total: 25}
+    gold: 3000000
+    exp: 5300000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 61
+    name: Jogos de Gelo - VIII
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Ent Anciao, total: 5}
+      - {slot: 1, name: Lobo Polar, total: 25}
+    gold: 3000000
+    exp: 6100000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 62
+    name: Jogos de Gelo - IX
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Guerreiro Amon, total: 25}
+      - {slot: 1, name: Urso Polar, total: 25}
+    gold: 3000000
+    exp: 6200000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 63
+    name: Explorando o Mapa
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: WriggleSwarm, total: 75}
+    gold: 3000000
+    exp: 4500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 64
+    name: El Torero
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: WriggleSwarm, total: 20}
+    gold: 3000000
+    exp: 4700000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 65
+    name: A busca pela sabedoria.
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Morlock, total: 100}
+    gold: 3000000
+    exp: 4700000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 65
+    name: Batalha Infernal - I
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Lich Crunt, total: 10}
+    gold: 3000000
+    exp: 6000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 66
+    name: Batalha Infernal - II
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Lich Crunt, total: 15}
+    gold: 3000000
+    exp: 6000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 67
+    name: Guerreiros do Castelo - I
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Berserker Ref, total: 10}
+      - {slot: 1, name: Berserker Titan, total: 10}
+    gold: 3000000
+    exp: 6000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 67
+    name: Guerreiros do Castelo - II
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Valkyrie Tina, total: 10}
+      - {slot: 1, name: Valkyrie Rosen, total: 10}
+    gold: 3000000
+    exp: 6000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 68
+    name: ValquÃ­rias - I
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Valkyrie Rosen, total: 20}
+    gold: 3000000
+    exp: 6500000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 69
+    name: ValquÃ­rias - II
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Valkyrie Tina, total: 20}
+    gold: 3000000
+    exp: 7000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 70
+    name: Guerreiros Amon - I
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Guerreiro Amon, total: 70}
+    gold: 3000000
+    exp: 7000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+  - id: 71
+    name: Guerreiros Amon - II
+    classes: [2, 3, 4]
+    level: [0, 400]
+    mobs:
+      - {slot: 0, name: Chefe Amon, total: 80}
+    gold: 3000000
+    exp: 7000000
+    free:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 413, amount: 1, effects: [[61, 15]]}
+    pass:
+      - {slot: 0, item: 3322, amount: 1, effects: [[61, 120]]}
+      - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
+      - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
+      - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
+      - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
+      - {slot: 5, item: 3467, amount: 1}

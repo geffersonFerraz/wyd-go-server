@@ -52,14 +52,11 @@ type Config struct {
 	SecureCookie bool
 	// GuildMarkDir is where guild marks are saved ("" disables the upload).
 	GuildMarkDir string
-	// LockDir is TMSRV's Cache/LockAccount, where the in-game account locks
-	// live ("" hides the lock tools).
-	LockDir string
 	// Channels are the channel numbers of tmsrv.yaml (none = just channel 1).
 	Channels []int
-	// SettingsPath (tmsrv.yaml), DataDir (the data folder) and StateDir
+	// SettingsPath (tmsrv.yaml), ConfigDir (the config folder) and StateDir
 	// (the panel's own files) are used by the server export and import.
-	SettingsPath, DataDir, StateDir string
+	SettingsPath, ConfigDir, StateDir string
 }
 
 type adminSession struct {
@@ -435,7 +432,7 @@ func (s *Server) renderAccount(w http.ResponseWriter, r *http.Request, code int,
 		return
 	}
 	data := map[string]any{"Title": user, "Username": user, "Account": acc, "Characters": chars,
-		"Deliveries": deliveries, "Online": online, "EffectNames": names, "Lock": s.lockInfo(user),
+		"Deliveries": deliveries, "Online": online, "EffectNames": names, "Lock": s.lockInfo(r.Context(), user),
 		"ItemForm": url.Values{"amount": {"1"}, "copies": {"1"}, "sanc": {"0"}}}
 	if acc.BanType != 0 && acc.BanUntil != nil {
 		data["BanActive"] = time.Now().Before(*acc.BanUntil)

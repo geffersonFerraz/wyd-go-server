@@ -26,7 +26,7 @@ const (
 	// OpRemove empties every slot of Removes, or none of them.
 	OpRemove = "remove"
 	// OpLock tells TMSRV to reload the account lock (the in-game lock
-	// password and switches, TMSRV's Cache/LockAccount/<LOGIN>.bin) after the
+	// password and switches, the account_locks row) after the
 	// panel removed it or changed its password. Nothing is stored in the
 	// account; offline it is a no-op (the file is read on entering the game).
 	OpLock = "lock"

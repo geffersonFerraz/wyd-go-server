@@ -3,11 +3,10 @@ package admin
 import (
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
+	"dbsrv/internal/game"
 	"dbsrv/internal/store"
 )
 
@@ -36,8 +35,7 @@ func TestAlertsPage(t *testing.T) {
 func TestCitiesSeedAndReset(t *testing.T) {
 	h := newPanel(t)
 	csrf := h.login()
-	zone := filepath.Join(t.TempDir(), "guild_zone.txt")
-	os.WriteFile(zone, []byte("0,5,0,0\n1,1,0,0\n2,0,0,0\n"), 0o644)
+	zone := []game.CitySettings{{City: 0, Owner: 5}, {City: 1, Owner: 1}, {City: 2}}
 	if err := h.st.SetCityOwner(h.ctx, 1, 1, 9, "admin"); err != nil {
 		t.Fatal(err)
 	}

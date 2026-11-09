@@ -1,8 +1,7 @@
 // Command dbsrv is the Go + PostgreSQL replacement for the C++ DBSRV.
 //
 //	dbsrv -dsn postgres://dbsrv:dbsrv@localhost:5432/dbsrv \
-//	      -config tmsrv.yaml \
-//	      -npc data/dbsrv/npc
+//	      -config tmsrv.yaml
 //
 // Environment: DATABASE_URL (instead of -dsn), DBSRV_MASTER_PASSWORD_HASH
 // (optional argon2id hash enabling the staff master password).
@@ -16,23 +15,21 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 	_ "time/tzdata"
 
 	"dbsrv/internal/cluster"
+	"dbsrv/internal/game"
 	"dbsrv/internal/logfile"
 	"dbsrv/internal/server"
 	"dbsrv/internal/store"
-	"dbsrv/internal/wire"
 )
 
 func main() {
 	listen := flag.String("listen", ":7514", "address TMSRV connects to")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres connection string (or DATABASE_URL)")
 	config := flag.String("config", "tmsrv.yaml", "TMSRV settings: their channels section lists the channel IPs (formerly serverlist.txt)")
-	npcDir := flag.String("npc", "data/dbsrv/npc", "folder with the TK, FM, BM, HT class templates")
 	tz := flag.String("tz", "America/Sao_Paulo", "game time zone")
 	statusFile := flag.String("status-file", "", "write online counts here every 30s (C++: C:\\xampp\\htdocs\\servNN.htm)")
 	debug := flag.Bool("debug", false, "debug logging")
@@ -49,7 +46,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := run(log, *listen, *dsn, *config, *npcDir, *tz, *statusFile); err != nil {
+	if err := run(log, *listen, *dsn, *config, *tz, *statusFile); err != nil {
 		log.Error("fatal", "err", err)
 		closeLog()
 		os.Exit(1)
@@ -64,7 +61,7 @@ func envOr(k, def string) string {
 	return def
 }
 
-func run(log *slog.Logger, listen, dsn, configPath, npcDir, tz, statusFile string) error {
+func run(log *slog.Logger, listen, dsn, configPath, tz, statusFile string) error {
 	if dsn == "" {
 		return fmt.Errorf("no -dsn or DATABASE_URL")
 	}
@@ -77,10 +74,6 @@ func run(log *slog.Logger, listen, dsn, configPath, npcDir, tz, statusFile strin
 		return err
 	}
 	channels := layout.ChannelIPs()
-	base, err := LoadBaseMobs(npcDir)
-	if err != nil {
-		return err
-	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -92,6 +85,14 @@ func run(log *slog.Logger, listen, dsn, configPath, npcDir, tz, statusFile strin
 	defer st.Close()
 	if err := st.Migrate(ctx); err != nil {
 		return fmt.Errorf("migrate: %w", err)
+	}
+	classes, err := st.ClassTemplates(ctx)
+	if err != nil {
+		return fmt.Errorf("class templates: %w", err)
+	}
+	base, err := game.ClassTemplates(classes)
+	if err != nil {
+		return err
 	}
 	sapphire, err := st.Sapphire(ctx)
 	if err != nil {
@@ -116,22 +117,4 @@ func run(log *slog.Logger, listen, dsn, configPath, npcDir, tz, statusFile strin
 	err = srv.Serve(ctx, ln)
 	log.Info("stopped")
 	return err
-}
-
-// LoadBaseMobs reads the four class templates (C++ ReadCharBase).
-func LoadBaseMobs(dir string) ([4]wire.Mob, error) {
-	var base [4]wire.Mob
-	for i, name := range []string{"TK", "FM", "BM", "HT"} {
-		raw, err := os.ReadFile(filepath.Join(dir, name))
-		if err != nil {
-			return base, fmt.Errorf("class template: %w", err)
-		}
-		if len(raw) != 848 { // the file keeps the 32-bit layout
-			return base, fmt.Errorf("class template %s: %d bytes, want 848 (sizeof STRUCT_MOB)", name, len(raw))
-		}
-		if err := wire.UnmarshalLegacyMob(raw, &base[i]); err != nil {
-			return base, err
-		}
-	}
-	return base, nil
 }

@@ -1,0 +1,401 @@
+# Mensagens do servidor (antigo Language.txt). id é o índice usado no código.
+messages:
+  - {id: 1, key: _NN_Get_Skill_Point, text: Foi adicionado 9 pontos de skill.}
+  - {id: 2, key: _NN_Weapon_Enchanted, text: A opção de sua arma foi modificada.}
+  - {id: 3, key: _NN_Get_Watching_Town_Mission, text: Recebeu a missão para ajudar os soldados da Terra Mística.}
+  - {id: 4, key: _NN_Watching_Town_Success, text: 'Foi provado que você ajudou os soldados, pegue sua recompensa com o capitão.'}
+  - {id: 5, key: _NN_Watching_Town_Awarded, text: Recebeu a recompensa do capitão.}
+  - {id: 6, key: _NN_Qest06Complete, text: Pontos de skill foram resetados.}
+  - {id: 7, key: _NN_Qest07Complete, text: 'Bloqueio #01 foi quebrado.'}
+  - {id: 8, key: _NN_Qest08Complete, text: 'Bloqueio #02 foi quebrado.'}
+  - {id: 9, key: _NN_Qest09Complete, text: 'Bloqueio #03 foi quebrado.'}
+  - {id: 10, key: _NN_Qest10Complete, text: 'Bloqueio #04 foi quebrado.'}
+  - {id: 11, key: _NN_Qest11Complete, text: 'Quest #11 completada.'}
+  - {id: 12, key: _NN_Qest12Complete, text: 'Quest #12 completada.'}
+  - {id: 13, key: _NN_Qest13Complete, text: 'Quest #13 completada.'}
+  - {id: 14, key: _NN_Qest14Complete, text: 'Quest #14 completada.'}
+  - {id: 15, key: _NN_Qest15Complete, text: 'Quest #15 completada.'}
+  - {id: 16, key: _NN_Qest16Complete, text: 'Quest #16 completada.'}
+  - {id: 17, key: _NN_ServerRebootAfter_2Min_00Sec, text: O Servidor será reiniciado em 2 minutos.}
+  - {id: 18, key: _NN_ServerRebootAfter_1Min_40Sec, text: Saia do jogo agora para não haver perda de itens.}
+  - {id: 19, key: _NN_ServerRebootAfter_1Min_20Sec, text: 'Após a manutenção, execute o launcher para receber as atualizações.'}
+  - {id: 20, key: _NN_ServerRebootAfter_1Min_00Sec, text: O Servidor será reiniciado em 1 minuto.}
+  - {id: 21, key: _NN_ServerRebootAfter_0Min_40Sec, text: Nenhum item será devolvido caso sua conta não for salva.}
+  - {id: 22, key: _NN_ServerRebootAfter_0Min_20Sec, text: O Servidor será reiniciado em 20 segundos.}
+  - {id: 23, key: _NN_Bad_Network_Packets, text: 'Ocorreu um erro, contate a administração relatando o bug.'}
+  - {id: 24, key: _NN_Only_Guild_Master_can, text: Somente para o líder da guilda.}
+  - {id: 25, key: _NN_Champions_Cant_Challange, text: Guilda vencedora não pode apostar.}
+  - {id: 26, key: _NN_Last_Challange_Cant, text: Última aposta não pode ser concluída.(F)}
+  - {id: 27, key: _NN_Allready_Challanged, text: Tudo pronto para o desafio.(F)}
+  - {id: 28, key: _NN_Cant_Get_More_Challanger, text: Não é possível mais apostadores.(F)}
+  - {id: 29, key: _NN_Need_Sign_Of_Challanger, text: O desafiado precisa aceita o desafio.(F)}
+  - {id: 30, key: _NN_Challanged, text: Aposta concluída.}
+  - {id: 31, key: _NN_Cant_Create_More_Summons, text: Não é possível envocar mais.}
+  - {id: 32, key: _NN_1_Kind_Summon_in_1_Party, text: Envocação está no grupo.(F)}
+  - {id: 33, key: _NN_Party_Full_Cant_Summon, text: Não é possível envocar com grupo cheio.}
+  - {id: 34, key: _NN_SelectCharacter, text: Selecione um personagem.}
+  - {id: 35, key: _NN_ServerReboot_Cant_Connect, text: Servidor reiniciado. Tente mais tarde.}
+  - {id: 36, key: _NN_Version_Not_Match_Rerun, text: Baixe as atualizações pelo launcher ou pelo site.}
+  - {id: 37, key: _NN_3_Tims_Wrong_Pass, text: Você errou a senha 3 vezes ou mais.}
+  - {id: 38, key: _NN_Wait_Checking_Billing, text: Verificando seu pagamento.}
+  - {id: 39, key: _DN_Not_Allowed_Account, text: Esta conta não está permitida para logar %d.}
+  - {id: 40, key: _NN_Using_Other_Server_Group, text: Usando outro grupo do servidor.(F)}
+  - {id: 41, key: _NN_Wait_Checking_Billing_t, text: 'Verificando seu pagamento.[2]'}
+  - {id: 42, key: _NN_Not_Allowed_Account_t, text: 'Conta digitada não foi encontrada.[2]'}
+  - {id: 43, key: _NN_Using_Other_Server_Group_t, text: 'Usando outro grupo do servidor.(F)[2]'}
+  - {id: 44, key: _NN_Cant_Deposit_That_Much, text: Você não possui essa quantia para depositar.}
+  - {id: 45, key: _NN_Cant_Withdraw_That_Much, text: Você não pode retirar essa quantia.}
+  - {id: 46, key: _NN_Newbie_zone, text: Só é permitido a entrada de personagens com level inferior a 35.}
+  - {id: 47, key: _NN_Only_Guild_Members, text: Só é permitido a entrada de membros da guilda.}
+  - {id: 48, key: _NN_Cant_Summon_Dead_Person, text: Não é possível summonar personagem morto.}
+  - {id: 49, key: _NN_Summon_Not_Allowed_Here, text: Área restrita para uso.}
+  - {id: 50, key: _NN_Too_High_Level_To_Summon, text: Level muito alto para summonar.}
+  - {id: 51, key: _NN_Not_Enough_Mana, text: Você não possui mana.}
+  - {id: 52, key: _SN_Summoned_By_S, text: Você foi summonado por %s.}
+  - {id: 53, key: _NN_Level_Up, text: +++ Subiu de Level +++}
+  - {id: 54, key: _NN_3_Quarters_Bonus, text: Adquiriu 3/4 de bônus.}
+  - {id: 55, key: _NN_2_Quarters_Bonus, text: Adquiriu 2/4 de bônus.}
+  - {id: 56, key: _NN_1_Quarters_Bonus, text: Adquiriu 1/4 de bônus.}
+  - {id: 57, key: _SS_Champion_And_Challanger, text: A guilda %s recebeu o desafio da guilda %s.}
+  - {id: 58, key: _SN_No_Challanger, text: Não houve nenhuma aposta.}
+  - {id: 59, key: _SN_Winner_Is, text: A guilda %s foi a vencedora.}
+  - {id: 60, key: _NN_Teleport_Gate_Requir, text: Requer um teleporte.(F)}
+  - {id: 61, key: _SN_I_Wwill_Enchant_Your_Weapon, text: A arma do personagem %s foi encantada.}
+  - {id: 62, key: _NN_Gather_7_Clistals, text: É necessário possuir os 7 cristais.}
+  - {id: 63, key: _NN_Equip_Weapon_To_Enchant, text: Você não possui arma para ser melhorada.}
+  - {id: 64, key: _NN_Only_Nomal_Weapons, text: Somente permitido armas sem nenhum refinamento.}
+  - {id: 65, key: _SN_Now_I_Will_Enchant_Your, text: A arma do personagem %s foi encantada.}
+  - {id: 66, key: _SN_All_Villagers_Thanks_Your, text: 'Obrigado %s, por nos ajudar.'}
+  - {id: 67, key: _NN_Give_You_Some_Reward, text: Pegue aqui sua recompensa.}
+  - {id: 68, key: _NN_Guard_This_Village, text: Ajude os soldados a matar esses monstros!}
+  - {id: 69, key: _NN_Monster_Attaking_Us_Help, text: Os monstros estão atacando! Ajude-nos!}
+  - {id: 70, key: _NN_Thanks_for_Helping_us, text: Obrigado por nos ajudar.}
+  - {id: 71, key: _NN_Youve_Done_It_Already, text: Você ja completou esta quest.}
+  - {id: 72, key: _NN_Cant_Drop_Here, text: Você não pode dropar aqui.}
+  - {id: 73, key: _NN_Guild_Medal_Cant_Be_Droped, text: Medalha de Guilda não pode ser dropada.}
+  - {id: 74, key: _NN_Only_To_Equips, text: Usado somente para os equipamentos.}
+  - {id: 75, key: _NN_Cant_Refine_More, text: Impossível refinar mais este item.}
+  - {id: 76, key: _NN_Fail_To_Refine, text: Refinação NÃO sucedida.}
+  - {id: 77, key: _NN_Fail_To_Level_Up, text: Caixa de Level NÃO sucedida.}
+  - {id: 78, key: _NN_No_Return_Point, text: Não tem área de retorno.}
+  - {id: 79, key: _NN_No_Key, text: Você não possui a chave.}
+  - {id: 80, key: _NN_Wrong_Trade_Packet1, text: 'Erro na troca, volte para a seleção de personagem e entre novamente.'}
+  - {id: 81, key: _NN_Only_With_Guild_Master, text: Somente com o líder da guilda.}
+  - {id: 82, key: _NN_Already_Trading, text: Este personagem ja está em troca com outro personagem.}
+  - {id: 83, key: _NN_Havent_Money_So_Much, text: Você não possui esta quantia.}
+  - {id: 84, key: _NN_Opponent_Havent_Money, text: O outro personagem não possui a quantia.}
+  - {id: 85, key: _NN_Each_Of_You_Havent_Space, text: Ambos não possuem espaço no inventório.}
+  - {id: 86, key: _NN_You_Have_No_Space_To_Trade, text: Você não possui espaço livre no inventório.}
+  - {id: 87, key: _NN_Opponent_Have_No_Space_To, text: O outro personagem não possui espaco livre no inventório.}
+  - {id: 88, key: _NN_Wrong_Trade_Packet2, text: 'Erro na troca, volte para a seleção de personagem e entre novamente.'}
+  - {id: 89, key: _NN_Summon, text: Summonado.}
+  - {id: 90, key: _NN_Cant_Use_Killed, text: 'Você não pode summonar, pois está morto.'}
+  - {id: 91, key: _NN_Not_Connected, text: Este personagem não está conectado.}
+  - {id: 92, key: _NN_Cant_Use_To_Yourself, text: Não é possível summonar você mesmo.}
+  - {id: 93, key: _NN_Cant_Use_To_Killed, text: 'Não foi possível summonar, pois o personagem está morto.'}
+  - {id: 94, key: _NN_Only_To_Party_Or_Guild, text: Usado somente para membros do grupo ou da guilda.}
+  - {id: 95, key: _NN_Didnt_Learn_Summon_Skill, text: É necessário a skill Teleporte.}
+  - {id: 96, key: _NN_Cant_Use_That_Here, text: Não pode usar aqui.}
+  - {id: 97, key: _NN_Too_High_Level, text: Você é level muito alto.}
+  - {id: 98, key: _SN_Summoned_By_S, text: Você foi summonado por %s.}
+  - {id: 99, key: _NN_Relocate, text: ir}
+  - {id: 100, key: _SN_S_Relocate_To_You, text: Personagem %s teleportou-se até você.}
+  - {id: 101, key: _NN_Reply, text: responder}
+  - {id: 102, key: _NN_No_One_To_Reply, text: Nenhum personagem para responder.}
+  - {id: 103, key: _SN_S_is_Connected, text: Personagem %s está conectado.}
+  - {id: 104, key: _NN_Only_Guild_Member_Can, text: Somente usado para membros da guilda.}
+  - {id: 105, key: _NN_Maximum_Point_Now, text: Limite máximo de pontos.}
+  - {id: 106, key: _NN_Maximum_Point_200_Now, text: Limite de 200 pontos em cada linhagem.}
+  - {id: 107, key: _NN_Cant_Learn_Other_Class_Skill, text: Você não pode aprender skills de outras classes.}
+  - {id: 108, key: _NN_Not_Enough_Skill_Point, text: Você não possui pontos de skill suficiente.}
+  - {id: 109, key: _NN_Already_Learned_It, text: Você ja aprendeu esta skill.}
+  - {id: 110, key: _NN_Need_More_Level_To_Learn, text: Você precisa de um level maior.}
+  - {id: 111, key: _NN_Need_More_Mastery_To_Learn, text: Você precisa de mais pontos da linhagem.}
+  - {id: 112, key: _NN_Only_Merchant_Sells, text: Vendas somente em vendedores.}
+  - {id: 113, key: _NN_Not_Enough_Money, text: Você não possui esta quantia.}
+  - {id: 114, key: _NN_Only_Guild_Master_Can_Buy_It, text: Somente líder de guildas podem comprar este item.}
+  - {id: 115, key: _NN_He_Is_Not_Merchant, text: O npc não é um vendedor.}
+  - {id: 116, key: _NN_Only_Merchant_Buy_Yours, text: Compras somente em vendedores.}
+  - {id: 117, key: _NN_Dropped_Current_Party_First, text: Vantagem para membros do grupo.}
+  - {id: 118, key: _NN_Not_Connected, text: Não conectado.}
+  - {id: 119, key: _NN_Other_Partys_Member, text: Este personagem ja possui um grupo.}
+  - {id: 120, key: _NN_Have_Own_Party_Already, text: Este personagem ja é lider de um grupo.}
+  - {id: 121, key: _NN_Dropped_Current_Party_First, text: Vantagem para membros do grupo.}
+  - {id: 122, key: _NN_Partys_Full, text: Grupo está cheio.}
+  - {id: 123, key: _DN_Billing_Code, text: 'Billing_Code [%d]'}
+  - {id: 124, key: _DN_Billing_Notice1, text: 'Billing_Notice1 [%d]'}
+  - {id: 125, key: _DD_Billing_Notice2, text: 'Billing_Notice2 [%d][%d]'}
+  - {id: 126, key: _NN_Billing_Notice3, text: Billing_Notice3}
+  - {id: 127, key: _NN_Billing_Notice4, text: Billing_Notice4}
+  - {id: 128, key: _NN_Billing_Notice5, text: Billing_Notice5}
+  - {id: 129, key: _NN_Billing_Notice6, text: Billing_Notice6}
+  - {id: 130, key: _NN_Try_Reconnect, text: Tente conectar mais tarde.}
+  - {id: 131, key: _NN_No_Account_With_That_Name, text: Esta conta não foi encontrada.}
+  - {id: 132, key: _NN_Blocked_Account, text: 'Conta bloqueada, contate o suporte.'}
+  - {id: 133, key: _NN_Wrong_Password, text: Senha incorreta.}
+  - {id: 134, key: _NN_Your_Account_From_Others, text: Conexão anterior finalizada. Tente novamente.}
+  - {id: 135, key: _NN_Guild_Battle_Notice1, text: 'Participantes da guerra, aguardem na cidade em que apostou.'}
+  - {id: 136, key: _NN_Guild_Battle_Notice2, text: A guerra comecará dentro de 3 minutos.}
+  - {id: 137, key: _NN_Guild_Battle_Notice3, text: Guerra iniciada.}
+  - {id: 138, key: _NN_Guild_Battle_Notice4, text: Guerra finalizada.}
+  - {id: 139, key: _NN_Guild_Battle_Notice5, text: Apostas iniciadas.}
+  - {id: 140, key: _NN_Guild_Battle_Notice6, text: Apostas finalizadas.}
+  - {id: 141, key: _NN_Below_lv20_No_Exp_Loss, text: Level abaixo de 20 não perde experiência.}
+  - {id: 142, key: _DN_lose_D_exp, text: Você perdeu %d de experiência.}
+  - {id: 143, key: _NN_In_Arena_No_Exp_Loss, text: Você não perde experiência nesta area.}
+  - {id: 144, key: _NN_Only_Guild_Master_Can, text: Somente líder de guilda pode usar.}
+  - {id: 145, key: _NN_Disqualified_By_Guild_Master, text: Você foi expulso da guilda.}
+  - {id: 146, key: _NN_Disqualify, text: O personagem foi expulso da guilda.}
+  - {id: 147, key: _NN_Haven_Guild_Medal, text: O personagem não possui a medalha da guilda.}
+  - {id: 148, key: _NN_Deprivate, text: expulsar}
+  - {id: 149, key: _NN_CarryFull, text: Seu inventório está cheio.}
+  - {id: 150, key: _NN_Equip_Particle, text: Equip_Particle.(F)}
+  - {id: 151, key: _NN_Purify_Particle, text: Purify_Particle.(F)}
+  - {id: 152, key: _NN_Need_1000000_Gold, text: Você precisa de 1 milhão.}
+  - {id: 153, key: _NN_Hurry_Helping_them, text: 'Depressa, ajude-nos!'}
+  - {id: 154, key: _NN_Party_Only, text: Somente em grupo.}
+  - {id: 155, key: _NN_Need_Pure_Divine, text: Você precisa do Circulo Divino Puro.}
+  - {id: 156, key: _NN_Initialize_Skill, text: Pontos de skill foram resetados.}
+  - {id: 157, key: _NN_Need_10_Particle, text: Você precisa de 10 restos para compor uma poeira.}
+  - {id: 158, key: _NN_Processing_Complete, text: Processo completado com sucesso!}
+  - {id: 159, key: _DD_Billing_Notice7, text: 'Billing_Notice7.(F) [%d][%d]'}
+  - {id: 160, key: _DN_Billing_Notice8, text: 'Billing_Notice8.(F) [%d]'}
+  - {id: 161, key: _NN_Disabled_Account, text: 'Conta em análise, entre em contato com o suporte.'}
+  - {id: 162, key: _NN_No_Guild_Members, text: Nenhum membro da guilda foi encontrado.}
+  - {id: 163, key: _SN_Zakum_Killed, text: Personagem %s derrotou o Castelo do Zakum.}
+  - {id: 164, key: _NN_Zakum_Initialize, text: O Castelo do Zakum será reiniciado dentro de 10 segundos.}
+  - {id: 165, key: _NN_Deny_Whisper, text: Você desativou a conversa.}
+  - {id: 166, key: _NN_Need_5000000_Gold, text: Você precisa de 5 milhões.}
+  - {id: 167, key: _NN_Cant_Sell_Potion, text: Você não pode vender poções.}
+  - {id: 168, key: _NN_Guild_Tax_0_to_30, text: A Taxa de Guilda é de no mínimo 0%% e no máximo 15%%.}
+  - {id: 169, key: _DD_Set_Guild_Tax, text: Taxa de imposto mudada para %d%%.}
+  - {id: 170, key: _NN_CantWhenAutoTrade, text: Você não pode abrir esta venda.}
+  - {id: 171, key: _NN_ItemSold, text: Um item foi vendido.}
+  - {id: 172, key: _NN_OnlyVillage, text: Permitido somente dentro da cidade.}
+  - {id: 173, key: _NN_Only_Named_Guild, text: Somente guildas com nome.}
+  - {id: 174, key: _NN_Only_Once_Per_Day, text: Apenas uma vez por dia.}
+  - {id: 175, key: _SSD_S_get_S_D, text: Jogador %s obteve o item %s(%d).}
+  - {id: 176, key: _NN_Refine_Success, text: Refinação sucedida.}
+  - {id: 177, key: _DN_Need_D_Sapphire, text: Você precisa de %d safira(as).}
+  - {id: 178, key: _NN_My_King_Bless1, text: Que Deus ilumine seu caminho!}
+  - {id: 179, key: _NN_My_King_Bless2, text: Que Deus ilumine seu caminho!}
+  - {id: 180, key: _NN_Need_Level, text: Você precisa de um level superior.}
+  - {id: 181, key: _NN_King1_Killed, text: O rei foi derrotado.}
+  - {id: 182, key: _NN_King2_Killed, text: O rei foi derrotado.}
+  - {id: 183, key: _DN_get_D_exp, text: Você ganhou %d de experiência.}
+  - {id: 184, key: _NN_Kingdom, text: reino}
+  - {id: 185, key: _NN_King, text: rei}
+  - {id: 186, key: _NN_Set_Warp, text: Posição salva.}
+  - {id: 187, key: _DS_S_Challanged, text: A maior aposta foi %d da guilda %s.}
+  - {id: 188, key: _NN_Need_Master, text: Need_Master.(F)}
+  - {id: 189, key: _DN_Need_D_Sapphire2, text: Você precisa de %d safira(as).}
+  - {id: 190, key: _NN_Need_Guild_Medal, text: Você precisa da medalha de guilda.}
+  - {id: 191, key: _NN_Reconnect, text: Reconnect.}
+  - {id: 192, key: _NN_Need_1000000_For_Challange, text: O valor mínimo para apostar é 1 milhão.}
+  - {id: 193, key: _NN_Battle_In_Progress, text: Batalha em andamento!}
+  - {id: 194, key: _NN_Battle_Started, text: Batalha iniciada!}
+  - {id: 195, key: _SS_S_Killed_By_S, text: '%s matou %s.'}
+  - {id: 196, key: _SS_S_WinBy_S, text: '%s venceu de %s.'}
+  - {id: 197, key: _SS_S_S_Draw, text: '%s empatou com %s.'}
+  - {id: 198, key: _SSD_S_get_S, text: Jogador %s pegou o item %s.}
+  - {id: 199, key: _NN_Leaving_kingdom, text: Você deixou o reino.}
+  - {id: 200, key: _NN_Next_Chance, text: Troca falhou.}
+  - {id: 201, key: _NN_Congratulations, text: Troca sucedida.}
+  - {id: 202, key: _NN_Stat_Initialized, text: Pontos de Atributo reiniciados.}
+  - {id: 203, key: _DN_Want_Stat_Init, text: Com %d safira(as) você reinicia 100 pontos de atributo.}
+  - {id: 204, key: _DN_D_Costs, text: O custo é de %d.}
+  - {id: 205, key: _NN_Cant_with_armor, text: A armadura não pode estar equipada.}
+  - {id: 206, key: _NN_Child_Pay, text: Child_Pay.(F)}
+  - {id: 207, key: _DD_PKPointPlus, text: CP %d aumentou em %d.}
+  - {id: 208, key: _DD_PKPointMinus, text: CP %d diminuiu em %d.}
+  - {id: 209, key: _DN_CantKillUser, text: Você não pode matar esse personagem.}
+  - {id: 210, key: _SS_War_Declared, text: '%s declarou guerra contra %s.'}
+  - {id: 211, key: _SS_War_Started, text: '%s e %s estão em guerra.'}
+  - {id: 212, key: _SS_War_Canceled, text: '%s cancelou guerra contra %s.'}
+  - {id: 213, key: _NN_War_Stop, text: A guerra foi finalizada.}
+  - {id: 214, key: _NN_Cant_Declare_War, text: Você não pode declarar guerra.}
+  - {id: 215, key: _NN_Party_Level_Limit, text: Diferença máximo de level entre os membros do grupo é de 400.}
+  - {id: 216, key: _NN_Summon_Guild, text: A guilda foi summonada.}
+  - {id: 217, key: _NN_Only_Village, text: Somente dentro da cidade.}
+  - {id: 218, key: _SN_Your_are_at_war, text: Você está em guerra contra %s.}
+  - {id: 219, key: _SN_War_to_S, text: Guerra contra %s.}
+  - {id: 220, key: _SN_War_from_S, text: Guerra de %s.}
+  - {id: 221, key: _SS_War_declare_canceled, text: '%s cancelou o pedido de guerra contra %s.'}
+  - {id: 222, key: _SD_Zakum_Quest_by_S_N, text: Jogador %s e mais %d jogador(es) estão atacando o Castelo.}
+  - {id: 223, key: _NN_Zakum_Quest_empty, text: O Castelo do Zakum não está sendo atacado por ninguém.}
+  - {id: 224, key: _NN_Only_Level1_Armor, text: Somente armadura de iniciante.}
+  - {id: 225, key: _NN_Only_Level2_Armor, text: Somente armadura de iniciante.}
+  - {id: 226, key: _NN_Only_Level3_Armor, text: Somente armadura de iniciante.}
+  - {id: 227, key: _NN_Only_Level4_Armor, text: Somente armadura de iniciante.}
+  - {id: 228, key: _NN_Only_By_Water_Scroll, text: Você precisa do Pergaminho da Água para entrar.}
+  - {id: 229, key: _NN_Party_Leader_Only, text: Somente o líder do grupo pode usar.}
+  - {id: 230, key: _NN_NewbieQuest_Already1, text: Que os Deuses iluminem seu caminho!}
+  - {id: 231, key: _NN_NewbieQuest_Cheerup1, text: Não posso lher dar nada se não tiver a chave do Gremlin Artif.}
+  - {id: 232, key: _NN_NewbieQuest_Complete1, text: Que os Deuses iluminem seu caminho!}
+  - {id: 233, key: _NN_NewbieQuest_Reward1, text: Recebeu Poção de Cura como recompensa.}
+  - {id: 234, key: _NN_NewbieQuest_Already2, text: Você é uma pessoa com muita sorte!}
+  - {id: 235, key: _NN_NewbieQuest_Cheerup2, text: 'Não posso te ajudar, a não ser que você tenha a chave para o nível.'}
+  - {id: 236, key: _NN_NewbieQuest_Complete2, text: 'Suas armas estão bem ruins, deixe eu dar uma olhadinha.'}
+  - {id: 237, key: _NN_NewbieQuest_Reward2, text: Como recompensa foi atribuída uma opção adicional em sua arma.}
+  - {id: 238, key: _NN_NewbieQuest_Already3, text: 'Está tudo preparado, agora só falta uma coisa.'}
+  - {id: 239, key: _NN_NewbieQuest_Cheerup3, text: Traga a chave que o Orc Sniper possui.}
+  - {id: 240, key: _NN_NewbieQuest_Complete3, text: Não acredito... Conseguiu chegar até aqui... Isso te dará força!}
+  - {id: 241, key: _NN_NewbieQuest_Reward3, text: Como recompensa a sua arma e armadura foram refinadas.}
+  - {id: 242, key: _NN_NewbieQuest_Already4, text: 'Você conseguiu completar o treinamento! Acredite, são poucos que conseguem.'}
+  - {id: 243, key: _NN_NewbieQuest_Cheerup4, text: Traga o emblema do Orc Guerreiro.}
+  - {id: 244, key: _NN_NewbieQuest_Complete4, text: Você não é mais um novato. Espere... Acho que isso pode servir.}
+  - {id: 245, key: _NN_NewbieQuest_Reward4, text: Recebeu a recompensa da Quest.}
+  - {id: 246, key: _NN_BR_Start1, text: Batalha número 1.}
+  - {id: 247, key: _NN_BR_Start2, text: Batalha número 2.}
+  - {id: 248, key: _NN_BR_Start3, text: Batalha número 3.}
+  - {id: 249, key: _NN_BR_Rewarded, text: O item foi colocado.}
+  - {id: 250, key: _NN_BR_Ready1, text: Batalha número 1 iniciou.}
+  - {id: 251, key: _NN_BR_Ready2, text: Batalha número 2 iniciou.}
+  - {id: 252, key: _NN_BR_Ready3, text: Batalha número 3 iniciou.}
+  - {id: 253, key: _NN_INCUBATED, text: A montaria nasceu.}
+  - {id: 254, key: _NN_Cant_Upgrade_More, text: Atingiu o level máximo.}
+  - {id: 255, key: _NN_Mount_Growth, text: A Montaria ficou adulta.}
+  - {id: 256, key: _NN_Mount_Not_Match, text: A montaria não confere.}
+  - {id: 257, key: _NN_Cure_animals, text: Sua montaria foi curada.}
+  - {id: 258, key: _DS_S_cure_price_D, text: Para reviver %s será necessário %d de gold.}
+  - {id: 259, key: _NN_Cured, text: Curada.}
+  - {id: 260, key: _NN_Cure_faild, text: 'Desculpe, a montaria morreu.'}
+  - {id: 261, key: _NN_Incu_Wait_More, text: Espere o tempo de incubação acabar.}
+  - {id: 262, key: _NN_Incu_Proceed, text: Tempo de incubação diminuiu.}
+  - {id: 263, key: _NN_Mount_Level, text: Sua montaria subiu de level.}
+  - {id: 264, key: _NN_Mount_died, text: Sua montaria morreu.}
+  - {id: 265, key: _NN_3rd_village_limit, text: Permitido somente para leveis inferiores.}
+  - {id: 266, key: _NN_Only_Sunday, text: Você pode retirar a medalha somente aos domingos.}
+  - {id: 267, key: _NN_Treasure_Map, text: Recebeu os baus do evento.}
+  - {id: 268, key: _NN_TicketUsed, text: TicketUsed.(F)}
+  - {id: 269, key: _NN_CombineFailed, text: Houve uma falha na composição do item.}
+  - {id: 270, key: _SS_CombineSucceed, text: '%s obteve sucesso na composição do item %s.'}
+  - {id: 271, key: _NN_Wrong_Combination, text: Combinação incorreta.}
+  - {id: 272, key: _NN_Item_Arrived, text: '!Item recebido.'}
+  - {id: 273, key: _NN_Cant_get_more_than_2G, text: Não é possível carregar mais que 2 bilhões de gold.}
+  - {id: 274, key: _SN_Learn_Sephera, text: Você aprendeu a skill %s.}
+  - {id: 275, key: _DN_Castle_will_be_open, text: Guerra de Noatum irá se iniciar dentro de 5 minutos.}
+  - {id: 276, key: _DN_Castle_opened, text: Guerra de Noatum iniciou.}
+  - {id: 277, key: _DN_Castle_will_be_closed, text: Guerra de Noatum acabará dentro de 5 minutos.}
+  - {id: 278, key: _DN_Castle_closed, text: Guerra de Noatum terminou.}
+  - {id: 279, key: _NN_Only_when_castle_war, text: Usar somente quando tiver Guerra de Noatum.}
+  - {id: 280, key: _SN_S_is_charging_castle, text: '%s está conquistando Noatum.'}
+  - {id: 281, key: _SN_S_charge_castle, text: '%s conquistou Noatum.'}
+  - {id: 282, key: _NN_Only_same_kingdom, text: Somente se estiver em algum reino.}
+  - {id: 283, key: _SN_Ally_to_S, text: Aliou-se com %s.}
+  - {id: 284, key: _SN_Ally_from_S, text: Aliança de %s.}
+  - {id: 285, key: _NN_Ally_Stop, text: Desfez da aliança.}
+  - {id: 286, key: _SS_Ally_Canceled, text: '%s cancelou a aliança com %s.'}
+  - {id: 287, key: _SS_Ally_Declared, text: '%s declarou aliança com %s.'}
+  - {id: 289, key: _NN_Cant_Declare_Ally, text: Não pode declarar aliança.}
+  - {id: 290, key: _SSNN_GuildWarResult, text: '%s venceu %s por %d:%d.'}
+  - {id: 291, key: _NN_Need_5_materials, text: Você precisa dos 5 materiais.}
+  - {id: 292, key: _NN_snowimp_create_success, text: Composiço feita com sucesso!}
+  - {id: 293, key: _NN_snowimp_need_2MGold, text: Você precisa de 2 milhões de gold.}
+  - {id: 294, key: _NN_SetNumeric_Password, text: Senha numérica setada. Não esqueça.}
+  - {id: 295, key: _NN_IncorrectNumeric, text: Senha numérica está incorreta}
+  - {id: 296, key: _NN_SetNewNumeric_Password, text: Senha numérica alterada}
+  - {id: 297, key: _NN_NotEnoughGold_Teleport, text: Não possui gold suficiente}
+  - {id: 298, key: _NN_NotEnoughGold_BuyShop, text: Não possui gold para comprar este item}
+  - {id: 299, key: _NN_SoFar_BuyShop, text: Você está muito distante.}
+  - {id: 300, key: _NN_AlwaysBuy_BuyShop, text: Este item já foi vendido}
+  - {id: 301, key: _NN_MaxBag_Actived, text: Você já está com o máximo de bolsas ativas}
+  - {id: 302, key: _NN_CantReset_ChaosPoint, text: Não é necessário resetar seus pontos de CP}
+  - {id: 303, key: _NN_CantRefine, text: Não é possível refinar este item}
+  - {id: 304, key: _NN_CantRefine_War, text: Não é possível refinar dentro da zona de guerra}
+  - {id: 305, key: _NN_Sephirot_EightStones, text: São necessárias 8 pedras para compor o Sephirot!}
+  - {id: 306, key: _NN_Sephirot_Need30MGold, text: São necessário 30.000.000 de gold para compor a Sephirot}
+  - {id: 307, key: _NN_Sephirot_Compose, text: Sephirot foi composto com sucesso}
+  - {id: 308, key: _NN_Sephirot_AreUSure, text: 'Deseja compor uma sephirot?'}
+  - {id: 309, key: _NN_Need_CelestialSub, text: Disponível apenas para evoluções acima ou igual a celestial}
+  - {id: 310, key: _NN_Max36_Enter, text: Máximo de 36 entradas}
+  - {id: 311, key: _NN_CantRefine_ItemCele, text: Não é possível refinar itens celestiais}
+  - {id: 312, key: _NN_Only_MortalArch, text: Disponível apenas para mortais/archs}
+  - {id: 313, key: _NN_Level_NotAllowed, text: 'Level permitido: [%d - %d]'}
+  - {id: 314, key: _NN_BringMe_ItemQuest, text: 'Traga-me [ %s ] para entrar na quest'}
+  - {id: 315, key: _NN_Player_QuestEnter, text: 'O personagem [ %s ] entrou na quest'}
+  - {id: 316, key: _NN_Already_A_Learner, text: Você já é um aprendiz!}
+  - {id: 317, key: _NN_BringMe_ToLearner, text: Traga-me o Emblema da Aprendizagem para virar um aprendiz}
+  - {id: 318, key: _NN_Welcome_Learner, text: 'Seja bem vindo, %s, novo aprendiz.'}
+  - {id: 319, key: _NN_OnlyMortal, text: Disponível apenas para mortais}
+  - {id: 320, key: _NN_Initialized_Quest, text: 'Quest [ %s ] iniciada'}
+  - {id: 321, key: _NN_BringMe_Molar, text: Traga-me o Molar de Gárgula para que eu possa recompensá-lo!}
+  - {id: 322, key: _NN_RefineSuccess_Molar, text: Quest concluída com sucesso. Seu equipamento foi refinado}
+  - {id: 323, key: _NN_BringMe_Selado, text: Traga-me o Pergaminho Selado para poder entrar}
+  - {id: 324, key: _NN_HallEnter, text: Você possui %d entradas}
+  - {id: 325, key: _NN_OnlySell_Citizen, text: Só é possível no canal em que você é cidadão}
+  - {id: 326, key: _NN_Water_RoomOcuped, text: 'Sala ocupada por %s e seu grupo. Tempo restante: %d seg'}
+  - {id: 327, key: _NN_Guild_Need100mGold, text: Para criar uma guild você precisa de 100 milhões de gold}
+  - {id: 328, key: _NN_Guild_YouHaveAGuild, text: Você já faz parte de uma guild}
+  - {id: 329, key: _NN_Guild_Limit, text: Limite de guilds atingido}
+  - {id: 330, key: _NN_Guild_NeedKingdom, text: Para criar uma guild você precisa de um Reino}
+  - {id: 331, key: _NN_Guild_GuildName, text: Este nome de guild já está em uso}
+  - {id: 332, key: _NN_Citizen, text: É necessário estar no canal cidadão para realizar esta ação}
+  - {id: 333, key: _NN_Guild_SuccessCreate, text: Sua guilda foi criado com sucesso}
+  - {id: 334, key: _NN_Guild_CantRecruit_Day, text: Você não pode recrutar sábado ou domingo}
+  - {id: 335, key: _NN_Guild_OnlyMasterOrSub, text: Somente líderes ou sub de guild podem recrutar}
+  - {id: 336, key: _NN_Guild_CantRecruit_Kingdom, text: É necessário que o outro jogador possua o mesmo reino}
+  - {id: 337, key: _NN_Guild_CantRecruit_Citizen, text: Não é possível recrutar usuário de cidadania diferente}
+  - {id: 338, key: _NN_Guild_CantRecruit_Gold, text: Você precisa de %d para recrutar este usuário}
+  - {id: 339, key: _NN_Guild_CantRecruit_Guild, text: O outro jogador já possui uma guild}
+  - {id: 340, key: _NN_Guild_Recruit_GuildEnter, text: Você entrou em uma guild}
+  - {id: 341, key: _NN_Guild_Recruit, text: Você recrutou %s}
+  - {id: 342, key: _NN_Guild_CantKick_Guild, text: Não é possível expulsar membros de outras guilds}
+  - {id: 343, key: _NN_Guild_Kicked, text: Você foi expulso da guild}
+  - {id: 344, key: _NN_Guild_YouKicked, text: Você expulsou o usuário %s da guild}
+  - {id: 345, key: _NN_Guild_SubCreated, text: Sublíder criado com sucesso}
+  - {id: 346, key: _NN_Guild_Sub_Called, text: Você foi convocado a sublíder}
+  - {id: 347, key: _NN_Level_Blocked, text: Seu level foi bloqueado}
+  - {id: 348, key: _NN_IncorrectComp, text: Composição incorreta}
+  - {id: 349, key: _NN_Success_Comp, text: Composição concluída!}
+  - {id: 350, key: _NN_Need_20mGold, text: Você precisa de 20 milhões de gold}
+  - {id: 351, key: _NN_Need_XX_Fame, text: Você precisa de %d de fame}
+  - {id: 352, key: _NN_NoSpace_Item, text: '!Sem espaço para receber o item %s'}
+  - {id: 353, key: _NN_Whisper_MP, text: Não é possível enviar mensagem para o personagem}
+  - {id: 354, key: _NN_Message_SND, text: 'Mensagem enquanto ocupado: %s'}
+  - {id: 355, key: _NN_CPPoint, text: 'Seu CP Atual : %d'}
+  - {id: 356, key: _NN_NT_Amount, text: 'Você possui [%02d] entradas'}
+  - {id: 357, key: _NN_NT_Zero, text: Você não possui entradas}
+  - {id: 358, key: _NN_Guild_MaxSub, text: Máximo de sublíderes atingido!}
+  - {id: 359, key: _NN_NoSpace_AllGroup, text: Não há espaço suficiente para o grupo completo}
+  - {id: 360, key: _NN_Only_Arzam, text: Somente na cidade de Arzam}
+  - {id: 361, key: _NN_CantEnter, text: Entrada não permitida}
+  - {id: 362, key: _NN_AccountBlocked_3Hrs, text: Conta bloqueada durante 3 horas por uso ilegal.}
+  - {id: 363, key: _NN_AccountBlocked_Analysis, text: Conta em análise. Entre em contato com o suporte}
+  - {id: 364, key: _NN_GiveMe_Item, text: 'Traga-me o item [ %s ] '}
+  - {id: 365, key: _NN_Received_Mount_Perzen, text: 'Você recebeu o item [ %s ]'}
+  - {id: 366, key: _NN_Welcome_Nipp, text: 'Bem vindo ao reino gelado, Nippleheim'}
+  - {id: 367, key: _NN_CantTele_Nip, text: Level inadequado}
+  - {id: 368, key: _NN_HasColor, text: Esta parte já pintada ou sem refinação.}
+  - {id: 369, key: _NN_NoColor, text: Esta parte não está pintada}
+  - {id: 370, key: _NN_Item_NotMatch, text: O item não confere}
+  - {id: 371, key: _NN_YouReCitizen, text: Você é cidadão desse canal. Drop bônus de %d%%.}
+  - {id: 372, key: _NN_NotCitizen, text: Drop bônus de %d%% para cidadões desse canal.}
+  - {id: 373, key: _NN_TeleportDisable, text: Teleporte não disponível}
+  - {id: 374, key: _NN_AreUSure_Reset, text: 'Tem certeza que deseja resetar seus pontos kill?'}
+  - {id: 375, key: _NN_God_Continue_Blessing, text: Que os Deuses continuem te abençoando}
+  - {id: 376, key: _NN_Citizen, text: Adquiriu cidadania}
+  - {id: 377, key: _NN_Sorry, text: Desculpe.}
+  - {id: 378, key: _NN_Items_Same_Class, text: Só é possível utilizar em itens da mesma classe}
+  - {id: 379, key: _NN_Items_JustMortal, text: 'Só é possível utilizar em sets mortais [E]'}
+  - {id: 380, key: _NN_Items_Anct, text: Só é possível utilizar em itens ancts}
+  - {id: 381, key: _NN_Items_Arch, text: Só é possível utilizar em itens archs}
+  - {id: 382, key: _NN_Items_Smaller9, text: Só é possível utilizar em itens inferiores a +9}
+  - {id: 383, key: _NN_Items_Plus11, text: Só é possível utilizar em itens +11}
+  - {id: 384, key: _NN_Items_NOtAnct, text: Só é possível utilizar em itens normais}
+  - {id: 385, key: _NN_Only_Armia, text: Somente na cidade de Armia}
+  - {id: 386, key: _NN_Only_Erion, text: Somente na cidade de Erion}
+  - {id: 387, key: _NN_Only_A_8th_Per_Char, text: Só é possível obter uma oitava skill por personagem.}
+  - {id: 388, key: _NN_Need_All_Skill_Lineage, text: Necessário todas as skills da linhagem.}
+  - {id: 389, key: _NN_Need_X_Gold_To_Buy_Skill, text: Gold insuficiente para adquirir a skill.}
+  - {id: 390, key: _NN_Minimum_AlqOdin_Ref_Is_10, text: Refinação mínima para composição é +10}
+  - {id: 391, key: _NN_Cant_Refine_With_Me, text: Não é possível refinar comigo...}
+  - {id: 392, key: _NN_Odin_CombineSucceed, text: Jogador %s obteve sucesso na refinação item +%d}
+  - {id: 393, key: _NN_Cant_Delete_This_Item, text: Não é possível deletar este item.}
+  - {id: 394, key: _NN_Guild_Only_CastleOwners, text: Somente para a guild dona do Castelo de Noatun}
+  - {id: 395, key: _NN_Guild_CitizenBonus_Gold, text: Você precisa de 1 bilhão de gold para tributar}
+  - {id: 396, key: _NN_Guild_CitizenBonus_Thanks, text: Obrigado por tributar para o Reino}
+  - {id: 397, key: _NN_Guild_CitizenBonus_MaxBonus, text: Bônus de experiência máximo já atingido}
+  - {id: 398, key: _NN_Kefra_GuildKill, text: 'A guild [%s] derrotou Kefra'}
+  - {id: 399, key: _NN_Kefra_PlayerKill, text: O Kefra foi derrotado}
+  - {id: 400, key: _NN_Kefra_Reborn, text: O Kefra renasceu}

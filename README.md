@@ -18,22 +18,28 @@ jogo precisam do cliente com o patch de canais (`wyd-client`).
 
 - Go (veja a versão em `go.mod`)
 - Docker Desktop, para o PostgreSQL (`docker-compose.yaml`)
-## Dados do jogo (`data/`)
+## Dados do jogo
 
-Tudo o que o servidor lê fica dentro do repositório:
-
-| Pasta | Conteúdo | Quem lê |
+| Onde | Conteúdo | Quem lê |
 |---|---|---|
-| `data/tmsrv` | `HeightMap.dat`, `AttributeMap.dat`, `guild_zone.txt`, `Language.txt`, `NPCGener.txt`, `InitItem.csv`, `npc/`, `npc_base/` | TMSRV |
-| `data/tmsrv/Data` | `Missions.xml`, `DailyReward.txt`, `NPCEvento.txt` | TMSRV |
-| `data/tmsrv/Conf/Roleta.txt`, `data/tmsrv/Controlador EXP/` | roleta e bônus de experiência | TMSRV |
-| `data/tmsrv/Cache` | bloqueio de conta e recompensa diária por conta (criado em execução, fora do Git) | TMSRV e painel |
-| `data/dbsrv` | `npc/` (modelos das classes) | DBSRV |
+| `tmsrv.yaml` | opções e tabelas pequenas: cidades, portões, NPCs de troca, recompensa diária, roleta, bônus de experiência | TMSRV (e DBSRV e painel, em parte) |
+| `config/` | `language.yaml`, `missions.yaml`, `npc_generators.yaml` | TMSRV e painel |
+| Banco, schema `gamedata` | itens, skills, drops, teleportes, mapas (`HeightMap.dat`, `AttributeMap.dat`), `ItemList.bin` do cliente e modelos de NPC e de classe | TMSRV, DBSRV e painel |
+| Banco, tabela `account_locks` | bloqueio de conta | TMSRV e painel |
 
-Os arquivos de texto estão em Windows-1252, a codificação do cliente; o
-`.gitattributes` impede o Git de alterá-los. Os caminhos podem ser trocados
-pelas flags `-dir` (tmsrv), `-tmsrv-dir` (admin),
-`-npc` (dbsrv).
+A recompensa diária de cada conta é salva junto com a conta. A pasta de
+`config/` pode ser trocada pela flag `-config-dir` (tmsrv e admin).
+
+Para substituir um binário (um `ItemList.bin` novo, modelos saídos de um editor
+de NPC), use `admin world-import`; só o que for informado é alterado:
+
+```bat
+go run ./cmd/admin world-import -itemlist ItemList.bin
+go run ./cmd/admin world-import -heightmap HeightMap.dat -attributemap AttributeMap.dat -npc npc -npc-base npc_base -class classes
+```
+
+O `ItemList.bin` vale em alguns segundos. Mapas e modelos valem quando a TMSRV
+(e, para as classes, o DBSRV) reiniciar.
 
 Só o `xml-import`, que migra uma vez as contas do DBsrv C++ (arquivos com
 dados de jogadores), ainda aponta para a pasta antiga `../Release Servidor/DBSRV`.
@@ -47,8 +53,10 @@ servidor stop
 servidor senha-admin
 ```
 
-Um servidor novo começa sem itens e skills. Importe um arquivo gerado em
-**Exportar** no painel de outro servidor (menu Exportar > Importar).
+Um servidor novo começa com o banco vazio: o DBSRV e os canais não sobem até
+receberem os dados. Abra o painel, que sobe sozinho, e importe um arquivo
+gerado em **Exportar** no painel de outro servidor (menu Exportar > Importar).
+Exportações feitas antes da mudança para YAML (versão 1) não são aceitas.
 
 ## Configuração
 

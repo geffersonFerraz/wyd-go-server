@@ -17,7 +17,7 @@ type GameData struct {
 	BlockedDrops []int
 	Teleports    []Teleport
 	// CityOwners are the cities the admin panel gave to a guild (cities
-	// without a row keep guild_zone.txt's owner).
+	// without a row keep the owner of tmsrv.yaml).
 	CityOwners []CityOwner
 }
 

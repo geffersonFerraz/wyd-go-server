@@ -2,10 +2,8 @@ package game
 
 import (
 	"bytes"
-	"errors"
-	"io/fs"
-	"os"
-	"path/filepath"
+	"context"
+	"time"
 
 	"dbsrv/internal/protocol"
 	"dbsrv/internal/wire"
@@ -14,8 +12,7 @@ import (
 // The account lock (RequestBlockFunc.cpp): an 8-character password and
 // eight switches that block parts of the game until the password is given
 // again. The C++ kept it in <TMSRV>/Cache/LockAccount/<LOGIN>.bin
-// (UserBlockData, 18 bytes); the same files are used here, so locks set on
-// either server carry over.
+// (UserBlockData, 18 bytes); here the same 18 bytes are in the database.
 
 const (
 	opLockStatus  = 0xF30 // server: MSG_AccountLockInfo; client: unlock (MSG_UnlockAccount)
@@ -64,27 +61,36 @@ type LockStatus struct {
 	Conf   [8]uint8
 }
 
-// lockPath is the lock file of an account ("" when the server has no
-// cache folder: locks then live only in memory).
-func (g *Game) lockPath(u *User) string {
-	login := wire.CString(u.account.Username[:])
-	if g.cfg.CacheDir == "" || login == "" || filepath.Base(login) != login {
+// LockStore keeps the account locks (internal/store implements it).
+type LockStore interface {
+	AccountLock(ctx context.Context, username string) ([]byte, error)
+	SetAccountLock(ctx context.Context, username string, data []byte) error
+	DeleteAccountLock(ctx context.Context, username string) error
+}
+
+// lockTimeout bounds the database calls made from the game loop.
+const lockTimeout = 2 * time.Second
+
+// lockLogin is the key of an account's lock ("" when locks live only in
+// memory).
+func (g *Game) lockLogin(u *User) string {
+	if g.cfg.Locks == nil {
 		return ""
 	}
-	return filepath.Join(g.cfg.CacheDir, "LockAccount", login+".bin")
+	return wire.CString(u.account.Username[:])
 }
 
 // loadLock is LoadBlockData (on entering the world).
 func (g *Game) loadLock(u *User) {
-	path := g.lockPath(u)
-	if path == "" {
+	login := g.lockLogin(u)
+	if login == "" {
 		return
 	}
-	raw, err := os.ReadFile(path)
+	ctx, cancel := context.WithTimeout(context.Background(), lockTimeout)
+	defer cancel()
+	raw, err := g.cfg.Locks.AccountLock(ctx, login)
 	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			g.log.Warn("account lock not readable", "slot", u.id, "err", err)
-		}
+		g.log.Warn("account lock not readable", "slot", u.id, "err", err)
 		return
 	}
 	if len(raw) < 18 {
@@ -96,15 +102,17 @@ func (g *Game) loadLock(u *User) {
 	}
 }
 
-// saveLock is SaveUserBlockData; a cleared lock removes the file (the C++
-// left it, so the lock came back at the next login).
+// saveLock is SaveUserBlockData; a cleared lock removes the row (the C++
+// left its file, so the lock came back at the next login).
 func (g *Game) saveLock(u *User) {
-	path := g.lockPath(u)
-	if path == "" {
+	login := g.lockLogin(u)
+	if login == "" {
 		return
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), lockTimeout)
+	defer cancel()
 	if !u.lock.set() {
-		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		if err := g.cfg.Locks.DeleteAccountLock(ctx, login); err != nil {
 			g.log.Warn("account lock not removed", "slot", u.id, "err", err)
 		}
 		return
@@ -118,11 +126,8 @@ func (g *Game) saveLock(u *User) {
 			b.WriteByte(0)
 		}
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err == nil {
-		err = os.WriteFile(path, b.Bytes(), 0o644)
-		if err != nil {
-			g.log.Warn("account lock not saved", "slot", u.id, "err", err)
-		}
+	if err := g.cfg.Locks.SetAccountLock(ctx, login, b.Bytes()); err != nil {
+		g.log.Warn("account lock not saved", "slot", u.id, "err", err)
 	}
 }
 

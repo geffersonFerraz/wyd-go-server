@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 go build -trimpath -o /out/app ./cmd/${CMD}
 FROM alpine:3.22
 RUN apk add --no-cache tzdata ca-certificates libcap
 ENV TZ=America/Sao_Paulo
-# Os programas usam caminhos relativos (data/..., tmsrv.yaml): a raiz do
+# Os programas usam caminhos relativos (config/..., tmsrv.yaml): a raiz do
 # repositório é montada em /app pelo docker-compose.
 WORKDIR /app
 COPY --from=build /out/app /usr/local/bin/app

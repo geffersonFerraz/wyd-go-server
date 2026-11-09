@@ -8,22 +8,42 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
+	"dbsrv/internal/game"
 	"dbsrv/internal/store"
 )
 
-func TestAllowedExportPath(t *testing.T) {
-	for p, want := range map[string]bool{
-		"tmsrv/npc/Kefra": true, "tmsrv/NPCGener.txt": true, "dbsrv/npc/TK": true, "tmsrv/Data/Missions.xml": true,
-		"../tmsrv.yaml": false, "tmsrv/npc/../../x": false, "tmsrv/Cache/LockAccount/A.bin": false, "/etc/passwd": false,
-		"tmsrv/HeightMap.dat": false, "tmsrv/npc/a/b": false, `tmsrv\npc\x`: false, "": false,
-	} {
-		if got := allowedExportPath(p); got != want {
-			t.Errorf("%q: %v", p, got)
-		}
+// testWorld is the smallest world the import accepts.
+func testWorld() *store.WorldAssets {
+	w := &store.WorldAssets{Assets: []store.WorldAsset{
+		{Name: store.AssetHeightMap, Content: make([]byte, 4096*4096)},
+		{Name: store.AssetAttributeMap, Content: make([]byte, 1024*1024)},
+		{Name: store.AssetItemList, Content: []byte("itens")},
+	}, Templates: []store.MobTemplate{{Kind: store.TemplateNPC, Name: "Lobo", Content: make([]byte, 848)}}}
+	for _, n := range game.ClassNames {
+		w.Templates = append(w.Templates, store.MobTemplate{Kind: store.TemplateClass, Name: n, Content: make([]byte, 848)})
 	}
+	return w
+}
+
+// copyConfigFiles copies the real config folder and returns the files.
+func copyConfigFiles(t *testing.T, dst string) []ExportFile {
+	t.Helper()
+	var out []ExportFile
+	for _, n := range game.ConfigFiles {
+		raw, err := os.ReadFile(filepath.Join("../../config", n))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dst, n), raw, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, ExportFile{Path: n, Content: raw})
+	}
+	return out
 }
 
 // uploadExport posts a file to the import step.
@@ -52,18 +72,20 @@ func TestServerExportImportRoundTrip(t *testing.T) {
 	h := newPanel(t)
 	csrf := h.login()
 	dir := t.TempDir()
-	data := filepath.Join(dir, "data")
-	os.MkdirAll(filepath.Join(data, "tmsrv", "npc"), 0o755)
+	conf := filepath.Join(dir, "config")
+	os.MkdirAll(conf, 0o755)
 	os.MkdirAll(filepath.Join(dir, "state"), 0o755)
-	os.WriteFile(filepath.Join(data, "tmsrv", "npc", "Lobo"), []byte{1, 2, 0xFF}, 0o644)
-	os.WriteFile(filepath.Join(data, "tmsrv", "HeightMap.dat"), []byte("mapa"), 0o644)
+	copyConfigFiles(t, conf)
 	raw, err := os.ReadFile("../../tmsrv.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	settings := filepath.Join(dir, "tmsrv.yaml")
 	os.WriteFile(settings, raw, 0o644)
-	h.panel.cfg.DataDir, h.panel.cfg.SettingsPath, h.panel.cfg.StateDir = data, settings, filepath.Join(dir, "state")
+	h.panel.cfg.ConfigDir, h.panel.cfg.SettingsPath, h.panel.cfg.StateDir = conf, settings, filepath.Join(dir, "state")
+	if err := h.st.UpsertWorldAssets(h.ctx, testWorld()); err != nil {
+		t.Fatal(err)
+	}
 
 	gd := testGameData()
 	if err := h.st.ImportGameData(h.ctx, gd, "t"); err != nil {
@@ -80,13 +102,14 @@ func TestServerExportImportRoundTrip(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &e); err != nil {
 		t.Fatal(err)
 	}
-	if len(e.Files) != 1 || e.Files[0].Path != "tmsrv/npc/Lobo" || len(e.MacBans) != 1 || len(e.GameData.Items) != len(gd.Items) || !strings.Contains(e.TmsrvYAML, "wars:") {
+	if len(e.Files) != len(game.ConfigFiles) || e.World == nil || len(e.World.Templates) != 5 || len(e.MacBans) != 1 || len(e.GameData.Items) != len(gd.Items) || !strings.Contains(e.TmsrvYAML, "wars:") {
 		t.Fatalf("export: %d files %v, bans %d, items %d", len(e.Files), e.Files, len(e.MacBans), len(e.GameData.Items))
 	}
 
 	// Changing the file only shows up after the confirmation.
 	e.GameData.Items[0].Price = 777
-	e.Files[0].Content = []byte("novo")
+	e.Files[0].Content = append(bytes.Clone(e.Files[0].Content), "\n# novo\n"...)
+	e.World.Templates[0].Content = bytes.Repeat([]byte{7}, 848)
 	e.TmsrvYAML += "\n# importado\n"
 	e.MacBans = nil
 	if code, body := uploadExport(t, h, csrf, &e); code != http.StatusOK || !strings.Contains(body, "Confirmar importação") {
@@ -109,8 +132,12 @@ func TestServerExportImportRoundTrip(t *testing.T) {
 	if macs, _ := h.st.MacBans(h.ctx); len(macs) != 0 {
 		t.Fatalf("bans: %v", macs)
 	}
-	if got, _ := os.ReadFile(filepath.Join(data, "tmsrv", "npc", "Lobo")); string(got) != "novo" {
-		t.Fatalf("file: %q", got)
+	if got, _ := os.ReadFile(filepath.Join(conf, e.Files[0].Path)); !strings.HasSuffix(string(got), "# novo\n") {
+		t.Fatalf("file: %q", got[max(len(got)-20, 0):])
+	}
+	world, _ := h.st.LoadWorldAssets(h.ctx)
+	if !bytes.Equal(world.Templates[0].Content, e.World.Templates[0].Content) {
+		t.Fatal("templates not imported")
 	}
 	if got, _ := os.ReadFile(settings); !strings.Contains(string(got), "# importado") {
 		t.Fatal("tmsrv.yaml not written")
@@ -127,9 +154,10 @@ func TestServerImportRefusesBadFiles(t *testing.T) {
 	raw, _ := os.ReadFile("../../tmsrv.yaml")
 	settings := filepath.Join(dir, "tmsrv.yaml")
 	os.WriteFile(settings, raw, 0o644)
-	h.panel.cfg.DataDir, h.panel.cfg.SettingsPath, h.panel.cfg.StateDir = dir, settings, dir
+	h.panel.cfg.ConfigDir, h.panel.cfg.SettingsPath, h.panel.cfg.StateDir = dir, settings, dir
+	files := copyConfigFiles(t, dir)
 	good := func() *ServerExport {
-		return &ServerExport{Format: exportFormat, Version: exportVersion, TmsrvYAML: string(raw), GameData: testGameData()}
+		return &ServerExport{Format: exportFormat, Version: exportVersion, TmsrvYAML: string(raw), GameData: testGameData(), World: testWorld(), Files: slices.Clone(files)}
 	}
 	if code, _ := uploadRaw(t, h, csrf, []byte("{ nope")); code != http.StatusUnprocessableEntity {
 		t.Fatalf("broken json: %d", code)
@@ -139,10 +167,22 @@ func TestServerImportRefusesBadFiles(t *testing.T) {
 	if code, _ := uploadExport(t, h, csrf, e); code != http.StatusUnprocessableEntity {
 		t.Fatalf("format: %d", code)
 	}
+	for _, p := range []string{"../../etc/x", "../tmsrv.yaml", "/etc/passwd", "", `a\\b`, "HeightMap.dat"} {
+		e = good()
+		e.Files = append(e.Files, ExportFile{Path: p, Content: []byte("x")})
+		if code, _ := uploadExport(t, h, csrf, e); code != http.StatusUnprocessableEntity {
+			t.Fatalf("path %q: %d", p, code)
+		}
+	}
 	e = good()
-	e.Files = []ExportFile{{Path: "../../etc/x", Content: []byte("x")}}
+	e.World = nil
 	if code, _ := uploadExport(t, h, csrf, e); code != http.StatusUnprocessableEntity {
-		t.Fatalf("path: %d", code)
+		t.Fatalf("no world: %d", code)
+	}
+	e = good()
+	e.World.Assets[0].Content = []byte("mapa")
+	if code, body := uploadExport(t, h, csrf, e); code != http.StatusUnprocessableEntity || !strings.Contains(body, "HeightMap") {
+		t.Fatalf("short map: %d", code)
 	}
 	e = good()
 	e.TmsrvYAML = "limits: {}\n"

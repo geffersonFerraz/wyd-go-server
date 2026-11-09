@@ -1,11 +1,6 @@
 package game
 
 import (
-	"bufio"
-	"bytes"
-	"os"
-	"strings"
-
 	"dbsrv/internal/protocol"
 	"dbsrv/internal/wire"
 )
@@ -111,33 +106,6 @@ type DropItemAck struct {
 	InvType, InvSlot int32
 	_                int32
 	PosX, PosY       int16
-}
-
-// loadInitItems mirrors ReadInitItem: "index,x,y,rotate // comment".
-// A missing file only means there are no gates.
-func (d *Data) loadInitItems(path string) error {
-	raw, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	d.InitItems = nil
-	sc := bufio.NewScanner(bytes.NewReader(raw))
-	for sc.Scan() {
-		line, _, _ := strings.Cut(sc.Text(), "//")
-		f := strings.Fields(strings.ReplaceAll(line, ",", " "))
-		if len(f) < 4 {
-			continue
-		}
-		it := InitItemFile{Index: atoi(f[0]), X: atoi(f[1]), Y: atoi(f[2]), Rotate: atoi(f[3])}
-		if it.Index <= 0 || len(d.InitItems) >= maxGroundItem-1 {
-			continue
-		}
-		d.InitItems = append(d.InitItems, it)
-	}
-	return sc.Err()
 }
 
 func cellKey(x, y int) int { return y*gridSize + x }

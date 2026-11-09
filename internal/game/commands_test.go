@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"strings"
 	"testing"
+	"time"
 
 	"dbsrv/internal/wire"
 )
@@ -255,7 +256,6 @@ func TestSNDAndRelo(t *testing.T) {
 
 func TestDailyRewardOncePerDay(t *testing.T) {
 	g := worldGame(t)
-	g.cfg.CacheDir = t.TempDir()
 	u := placePlayer(g, 2100, 2100, 0)
 	listen(u)
 	wire.PutCString(u.account.Username[:], "TESTE")
@@ -280,11 +280,9 @@ func TestDailyRewardOncePerDay(t *testing.T) {
 	if again != 2 {
 		t.Fatal("daily paid twice the same day")
 	}
-	// The mark survives in the shared cache file.
-	u.account.Daily = wire.Daily{}
-	g.loadDaily(u)
-	if u.account.Daily.WeekYear == 0 {
-		t.Fatal("daily state not saved to Cache/Daily")
+	// The mark is in the account, which DBSRV saves.
+	if u.account.Daily.WeekYear == 0 || !u.account.Daily.Received[int(time.Now().Weekday())] {
+		t.Fatalf("daily state not in the account: %+v", u.account.Daily)
 	}
 }
 

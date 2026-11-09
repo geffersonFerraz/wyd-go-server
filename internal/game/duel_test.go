@@ -2,8 +2,6 @@ package game
 
 import (
 	"encoding/binary"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"dbsrv/internal/wire"
@@ -22,7 +20,8 @@ func TestLockAndDuelPacketSizes(t *testing.T) {
 
 func TestAccountLock(t *testing.T) {
 	g := worldGame(t)
-	g.cfg.CacheDir = t.TempDir()
+	locks := memLocks{}
+	g.cfg.Locks = locks
 	u := placePlayer(g, 2112, 2042, 0)
 	listen(u)
 	wire.PutCString(u.account.Username[:], "TESTE")
@@ -37,9 +36,8 @@ func TestAccountLock(t *testing.T) {
 	copy(lock.Password[:], "12345678")
 	lock.Conf[lockUnequip], lock.Conf[lockTrade] = 1, 1
 	g.requestLock(u, packet(&lock))
-	path := filepath.Join(g.cfg.CacheDir, "LockAccount", "TESTE.bin")
-	if raw, err := os.ReadFile(path); err != nil || len(raw) != 18 || string(raw[:8]) != "12345678" || raw[10] != 1 || raw[11] != 1 || raw[12] != 0 {
-		t.Fatalf("lock file %q err %v", raw, err)
+	if raw := locks["TESTE"]; len(raw) != 18 || string(raw[:8]) != "12345678" || raw[10] != 1 || raw[11] != 1 || raw[12] != 0 {
+		t.Fatalf("stored lock %q", raw)
 	}
 	if len(sent(u, opLockStatus)) == 0 {
 		t.Fatal("no lock status sent")
@@ -53,7 +51,7 @@ func TestAccountLock(t *testing.T) {
 		t.Fatal("item used while locked")
 	}
 
-	// The lock comes back from the file at the next login.
+	// The lock comes back from the database at the next login.
 	u.lock = accountLock{}
 	g.loadLock(u)
 	if !u.lock.desc[lockTrade] || u.lock.desc[lockBuy] {
@@ -71,8 +69,8 @@ func TestAccountLock(t *testing.T) {
 	if u.lock.set() {
 		t.Fatal("not unlocked")
 	}
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Fatal("lock file left behind (the lock would come back)")
+	if _, ok := locks["TESTE"]; ok {
+		t.Fatal("lock row left behind (the lock would come back)")
 	}
 }
 

@@ -2,20 +2,11 @@ package game
 
 import (
 	"log/slog"
-	"os"
 	"testing"
 )
 
-const realDataDir = "../../data/tmsrv"
-
 func TestLoadWorldData(t *testing.T) {
-	if _, err := os.Stat(realDataDir); err != nil {
-		t.Skip("no TMSRV data folder")
-	}
-	d, err := LoadData(realDataDir)
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := LoadRealData(t)
 	applyLegacyGameData(t, d)
 	if len(d.Geners) < 1000 {
 		t.Errorf("geners = %d, want thousands", len(d.Geners))

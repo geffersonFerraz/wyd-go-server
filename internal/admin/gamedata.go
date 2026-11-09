@@ -564,12 +564,16 @@ func (s *Server) saveDropRates(w http.ResponseWriter, r *http.Request) {
 
 // SeedRateDrops copies the monsters' inventories to the chance list the
 // first time the panel runs after the migration.
-func SeedRateDrops(ctx context.Context, st *store.Store, tmsrvDir string) (int, error) {
+func SeedRateDrops(ctx context.Context, st *store.Store, configDir string) (int, error) {
 	done, err := st.RateDropsImported(ctx)
 	if err != nil || done {
 		return 0, err
 	}
-	drops, err := game.ReadRateDrops(tmsrvDir)
+	world, err := st.LoadWorldAssets(ctx)
+	if err != nil || len(world.TemplatesOf(store.TemplateNPC)) == 0 {
+		return 0, err // a new server: the templates come with the first import
+	}
+	drops, err := game.ReadRateDrops(configDir, world)
 	if err != nil {
 		return 0, err
 	}

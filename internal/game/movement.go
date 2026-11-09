@@ -1,12 +1,6 @@
 package game
 
 import (
-	"bufio"
-	"bytes"
-	"os"
-	"strconv"
-	"strings"
-
 	"dbsrv/internal/wire"
 )
 
@@ -15,39 +9,6 @@ const (
 	nnNewbieZone       = 46
 	nnOnlyGuildMembers = 47
 )
-
-// loadLanguage is ReadLanguageFile: "index name message" per line (tabs are
-// spaces, '#' comments). The file is Windows-1252.
-func (d *Data) loadLanguage(path string) {
-	d.Lang = map[int]string{}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
-	sc := bufio.NewScanner(bytes.NewReader(raw))
-	for sc.Scan() {
-		line := strings.ReplaceAll(sc.Text(), "\t", " ")
-		if line == "" || line[0] == '#' {
-			continue
-		}
-		f := strings.Fields(line)
-		if len(f) < 3 {
-			continue
-		}
-		idx, err := strconv.Atoi(f[0])
-		if err != nil {
-			continue
-		}
-		// %d %*s %[^\n]: the message starts after the second field.
-		rest := strings.TrimLeft(line, " ")
-		rest = strings.TrimLeft(rest[len(f[0]):], " ")
-		rest = strings.TrimLeft(rest[len(f[1]):], " ")
-		if len(rest) > 127 {
-			rest = rest[:127]
-		}
-		d.Lang[idx] = wire.GameString([]byte(rest))
-	}
-}
 
 // lang is g_pLanguageString[i].
 func (g *Game) lang(i int) string { return g.data.Lang[i] }

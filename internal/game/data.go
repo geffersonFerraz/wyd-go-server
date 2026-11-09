@@ -1,12 +1,7 @@
 package game
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -40,7 +35,7 @@ type ItemData struct {
 	Grade   int16
 }
 
-// CityZone mirrors the STRUCT_GUILDZONE fields Phase A uses (guild_zone.txt).
+// CityZone mirrors the STRUCT_GUILDZONE fields Phase A uses (cities of tmsrv.yaml).
 type CityZone struct {
 	OwnerIndex             int32
 	TowerX, TowerY         int32
@@ -57,35 +52,33 @@ type CityZone struct {
 	WinCount               int32 // times the owner won the city (tower model)
 }
 
-// Data is the static game data loaded at startup (from the TMSRV folder).
+// Data is the static game data loaded at startup.
 type Data struct {
 	Items        []ItemData // indexed by item id, len MaxItemList
 	Cities       [5]CityZone
-	Height       []byte // HeightMap.dat, [y*4096+x]; 127 = blocked
-	Attribute    []byte // AttributeMap.dat, 1024x1024 cells of 4x4 tiles
+	Height       []byte // gamedata.assets HeightMap.dat, [y*4096+x]; 127 = blocked
+	Attribute    []byte // gamedata.assets AttributeMap.dat, 1024x1024 cells of 4x4 tiles
 	Teleports    []Teleport
-	Geners       []Generator           // NPCGener.txt, index = generator id
-	Lang         map[int]string        // Language.txt
+	Geners       []Generator           // config/npc_generators.yaml, index = generator id
+	Lang         map[int]string        // config/language.yaml
 	Skills       []SkillData           // skilldata.csv, 256 entries
 	Drops        map[string]*MobDrop   // drop table by mob name (LoadDrops)
 	DropSlots    [64]store.DropSlot    // chance settings of each slot
 	BlockedDrops map[int]bool          // never dropped by chance
-	NPCBase      [50]wire.Mob          // npc_base/ (mounts, summons)
-	dir          string                // TMSRV data folder
-	InitItems    []InitItemFile        // InitItem.csv: gates, barriers, doors
-	NPCEvents    [maxNPCEvent]NPCEvent // Data/NPCEvento.txt
-	StoreBase    *wire.Mob             // npc/Base: the auction store NPC
-	Thorn        *wire.Mob             // npc/Vinha: Muro de Espinhos (skill 98)
+	NPCBase      [50]wire.Mob          // templates npc_base (mounts, summons)
+	npcFiles     map[string][]byte     // gamedata.mob_templates, kind npc
+	InitItems    []InitItemFile        // init_items of tmsrv.yaml: gates, barriers, doors
+	NPCEvents    [maxNPCEvent]NPCEvent // npc_events of tmsrv.yaml
+	StoreBase    *wire.Mob             // template Base: the auction store NPC
+	Thorn        *wire.Mob             // template Vinha: Muro de Espinhos (skill 98)
 
-	DailyReward [7][4]wire.Item             // Data/DailyReward.txt
-	Missions    []Mission                   // Data/Missions.xml
-	Roulette    [maxRouletteBox]RouletteBox // ../Conf/Roleta.txt
-	ExpBonus    ExpBonus                    // Controlador EXP/*.txt
+	DailyReward [7][4]wire.Item             // daily_reward of tmsrv.yaml
+	Missions    []Mission                   // config/missions.yaml
+	Roulette    [maxRouletteBox]RouletteBox // roulette of tmsrv.yaml
+	ExpBonus    ExpBonus                    // exp_bonus of tmsrv.yaml
 }
 
-// Config is what the game loop runs with: tmsrv.yaml (see ApplySettings)
-// plus the TMSRV data folder. serverip.txt and dataserver.txt are no
-// longer read (they stay for the C++ server).
+// Config is what the game loop runs with: tmsrv.yaml (see ApplySettings).
 type Config struct {
 	Limits      LimitSettings  // limits of tmsrv.yaml
 	NoCPAreas   []NoCPArea     // no_cp_areas of tmsrv.yaml
@@ -109,7 +102,7 @@ type Config struct {
 	Login                 LoginSettings
 	Missions              MissionSettings
 	Store                 StoreSettings
-	CacheDir              string // per-account files shared with the C++ (locks, daily)
+	Locks                 LockStore // account locks; nil keeps them only in memory
 }
 
 // ApplySettings copies tmsrv.yaml values into the config, for channel
@@ -138,21 +131,15 @@ func (c *Config) ApplySettings(s Settings, channel int) error {
 	c.Arena = s.Arena
 	c.Wars, c.Bosses = s.Wars, s.Bosses
 	c.Login, c.Missions, c.Store = s.Login, s.Missions, s.Store
-	if s.CacheDir != "" {
-		c.CacheDir = s.CacheDir
-	}
 	return nil
 }
 
-// LoadConfig is the config of a TMSRV data folder with the C++ values (tests
-// use it; the server applies tmsrv.yaml on top with ApplySettings).
-func LoadConfig(dir string) (Config, error) {
+// LoadConfig is the config with the C++ values (tests use it; the server
+// applies tmsrv.yaml on top with ApplySettings).
+func LoadConfig() (Config, error) {
 	var c Config
-	if err := c.ApplySettings(CppSettings(), 1); err != nil {
-		return c, err
-	}
-	c.CacheDir = filepath.Join(dir, "Cache")
-	return c, nil
+	err := c.ApplySettings(CppSettings(), 1)
+	return c, err
 }
 
 // fillDefaults gives the zero values of a hand-made test Config the C++
@@ -176,100 +163,28 @@ func (c *Config) fillDefaults() {
 	}
 }
 
-// LoadData loads the file-based data from the C++ TMSRV folder: guild_zone.txt,
-// HeightMap.dat, AttributeMap.dat, Language.txt and NPCGener.txt (+ npc/).
-// Items, skills, drops and teleports come from the database: ApplyGameData.
-func LoadData(dir string) (*Data, error) {
-	d := &Data{Items: make([]ItemData, MaxItemList)}
-	if err := d.loadCityZones(filepath.Join(dir, "guild_zone.txt")); err != nil {
+// LoadData builds the static data: the world tables of tmsrv.yaml (s), the
+// big tables of the config folder (dir) and the binary files of the database
+// (w). Items, skills, drops and teleports come from the database too:
+// ApplyGameData.
+func LoadData(dir string, s Settings, w *store.WorldAssets) (*Data, error) {
+	d := &Data{Items: make([]ItemData, MaxItemList), Skills: make([]SkillData, maxSkill)} // Skills: filled by ApplyGameData
+	if err := d.setWorldAssets(w); err != nil {
 		return nil, err
 	}
-	h, err := os.ReadFile(filepath.Join(dir, "HeightMap.dat"))
-	if err != nil {
+	d.applyWorldTables(&s)
+	if err := d.loadLanguage(dir); err != nil {
 		return nil, err
 	}
-	if len(h) != gridSize*gridSize {
-		return nil, fmt.Errorf("HeightMap.dat: %d bytes, want %d", len(h), gridSize*gridSize)
-	}
-	d.Height = h
-	if err := d.loadWorldData(dir); err != nil {
+	d.loadNPCBase(w.TemplatesOf(store.TemplateNPCBase))
+	if err := d.loadGeners(dir); err != nil {
 		return nil, err
 	}
-	if err := d.loadInitItems(filepath.Join(dir, "InitItem.csv")); err != nil {
+	if err := d.loadMissions(dir); err != nil {
 		return nil, err
 	}
-	if err := d.loadNPCEvents(filepath.Join(dir, "Data", "NPCEvento.txt")); err != nil {
-		return nil, err
-	}
-	d.dir = dir
-	d.loadStoreBase(dir)
-	if err := loadOptional(d.loadDailyReward, filepath.Join(dir, "Data", "DailyReward.txt")); err != nil {
-		return nil, err
-	}
-	if err := loadOptional(d.loadMissions, filepath.Join(dir, "Data", "Missions.xml")); err != nil {
-		return nil, fmt.Errorf("Missions.xml: %w", err)
-	}
-	if err := loadOptional(d.loadRoulette, filepath.Join(dir, "Conf", "Roleta.txt")); err != nil {
-		return nil, err
-	}
-	for _, f := range []string{"ControleExp.txt", "bonusmortal.txt"} {
-		if err := loadOptional(func(p string) error { return d.ExpBonus.load(p, f) },
-			filepath.Join(dir, "Controlador EXP", f)); err != nil {
-			return nil, err
-		}
-	}
+	d.StoreBase, d.Thorn = d.npcTemplate("Base"), d.npcTemplate("Vinha")
 	return d, nil
-}
-
-var defineRe = regexp.MustCompile(`^\s*#define\s+(\w+)\s+(\d+)`)
-
-func (d *Data) loadCityZones(path string) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	sc := bufio.NewScanner(bytes.NewReader(raw))
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" || line[0] == '#' {
-			continue
-		}
-		f := strings.Split(line, ",")
-		if len(f) < 10 {
-			continue
-		}
-		idx := atoi(f[0])
-		if idx < 0 || idx >= len(d.Cities) {
-			continue
-		}
-		z := CityZone{
-			OwnerIndex: int32(atoi(f[1])),
-			TowerX:     int32(atoi(f[4])), TowerY: int32(atoi(f[5])),
-			AreaGuildX: int32(atoi(f[6])), AreaGuildY: int32(atoi(f[7])),
-			CityX: int32(atoi(f[8])), CityY: int32(atoi(f[9])),
-		}
-		if len(f) >= 14 {
-			z.CityMinX, z.CityMinY = int32(atoi(f[10])), int32(atoi(f[11]))
-			z.CityMaxX, z.CityMaxY = int32(atoi(f[12])), int32(atoi(f[13]))
-		}
-		if len(f) >= 22 {
-			z.WarMinX, z.WarMinY = int32(atoi(f[18])), int32(atoi(f[19]))
-			z.WarMaxX, z.WarMaxY = int32(atoi(f[20])), int32(atoi(f[21]))
-		}
-		if len(f) >= 26 {
-			z.GuildAWarX, z.GuildAWarY = int32(atoi(f[22])), int32(atoi(f[23]))
-			z.GuildBWarX, z.GuildBWarY = int32(atoi(f[24])), int32(atoi(f[25]))
-		}
-		if len(f) >= 28 {
-			z.Impost = int64(atoi(f[26]))
-			z.PercImpost = int32(atoi(f[27]))
-		}
-		if len(f) >= 29 {
-			z.WinCount = int32(atoi(f[28]))
-		}
-		d.Cities[idx] = z
-	}
-	return sc.Err()
 }
 
 func atoi(s string) int {
@@ -303,13 +218,10 @@ func (d *Data) Blocked(x, y int) bool {
 	return d.Height[y*gridSize+x] == 127
 }
 
-// npcTemplate reads npc/<name> (nil if there is no such file).
+// npcTemplate decodes the NPC template name (nil if there is none).
 func (d *Data) npcTemplate(name string) *wire.Mob {
-	if name == "" || name != filepath.Base(name) || d.dir == "" {
-		return nil
-	}
-	b, err := os.ReadFile(filepath.Join(d.dir, "npc", name))
-	if err != nil {
+	b, ok := d.npcFiles[name]
+	if !ok {
 		return nil
 	}
 	var m wire.Mob

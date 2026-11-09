@@ -1,7 +1,6 @@
 package game
 
 import (
-	"path/filepath"
 	"testing"
 
 	"dbsrv/internal/wire"
@@ -32,10 +31,8 @@ func fixRand(t *testing.T, v int) {
 }
 
 func TestLoadNPCEvents(t *testing.T) {
-	var d Data
-	if err := d.loadNPCEvents(filepath.Join(realDataDir, "Data", "NPCEvento.txt")); err != nil {
-		t.Fatal(err)
-	}
+	d, s := Data{}, RealSettings(t)
+	d.applyWorldTables(&s)
 	ev := d.NPCEvents[0]
 	if ev.ItemRequired[0].Index != 4725 || ev.AmountRequired[0] != 1 || ev.Rates != [10]int{75, 150, 225, 300} {
 		t.Fatalf("npc I: %+v", ev)

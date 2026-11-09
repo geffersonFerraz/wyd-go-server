@@ -1,19 +1,15 @@
 package game
 
 import (
-	"path/filepath"
 	"testing"
 
 	"dbsrv/internal/wire"
 )
 
 func TestExpBonusFiles(t *testing.T) {
-	var b ExpBonus
-	if err := b.load(filepath.Join(realDataDir, "Controlador EXP", "ControleExp.txt"), "ControleExp.txt"); err != nil {
-		t.Skip(err)
-	}
-	// ControleExp.txt also lists the Água/Pesa values, but like the C++ only
-	// the desert keys are read from it (the others come from bonusmortal.txt).
+	b := RealSettings(t).ExpBonus
+	// The C++ read only the desert keys of ControleExp.txt; the Água/Pesa
+	// values of bonusmortal.txt were absent, so they are 0 in tmsrv.yaml.
 	if b.DesertMortal != 100 || b.DesertArch != 20 || b.DesertCele != 143 || b.DesertSub != 142 || b.WaterArch != 0 {
 		t.Fatalf("bonus: %+v", b)
 	}

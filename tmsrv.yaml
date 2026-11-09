@@ -59,10 +59,6 @@ change_channel:
   # Segundos mínimos entre duas trocas do mesmo jogador.
   cooldown_seconds: 10
 
-# Pasta dos arquivos por conta compartilhados com o C++ (bloqueio de conta,
-# recompensa diária). Vazio = a pasta Cache dentro da pasta da TMSRV (-dir).
-cache_dir: ""
-
 # Level máximo para entrar na área de novatos.
 newbie_zone: 35
 
@@ -574,3 +570,442 @@ wars:
 #   max_seconds:    tempo máximo vivo sem estar em combate.
 #   geners:         ids do NPCGener; um deles é sorteado a cada nascimento.
 bosses: []
+
+# Cidades (antigo guild_zone.txt). owner só vale na primeira partida: depois
+# os donos ficam no banco (painel > Guildas), e impostos e vitórias são
+# salvos por canal.
+cities:
+  - {city: 0, owner: 5, tower: [2131, 2115], guild_area: [2088, 2148], center: [2086, 2093], area_min: [2052, 2052], area_max: [2171, 2163], war_min: [197, 213], war_max: [238, 230], war_defenders: [205, 220], war_challengers: [228, 220], taxes_collected: 529765946, tax_percent: 15, wins: 1}
+  - {city: 1, owner: 1, tower: [2490, 1718], guild_area: [2531, 1700], center: [2494, 1707], area_min: [2432, 1672], area_max: [2675, 1767], war_min: [197, 149], war_max: [238, 166], war_defenders: [205, 157], war_challengers: [228, 157], taxes_collected: 48317988, tax_percent: 15, wins: 4}
+  - {city: 2, owner: 1, tower: [2454, 1995], guild_area: [2460, 1976], center: [2453, 2000], area_min: [2448, 1966], area_max: [2476, 2024], war_min: [141, 213], war_max: [182, 230], war_defenders: [146, 220], war_challengers: [173, 220], taxes_collected: 1666256, tax_percent: 15, wins: 4}
+  - {city: 3, owner: 1, tower: [3656, 3109], guild_area: [3612, 3118], center: [3652, 3124], area_min: [3604, 3086], area_max: [3688, 3160], war_min: [141, 149], war_max: [182, 166], war_defenders: [146, 157], war_challengers: [173, 157], taxes_collected: 66992732, tax_percent: 15, wins: 4}
+  - {city: 4, owner: 5, tower: [1054, 1718], guild_area: [1068, 1757], center: [1061, 1719], area_min: [1039, 1704], area_max: [1074, 1778], war_min: [4000, 4000], war_max: [4000, 4000], war_defenders: [4000, 4000], war_challengers: [4000, 4000], taxes_collected: 105727983, tax_percent: 15, wins: 0}
+
+# Portões, barreiras e portas do mapa (antigo InitItem.csv).
+init_items:
+  - {item: 471, x: 217, "y": 215, rotate: 1}
+  - {item: 471, x: 217, "y": 221, rotate: 1}
+  - {item: 471, x: 217, "y": 227, rotate: 1}
+  - {item: 471, x: 217, "y": 151, rotate: 1}
+  - {item: 471, x: 217, "y": 157, rotate: 1}
+  - {item: 471, x: 217, "y": 163, rotate: 1}
+  - {item: 471, x: 161, "y": 215, rotate: 1}
+  - {item: 471, x: 161, "y": 221, rotate: 1}
+  - {item: 471, x: 161, "y": 227, rotate: 1}
+  - {item: 471, x: 161, "y": 151, rotate: 1}
+  - {item: 471, x: 161, "y": 157, rotate: 1}
+  - {item: 471, x: 161, "y": 163, rotate: 1}
+  - {item: 472, x: 2603, "y": 1717, rotate: 1}
+  - {item: 472, x: 2603, "y": 1733, rotate: 1}
+  - {item: 471, x: 2624, "y": 1739, rotate: 1}
+  - {item: 471, x: 2624, "y": 1731, rotate: 1}
+  - {item: 471, x: 2624, "y": 1725, rotate: 1}
+  - {item: 471, x: 2624, "y": 1719, rotate: 1}
+  - {item: 471, x: 2624, "y": 1711, rotate: 1}
+  - {item: 464, x: 2504, "y": 2145, rotate: 1}
+  - {item: 468, x: 2528, "y": 2134, rotate: 2}
+  - {item: 462, x: 2487, "y": 2129, rotate: 1}
+  - {item: 463, x: 2518, "y": 2106, rotate: 2}
+  - {item: 757, x: 2240, "y": 1270, rotate: 0}
+  - {item: 758, x: 2248, "y": 1246, rotate: 2}
+  - {item: 759, x: 2262, "y": 1224, rotate: 1}
+  - {item: 760, x: 2279, "y": 1209, rotate: 2}
+  - {item: 761, x: 2265, "y": 1174, rotate: 1}
+  - {item: 758, x: 2230, "y": 1246, rotate: 2}
+  - {item: 759, x: 2216, "y": 1224, rotate: 1}
+  - {item: 760, x: 2199, "y": 1209, rotate: 2}
+  - {item: 761, x: 2213, "y": 1174, rotate: 1}
+  - {item: 773, x: 1129, "y": 1707, rotate: 1}
+  - {item: 773, x: 1116, "y": 1707, rotate: 1}
+  - {item: 773, x: 1094, "y": 1690, rotate: 1}
+  - {item: 800, x: 1075, "y": 1711, rotate: 1}
+  - {item: 746, x: 1129, "y": 1717, rotate: 1}
+  - {item: 746, x: 1129, "y": 1713, rotate: 1}
+  - {item: 746, x: 1129, "y": 1702, rotate: 1}
+  - {item: 746, x: 1129, "y": 1698, rotate: 1}
+  - {item: 4143, x: 2123, "y": 2143, rotate: 1}
+  - {item: 458, x: 2075, "y": 2015, rotate: 2}
+  - {item: 459, x: 2143, "y": 1985, rotate: 2}
+  - {item: 461, x: 2081, "y": 1961, rotate: 2}
+
+# NPCs de troca, Status.Level 500..509 (antigo Data/NPCEvento.txt). O nível i
+# de prêmio sai quando Rand()%300 <= rate.
+npc_events:
+  - event: 0
+    name: Espero que essa recompensa te ajude em sua jornada!
+    required:
+      - {slot: 0, item: 4725, amount: 1}
+    tiers:
+      - {tier: 0, rate: 75, prizes: [{slot: 0, item: 413}]}
+      - {tier: 1, rate: 150, prizes: [{slot: 0, item: 412}]}
+      - {tier: 2, rate: 225, prizes: [{slot: 0, item: 4026}]}
+      - {tier: 3, rate: 300, prizes: [{slot: 0, item: 4726}]}
+  - event: 1
+    name: A recompensa foi boa? Traga-me caveiras melhores.
+    required:
+      - {slot: 0, item: 4726, amount: 1}
+    tiers:
+      - {tier: 0, rate: 50, prizes: [{slot: 0, item: 4027}]}
+      - {tier: 1, rate: 100, prizes: [{slot: 0, item: 413, effects: [[61, 3]]}]}
+      - {tier: 2, rate: 150, prizes: [{slot: 0, item: 4631}]}
+      - {tier: 3, rate: 200, prizes: [{slot: 0, item: 4677, effects: [[43, 9]]}]}
+      - {tier: 4, rate: 250, prizes: [{slot: 0, item: 4028}]}
+      - {tier: 5, rate: 300, prizes: [{slot: 0, item: 4727}]}
+  - event: 2
+    name: Você está avançando de nível, guerreiro.
+    required:
+      - {slot: 0, item: 4727, amount: 1}
+    tiers:
+      - {tier: 0, rate: 50, prizes: [{slot: 0, item: 4529}]}
+      - {tier: 1, rate: 100, prizes: [{slot: 0, item: 4633}]}
+      - {tier: 2, rate: 120, prizes: [{slot: 0, item: 2414, effects: [[61, 10]]}]}
+      - {tier: 3, rate: 140, prizes: [{slot: 0, item: 2415, effects: [[61, 10]]}]}
+      - {tier: 4, rate: 160, prizes: [{slot: 0, item: 2416, effects: [[61, 10]]}]}
+      - {tier: 5, rate: 210, prizes: [{slot: 0, item: 3182, effects: [[61, 4]]}]}
+      - {tier: 6, rate: 260, prizes: [{slot: 0, item: 4029}]}
+      - {tier: 7, rate: 300, prizes: [{slot: 0, item: 4728}]}
+  - event: 3
+    name: Mero mortal, você não é capaz de avançar desse jeito!
+    gold_required: 100000000
+    required:
+      - {slot: 0, item: 4728, amount: 1}
+    tiers:
+      - {tier: 0, rate: 60, prizes: [{slot: 0, item: 4043}, {slot: 1, item: 4043}]}
+      - {tier: 1, rate: 120, prizes: [{slot: 0, item: 4610}]}
+      - {tier: 2, rate: 180, prizes: [{slot: 0, item: 4717}, {slot: 1, item: 4717}]}
+      - {tier: 3, rate: 240, prizes: [{slot: 0, item: 4676}]}
+      - {tier: 4, rate: 300, prizes: [{slot: 0, item: 4729}]}
+  - event: 4
+    name: Se você chegou até aqui, com certeza derrotou vários demônios...
+    gold_required: 300000000
+    required:
+      - {slot: 0, item: 4729, amount: 1}
+    tiers:
+      - {tier: 0, rate: 50, prizes: [{slot: 0, item: 4864}, {slot: 1, item: 4864}]}
+      - {tier: 1, rate: 100, prizes: [{slot: 0, item: 4864, effects: [[43, 1]]}, {slot: 1, item: 4864, effects: [[43, 1]]}]}
+      - {tier: 2, rate: 150, prizes: [{slot: 0, item: 3338}, {slot: 1, item: 3338}]}
+      - {tier: 3, rate: 200, prizes: [{slot: 0, item: 3338, effects: [[43, 1]]}, {slot: 1, item: 3338, effects: [[43, 1]]}]}
+      - {tier: 4, rate: 250, prizes: [{slot: 0, item: 792}]}
+      - {tier: 5, rate: 300, prizes: [{slot: 0, item: 4730}]}
+  - event: 5
+    name: Se você chegou até aqui, com certeza derrotou vários demônios...
+    required:
+      - {slot: 0, item: 4729, amount: 1}
+      - {slot: 1, item: 4728, amount: 2}
+      - {slot: 2, item: 4727, amount: 2}
+    tiers:
+      - {tier: 0, rate: 60, prizes: [{slot: 0, item: 762}]}
+      - {tier: 1, rate: 120, prizes: [{slot: 0, item: 763}]}
+      - {tier: 2, rate: 180, prizes: [{slot: 0, item: 764}]}
+      - {tier: 3, rate: 240, prizes: [{slot: 0, item: 765}]}
+      - {tier: 4, rate: 300, prizes: [{slot: 0, item: 4856}]}
+  - event: 6
+    name: Se você chegou até aqui, com certeza derrotou vários demônios...
+    required:
+      - {slot: 0, item: 4729, amount: 1}
+      - {slot: 1, item: 4728, amount: 3}
+      - {slot: 2, item: 4011, amount: 1}
+    tiers:
+      - {tier: 0, rate: 100, prizes: [{slot: 0, item: 2324, effects: [[78, 8]]}]}
+      - {tier: 1, rate: 200, prizes: [{slot: 0, item: 2325, effects: [[78, 8]]}]}
+      - {tier: 2, rate: 300, prizes: [{slot: 0, item: 2326, effects: [[78, 8]]}]}
+  - event: 7
+    name: Você não vai se arrepender dessa recompensa épica!
+    required:
+      - {slot: 0, item: 4730, amount: 1}
+      - {slot: 1, item: 4728, amount: 2}
+      - {slot: 2, item: 4011, amount: 2}
+    tiers:
+      - {tier: 0, rate: 60, prizes: [{slot: 0, item: 3026, effects: [[87, 11], [60, 44], [4, 120]]}]}
+      - {tier: 1, rate: 120, prizes: [{slot: 0, item: 3026, effects: [[87, 11], [2, 99], [4, 120]]}]}
+      - {tier: 2, rate: 180, prizes: [{slot: 0, item: 3026, effects: [[87, 11], [2, 99], [42, 35]]}]}
+      - {tier: 3, rate: 240, prizes: [{slot: 0, item: 1711, effects: [[43, 231], [3, 80], [4, 100]]}]}
+      - {tier: 4, rate: 300, prizes: [{slot: 0, item: 1711, effects: [[43, 231], [54, 10], [4, 100]]}]}
+  - event: 8
+    name: ""
+    required:
+      - {slot: 0, item: 4733, amount: 3}
+    tiers:
+      - {tier: 0, rate: 300, prizes: [{slot: 0, item: 4725}]}
+
+# Recompensa diária: day 0 = domingo, slot 0..3 (antigo Data/DailyReward.txt).
+daily_reward:
+  - {day: 0, slot: 0, item: 412}
+  - {day: 1, slot: 0, item: 413}
+  - {day: 2, slot: 0, item: 412}
+  - {day: 3, slot: 0, item: 413}
+  - {day: 4, slot: 0, item: 412}
+  - {day: 5, slot: 0, item: 413}
+  - {day: 6, slot: 0, item: 412}
+
+# Caixas da /roleta (antigo Conf/Roleta.txt). show_slots usa -1 para vazio.
+roulette:
+  - box: 0
+    enabled: true
+    super_drop: true
+    key_id: 0
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1]
+    rolls:
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 4, rare: 1, super: 4, evol_bar: 1}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 4, rare: 2, super: 4, evol_bar: 2}
+      - {item: 480, effects: [[61, 1]], chance: 1, announce: 3, rare: 3, super: 3, evol_bar: 3}
+      - {item: 482, effects: [[61, 1]], chance: 1, announce: 2, rare: 4, super: 2, evol_bar: 4}
+      - {item: 483, effects: [[61, 1]], chance: 1, announce: 1, rare: 4, super: 1, evol_bar: 4}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 4, rare: 1, super: 4, evol_bar: 0}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 4, rare: 2, super: 4, evol_bar: 0}
+      - {item: 480, effects: [[61, 1]], chance: 1, announce: 3, rare: 3, super: 3, evol_bar: 0}
+      - {item: 482, effects: [[61, 1]], chance: 1, announce: 2, rare: 4, super: 2, evol_bar: 0}
+      - {item: 483, effects: [[61, 1]], chance: 1, announce: 1, rare: 4, super: 1, evol_bar: 0}
+  - box: 1
+    enabled: true
+    super_drop: false
+    key_id: 1
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1]
+    rolls:
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 480, effects: [[61, 1]], chance: 1, announce: 0, rare: 3, super: 0, evol_bar: 0}
+      - {item: 482, effects: [[61, 1]], chance: 1, announce: 0, rare: 4, super: 1, evol_bar: 0}
+      - {item: 483, effects: [[61, 1]], chance: 1, announce: 0, rare: 4, super: 2, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+  - box: 2
+    enabled: true
+    super_drop: false
+    key_id: 2
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1]
+    rolls:
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 480, effects: [[61, 1]], chance: 1, announce: 0, rare: 3, super: 0, evol_bar: 0}
+      - {item: 482, effects: [[61, 1]], chance: 1, announce: 0, rare: 4, super: 1, evol_bar: 0}
+      - {item: 483, effects: [[61, 1]], chance: 1, announce: 0, rare: 4, super: 2, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+  - box: 3
+    enabled: true
+    super_drop: false
+    key_id: 3
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1]
+    rolls:
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 480, effects: [[61, 1]], chance: 1, announce: 0, rare: 3, super: 0, evol_bar: 0}
+      - {item: 482, effects: [[61, 1]], chance: 1, announce: 0, rare: 4, super: 1, evol_bar: 0}
+      - {item: 483, effects: [[61, 1]], chance: 1, announce: 0, rare: 4, super: 2, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 475, effects: [[61, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 476, effects: [[61, 1]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+  - box: 4
+    enabled: true
+    super_drop: false
+    key_id: 4
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1]
+    rolls:
+      - {item: 5381, effects: [[203, 0]], chance: 1, announce: 0, rare: 4, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[203, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[203, 2]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[203, 3]], chance: 1, announce: 0, rare: 3, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[203, 4]], chance: 1, announce: 0, rare: 4, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[203, 0]], chance: 1, announce: 0, rare: 4, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[203, 1]], chance: 1, announce: 0, rare: 1, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[203, 2]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 5382, effects: [[203, 3]], chance: 1, announce: 0, rare: 3, super: 0, evol_bar: 0}
+      - {item: 5382, effects: [[203, 4]], chance: 1, announce: 0, rare: 4, super: 0, evol_bar: 0}
+  - box: 5
+    enabled: true
+    super_drop: true
+    key_id: 5
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    rolls:
+      - {item: 4160, effects: [[96, 90], [0, 0], [3, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 1}
+      - {item: 4159, effects: [[96, 7], [0, 0], [3, 0]], chance: 10, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4161, effects: [[96, 7], [0, 0], [3, 0]], chance: 10, announce: 1, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4160, effects: [[96, 7], [0, 0], [3, 0]], chance: 10, announce: 1, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4172, effects: [[96, 7], [0, 0], [3, 0]], chance: 10, announce: 1, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4161, effects: [[96, 3], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4160, effects: [[96, 3], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4191, effects: [[96, 3], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4172, effects: [[96, 3], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 2, super: 0, evol_bar: 1}
+      - {item: 4160, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 2, super: 0, evol_bar: 1}
+      - {item: 4161, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 2, super: 0, evol_bar: 1}
+      - {item: 4162, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 2, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4161, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4160, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4162, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4159, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+  - box: 6
+    enabled: true
+    super_drop: true
+    key_id: 6
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, -2, -3, -4]
+    rolls:
+      - {item: 3394, effects: [[61, 50]], chance: 400, announce: 0, rare: 2, super: 1, evol_bar: 0}
+      - {item: 2328, chance: 50, announce: 1, rare: 3, super: 1, evol_bar: 0}
+      - {item: 2327, chance: 50, announce: 1, rare: 3, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 10]], chance: 50, announce: 1, rare: 4, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 6]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 2329, chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 2319, chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4528, chance: 4, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4529, chance: 4, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 5381, effects: [[96, 3]], chance: 50, announce: 1, rare: 3, super: 1, evol_bar: 0}
+      - {item: 5381, effects: [[96, 2]], chance: 500, announce: 1, rare: 3, super: 0, evol_bar: 0}
+      - {item: 2418, effects: [[61, 3]], chance: 300, announce: 1, rare: 2, super: 1, evol_bar: 0}
+      - {item: 4600, effects: [[61, 30]], chance: 300, announce: 1, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2417, effects: [[61, 3]], chance: 300, announce: 1, rare: 2, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 18]], chance: 30, announce: 1, rare: 4, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 19]], chance: 30, announce: 1, rare: 4, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 20]], chance: 30, announce: 1, rare: 4, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 21]], chance: 20, announce: 1, rare: 4, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 22]], chance: 20, announce: 1, rare: 4, super: 1, evol_bar: 0}
+      - {item: 5380, effects: [[96, 23]], chance: 20, announce: 1, rare: 4, super: 1, evol_bar: 0}
+      - {item: 3394, chance: 2100, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 3394, chance: 1900, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 3394, effects: [[61, 3]], chance: 1500, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 3394, effects: [[61, 5]], chance: 1000, announce: 0, rare: 3, super: 0, evol_bar: 0}
+      - {item: 5381, effects: [[96, 6]], chance: 1900, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 5382, effects: [[96, 6]], chance: 700, announce: 0, rare: 3, super: 1, evol_bar: 0}
+      - {item: 5381, effects: [[96, 6], [61, 10]], chance: 100, announce: 0, rare: 3, super: 0, evol_bar: 0}
+  - box: 7
+    enabled: true
+    super_drop: true
+    key_id: 7
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, -2, -3]
+    rolls:
+      - {item: 4305, effects: [[96, 1]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4319, effects: [[96, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 3983, effects: [[106, 90]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 2285, effects: [[106, 90], [0, 0], [4, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 2286, effects: [[106, 90]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4183, effects: [[96, 90], [0, 0], [4, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4182, effects: [[96, 90], [0, 0], [4, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4189, effects: [[96, 90], [0, 0], [4, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 1}
+      - {item: 4180, effects: [[96, 90], [0, 0], [4, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 1}
+      - {item: 3983, effects: [[106, 7]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 2285, effects: [[106, 7]], chance: 5, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 2286, effects: [[106, 7]], chance: 5, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4183, effects: [[96, 7], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4182, effects: [[96, 7], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4189, effects: [[96, 7], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4180, effects: [[96, 7], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 3983, effects: [[106, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 2285, effects: [[106, 3], [0, 0], [2, 0]], chance: 10, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 2286, effects: [[106, 3], [0, 0], [2, 0]], chance: 10, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4183, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4182, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4189, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4180, effects: [[96, 7], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4183, effects: [[96, 7], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4182, effects: [[96, 7], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4180, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4189, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4180, effects: [[96, 3]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+  - box: 8
+    enabled: true
+    super_drop: true
+    key_id: 8
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -2]
+    rolls:
+      - {item: 4300, effects: [[96, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 3992, effects: [[106, 90]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4196, effects: [[96, 90], [0, 0], [4, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4197, effects: [[96, 90], [0, 0], [4, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4155, effects: [[96, 90], [0, 0], [3, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4156, effects: [[96, 90], [0, 0], [3, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4163, effects: [[96, 90], [0, 0], [3, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4164, effects: [[96, 90], [0, 0], [3, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4167, effects: [[96, 90], [0, 0], [3, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 0}
+      - {item: 4198, effects: [[96, 90], [0, 0], [3, 0]], chance: 1, announce: 1, rare: 5, super: 1, evol_bar: 1}
+      - {item: 3992, effects: [[106, 7]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4196, effects: [[96, 7], [0, 0], [3, 0]], chance: 5, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4197, effects: [[96, 7], [0, 0], [3, 0]], chance: 5, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4163, effects: [[96, 7], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4164, effects: [[96, 7], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4167, effects: [[96, 7], [0, 0], [3, 0]], chance: 20, announce: 0, rare: 4, super: 0, evol_bar: 1}
+      - {item: 4163, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4164, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4167, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4198, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4163, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4164, effects: [[96, 3], [0, 0], [2, 0]], chance: 30, announce: 0, rare: 3, super: 0, evol_bar: 1}
+      - {item: 4167, effects: [[96, 7], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4198, effects: [[96, 7], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4163, effects: [[96, 3], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4164, effects: [[96, 3], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4167, effects: [[96, 3], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+      - {item: 4198, effects: [[96, 3], [0, 0], [1, 0]], chance: 30, announce: 0, rare: 1, super: 0, evol_bar: 1}
+  - box: 9
+    enabled: true
+    super_drop: false
+    key_id: 9
+    show_slots: [0, 1, 2, 3, 4, 5, -1, -1, -1, -1, -1]
+    rolls:
+      - {item: 4161, effects: [[96, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 4161, effects: [[96, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 4161, effects: [[96, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 4161, effects: [[96, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 4161, effects: [[96, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 4161, effects: [[96, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+  - box: 10
+    enabled: true
+    super_drop: false
+    key_id: 10
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, -1, -1]
+    rolls:
+      - {item: 2406, effects: [[61, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2405, effects: [[61, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2400, effects: [[61, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2406, effects: [[61, 5]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2405, effects: [[61, 5]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2400, effects: [[61, 5]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2406, effects: [[61, 10]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2405, effects: [[61, 10]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2400, effects: [[61, 10]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+  - box: 11
+    enabled: true
+    super_drop: false
+    key_id: 11
+    show_slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, -1, -1]
+    rolls:
+      - {item: 2411, effects: [[61, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2412, effects: [[61, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2413, effects: [[61, 3]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2411, effects: [[61, 5]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2412, effects: [[61, 5]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2413, effects: [[61, 5]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2411, effects: [[61, 10]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2412, effects: [[61, 10]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+      - {item: 2413, effects: [[61, 10]], chance: 1, announce: 0, rare: 2, super: 0, evol_bar: 0}
+
+# Bônus de experiência por zona e evolução (antigo Controlador EXP).
+exp_bonus:
+  desert_mortal: 100
+  desert_arch: 20
+  desert_cele: 143
+  desert_sub: 142
+  water_mortal: 0
+  water_arch: 0
+  water_cele: 0
+  water_sub: 0
+  pesa_cele: 0
+  pesa_sub: 0
+  pesa_mortal: 0
+  pesa_arch: 0

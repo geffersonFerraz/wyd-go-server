@@ -2,7 +2,6 @@ package game
 
 import (
 	"log/slog"
-	"os"
 	"testing"
 
 	"dbsrv/internal/protocol"
@@ -12,13 +11,7 @@ import (
 // worldGame loads the real TMSRV data and spawns NPCs (no network).
 func worldGame(t *testing.T) *Game {
 	t.Helper()
-	if _, err := os.Stat(realDataDir); err != nil {
-		t.Skip("no TMSRV data folder")
-	}
-	d, err := LoadData(realDataDir)
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := LoadRealData(t)
 	applyLegacyGameData(t, d)
 	g := New(Config{Channel: 1, NewbieZone: 35}, d, slog.New(slog.DiscardHandler))
 	g.minTimer()

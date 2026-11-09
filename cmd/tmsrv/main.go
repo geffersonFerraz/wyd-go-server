@@ -1,18 +1,16 @@
 // Command tmsrv is the Go port of the C++ TMSRV (game server).
 //
-//	tmsrv -dir data/tmsrv -dsn postgres://... -channel 2
+//	tmsrv -config-dir config -dsn postgres://... -channel 2
 //
 // tmsrv.yaml lists every channel; -channel (or TMSRV_CHANNEL) says which one
 // this process is: it listens on that channel's ip:port and connects to
 // DBSRV from that IP (DBSRV identifies the channel by it). With a single
 // channel in the file, -channel may be left out.
 //
-// Items, skills, drops and teleports come from Postgres (schema gamedata,
-// filled by the admin panel; -dsn or DATABASE_URL). From -dir it
-// still reads serverip.txt, dataserver.txt, guild_zone.txt, Language.txt,
-// NPCGener.txt (+ npc/) and the height/attribute maps. Its own options come
-// from -config (tmsrv.yaml: channels, newbie zone, mob AI); the C++
-// gameconfig.txt is not read.
+// Items, skills, drops, teleports, the maps and the NPC templates come from
+// Postgres (schema gamedata, filled by the admin panel; -dsn or DATABASE_URL).
+// Its options and the small world tables come from -config (tmsrv.yaml), and
+// the big tables (generators, missions, messages) from -config-dir.
 package main
 
 import (
@@ -33,7 +31,7 @@ import (
 )
 
 func main() {
-	dir := flag.String("dir", "data/tmsrv", "game data folder (maps, NPCs, guild_zone.txt, Data/, Cache/)")
+	dir := flag.String("config-dir", "config", "folder with the big YAML tables (language, missions, NPC generators)")
 	listen := flag.String("listen", "", "override network.listen_ip/listen_port of the settings (host:port)")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres with the gamedata tables (or DATABASE_URL)")
 	config := flag.String("config", "tmsrv.yaml", "server settings (YAML, required: every option comes from it)")
@@ -77,7 +75,7 @@ func envInt(k string) int {
 }
 
 func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) error {
-	cfg, err := game.LoadConfig(dir)
+	cfg, err := game.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
@@ -91,15 +89,16 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 	log.Info("settings", "path", configPath, "listen", net.JoinHostPort(cfg.ListenIP, fmt.Sprint(cfg.ListenPort)),
 		"dbsrv", net.JoinHostPort(cfg.DBIP, fmt.Sprint(cfg.DBPort)), "channel", cfg.Channel,
 		"newbie_zone", cfg.NewbieZone, "mob_ai", fmt.Sprintf("%+v", cfg.MobAI))
-	data, err := game.LoadData(dir)
-	if err != nil {
-		return fmt.Errorf("data: %w", err)
-	}
-	st, gd, err := loadGameData(dsn)
+	st, gd, world, err := loadGameData(dsn)
 	if err != nil {
 		return fmt.Errorf("game data: %w", err)
 	}
 	defer st.Close()
+	cfg.Locks = st
+	data, err := game.LoadData(dir, settings, world)
+	if err != nil {
+		return fmt.Errorf("data: %w", err)
+	}
 	data.ApplyCityOwners(cfg.Channel, gd.CityOwners)
 	if err := data.ApplyGameData(gd); err != nil {
 		return fmt.Errorf("game data: %w", err)
@@ -198,22 +197,27 @@ func loadGuilds(ctx context.Context, st *store.Store, g *game.Game, log *slog.Lo
 	return nil
 }
 
-// loadGameData opens the database (read only use) and loads the gamedata
-// tables; the store stays open for live reloads.
-func loadGameData(dsn string) (*store.Store, *store.GameData, error) {
+// loadGameData opens the database and loads the gamedata tables and the
+// binary world files; the store stays open for live reloads and account locks.
+func loadGameData(dsn string) (*store.Store, *store.GameData, *store.WorldAssets, error) {
 	if dsn == "" {
-		return nil, nil, fmt.Errorf("no -dsn or DATABASE_URL")
+		return nil, nil, nil, fmt.Errorf("no -dsn or DATABASE_URL")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	st, err := store.OpenUnprivileged(ctx, dsn, time.Local)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	gd, err := st.LoadGameData(ctx)
 	if err != nil {
 		st.Close()
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return st, gd, nil
+	world, err := st.LoadWorldAssets(ctx)
+	if err != nil {
+		st.Close()
+		return nil, nil, nil, err
+	}
+	return st, gd, world, nil
 }

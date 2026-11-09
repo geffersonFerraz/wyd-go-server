@@ -1,8 +1,6 @@
 package game
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"dbsrv/internal/acctedit"
@@ -68,7 +66,8 @@ func TestCashDeliveryInGame(t *testing.T) {
 
 func TestAdminLockReload(t *testing.T) {
 	g := worldGame(t)
-	g.cfg.CacheDir = t.TempDir()
+	locks := memLocks{}
+	g.cfg.Locks = locks
 	u := placePlayer(g, 2100, 2100, 0)
 	listen(u)
 	wire.PutCString(u.account.Username[:], "TESTER")
@@ -76,12 +75,9 @@ func TestAdminLockReload(t *testing.T) {
 	copy(lock.Password[:], "12345678")
 	lock.Conf[lockTrade] = 1
 	g.requestLock(u, packet(&lock))
-	path := filepath.Join(g.cfg.CacheDir, "LockAccount", "TESTER.bin")
 
 	// The panel writes a new password: the live lock follows it.
-	raw, _ := os.ReadFile(path)
-	copy(raw[:8], "ABCDEFGH")
-	_ = os.WriteFile(path, raw, 0o644)
+	copy(locks["TESTER"][:8], "ABCDEFGH")
 	e := acctedit.Edit{Op: acctedit.OpLock}
 	p := e.Packet("TESTER", 1)
 	g.adminEdit(u, packet(&p))
@@ -89,8 +85,8 @@ func TestAdminLockReload(t *testing.T) {
 		t.Fatalf("lock after reset %+v", u.lock)
 	}
 
-	// The panel removes the file: the player is unlocked at once.
-	_ = os.Remove(path)
+	// The panel removes the lock: the player is unlocked at once.
+	delete(locks, "TESTER")
 	g.adminEdit(u, packet(&p))
 	if u.lock.set() || u.lock.desc[lockTrade] {
 		t.Fatalf("lock after removal %+v", u.lock)

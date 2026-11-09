@@ -9,11 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
@@ -34,21 +34,13 @@ import (
 
 const (
 	exportFormat    = "wyd-server-export"
-	exportVersion   = 1
+	exportVersion   = 2 // 2: world assets in the database, YAML config files
 	exportMaxUpload = 128 << 20
 	importTTL       = 15 * time.Minute
 	snapshotsKept   = 10
 )
 
-// exportDirs are the files of the data folder that hold configuration. The
-// maps, the client files and Cache/ (player state) are left out.
-var (
-	exportDirs  = []string{"tmsrv/Data", "tmsrv/Conf", "tmsrv/Controlador EXP", "tmsrv/npc", "tmsrv/npc_base", "dbsrv/npc"}
-	exportFiles = []string{"tmsrv/guild_zone.txt", "tmsrv/InitItem.csv", "tmsrv/NPCGener.txt", "tmsrv/Language.txt"}
-)
-
-// ExportFile is one configuration file; Content is base64 in the JSON
-// because many of them are binary or Windows-1252.
+// ExportFile is one file of the config folder (game.ConfigFiles).
 type ExportFile struct {
 	Path    string `json:"path"`
 	Content []byte `json:"content"`
@@ -64,6 +56,8 @@ type ServerExport struct {
 	GameData   *store.GameData `json:"gamedata"`
 	MacBans    []string        `json:"mac_bans"`
 	Files      []ExportFile    `json:"files"`
+	// World is the binary files of the database: maps, ItemList.bin, templates.
+	World *store.WorldAssets `json:"world"`
 }
 
 // importCount is one line of the summary.
@@ -80,6 +74,7 @@ type pendingImport struct {
 	expires  time.Time
 	changed  []string // files that differ
 	settings bool     // tmsrv.yaml differs
+	world    bool     // the binary files of the database differ
 	counts   []importCount
 	warnings []string
 }
@@ -97,7 +92,7 @@ func (s *Server) serverPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderServer(w http.ResponseWriter, r *http.Request, code int, msg, errMsg string, p *pendingImport) {
-	data := map[string]any{"Title": "Exportar servidor", "Msg": msg, "Error": errMsg, "Enabled": s.cfg.DataDir != "" && s.cfg.SettingsPath != ""}
+	data := map[string]any{"Title": "Exportar servidor", "Msg": msg, "Error": errMsg, "Enabled": s.cfg.ConfigDir != "" && s.cfg.SettingsPath != ""}
 	if p != nil {
 		data["Pending"] = map[string]any{"Token": p.token, "By": p.export.ExportedBy, "At": p.export.ExportedAt, "Counts": p.counts,
 			"Changed": p.changed, "ChangedTotal": len(p.changed), "Settings": p.settings, "Warnings": p.warnings}
@@ -128,50 +123,31 @@ func (s *Server) buildExport(ctx context.Context, by string) (*ServerExport, err
 	if err != nil {
 		return nil, err
 	}
-	files, err := readExportFiles(s.cfg.DataDir)
+	files, err := readExportFiles(s.cfg.ConfigDir)
+	if err != nil {
+		return nil, err
+	}
+	world, err := s.st.LoadWorldAssets(ctx)
 	if err != nil {
 		return nil, err
 	}
 	e := &ServerExport{Format: exportFormat, Version: exportVersion, ExportedAt: time.Now(), ExportedBy: by,
-		TmsrvYAML: string(yaml), GameData: gd, MacBans: []string{}, Files: files}
+		TmsrvYAML: string(yaml), GameData: gd, MacBans: []string{}, Files: files, World: world}
 	for _, m := range macs {
 		e.MacBans = append(e.MacBans, hex.EncodeToString(m[:]))
 	}
 	return e, nil
 }
 
-func readExportFiles(dataDir string) ([]ExportFile, error) {
-	var out []ExportFile
-	add := func(rel string) error {
-		raw, err := os.ReadFile(filepath.Join(dataDir, filepath.FromSlash(rel)))
-		if err != nil {
-			return err
-		}
-		out = append(out, ExportFile{Path: rel, Content: raw})
-		return nil
-	}
-	for _, rel := range exportFiles {
-		if err := add(rel); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return nil, err
-		}
-	}
-	for _, dir := range exportDirs {
-		entries, err := os.ReadDir(filepath.Join(dataDir, filepath.FromSlash(dir)))
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
+func readExportFiles(dir string) ([]ExportFile, error) {
+	out := make([]ExportFile, 0, len(game.ConfigFiles))
+	for _, name := range game.ConfigFiles {
+		raw, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
 			return nil, err
 		}
-		for _, e := range entries {
-			if e.Type().IsRegular() {
-				if err := add(dir + "/" + e.Name()); err != nil {
-					return nil, err
-				}
-			}
-		}
+		out = append(out, ExportFile{Path: name, Content: raw})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
 	return out, nil
 }
 
@@ -192,28 +168,6 @@ func (s *Server) exportServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.log.Info("server exported", "admin", by, "files", len(e.Files), "items", len(e.GameData.Items))
-}
-
-// allowedExportPath reports whether an import may write this file. The list
-// is the same that the export reads, so a crafted file cannot reach anything
-// else in the data folder.
-func allowedExportPath(p string) bool {
-	if p == "" || strings.ContainsAny(p, "\\\x00") || filepath.IsAbs(p) || p != filepath.ToSlash(filepath.Clean(p)) || strings.HasPrefix(p, "../") {
-		return false
-	}
-	if slices.Contains(exportFiles, p) {
-		return true
-	}
-	dir, name, ok := cutLast(p)
-	return ok && name != "" && name != ".." && slices.Contains(exportDirs, dir)
-}
-
-func cutLast(p string) (string, string, bool) {
-	i := strings.LastIndexByte(p, '/')
-	if i < 0 {
-		return "", "", false
-	}
-	return p[:i], p[i+1:], true
 }
 
 // checkExport validates a parsed file (everything but the database).
@@ -242,18 +196,22 @@ func (s *Server) checkExport(e *ServerExport) ([][8]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := game.LoadSettings(tmp.Name()); err != nil {
+	settings, err := game.LoadSettings(tmp.Name())
+	if err != nil {
 		return nil, fmt.Errorf("tmsrv.yaml: %s", strings.ReplaceAll(err.Error(), tmp.Name(), "tmsrv.yaml"))
 	}
 	seen := map[string]bool{}
 	for _, f := range e.Files {
-		if !allowedExportPath(f.Path) {
+		if !slices.Contains(game.ConfigFiles, f.Path) {
 			return nil, fmt.Errorf("arquivo não permitido: %q", f.Path)
 		}
 		if seen[f.Path] {
 			return nil, fmt.Errorf("arquivo repetido: %q", f.Path)
 		}
 		seen[f.Path] = true
+	}
+	if err := checkExportWorld(e, settings); err != nil {
+		return nil, err
 	}
 	macs := make([][8]byte, 0, len(e.MacBans))
 	for _, h := range e.MacBans {
@@ -266,11 +224,38 @@ func (s *Server) checkExport(e *ServerExport) ([][8]byte, error) {
 	return macs, nil
 }
 
+// checkExportWorld loads the whole world from the file, as a TMSRV would.
+func checkExportWorld(e *ServerExport, settings game.Settings) error {
+	if e.World == nil {
+		return errors.New("o arquivo não tem os dados binários do mundo")
+	}
+	if b := e.World.Asset(store.AssetItemList); len(b) == 0 {
+		return errors.New("o arquivo não tem o ItemList.bin")
+	}
+	if err := game.CheckClassTemplates(e.World.TemplatesOf(store.TemplateClass)); err != nil {
+		return err
+	}
+	dir, err := os.MkdirTemp("", "tmsrv-import-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	for _, f := range e.Files {
+		if err := os.WriteFile(filepath.Join(dir, f.Path), f.Content, 0o600); err != nil {
+			return err
+		}
+	}
+	if _, err := game.LoadData(dir, settings, e.World); err != nil {
+		return errors.New(strings.ReplaceAll(err.Error(), dir+string(filepath.Separator), ""))
+	}
+	return nil
+}
+
 func (s *Server) previewImport(w http.ResponseWriter, r *http.Request) {
 	user := sessionOf(r).user
 	fail := func(code int, msg string) { s.renderServer(w, r, code, "", msg, nil) }
-	if s.cfg.DataDir == "" || s.cfg.SettingsPath == "" {
-		fail(http.StatusServiceUnavailable, "Importação indisponível: o painel não conhece a pasta de dados.")
+	if s.cfg.ConfigDir == "" || s.cfg.SettingsPath == "" {
+		fail(http.StatusServiceUnavailable, "Importação indisponível: o painel não conhece a pasta de configuração.")
 		return
 	}
 	f, _, err := r.FormFile("file")
@@ -296,7 +281,7 @@ func (s *Server) previewImport(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusUnprocessableEntity, "Arquivo recusado: "+err.Error())
 		return
 	}
-	if err := s.st.ImportServerConfig(r.Context(), e.GameData, macs, user, true); err != nil {
+	if err := s.st.ImportServerConfig(r.Context(), e.GameData, e.World, macs, user, true); err != nil {
 		fail(http.StatusUnprocessableEntity, "O banco recusou os dados: "+err.Error())
 		return
 	}
@@ -327,7 +312,7 @@ func (s *Server) summarizeImport(ctx context.Context, e *ServerExport, macs [][8
 	cf, cc := lines(cur.GameData)
 	nf, nc := lines(e.GameData)
 	p := &pendingImport{token: randomToken(), user: user, export: e, macs: macs, expires: time.Now().Add(importTTL),
-		settings: cur.TmsrvYAML != e.TmsrvYAML}
+		settings: cur.TmsrvYAML != e.TmsrvYAML, world: !reflect.DeepEqual(cur.World, e.World)}
 	p.counts = []importCount{
 		{"Itens", len(cur.GameData.Items), len(e.GameData.Items)},
 		{"Skills", len(cur.GameData.Skills), len(e.GameData.Skills)},
@@ -339,6 +324,8 @@ func (s *Server) summarizeImport(ctx context.Context, e *ServerExport, macs [][8
 		{"Donos de cidade", len(cur.GameData.CityOwners), len(e.GameData.CityOwners)},
 		{"Computadores banidos", len(cur.MacBans), len(e.MacBans)},
 		{"Arquivos de configuração", len(cur.Files), len(e.Files)},
+		{"Arquivos binários (mapas, ItemList)", len(cur.World.Assets), len(e.World.Assets)},
+		{"Modelos de NPC e classe", len(cur.World.Templates), len(e.World.Templates)},
 	}
 	old := make(map[string][32]byte, len(cur.Files))
 	for _, f := range cur.Files {
@@ -387,7 +374,7 @@ func (s *Server) applyImport(w http.ResponseWriter, r *http.Request) {
 		s.renderServer(w, r, http.StatusInternalServerError, "", "Importação cancelada: não foi possível guardar a configuração atual ("+err.Error()+").", p)
 		return
 	}
-	if err := s.st.ImportServerConfig(r.Context(), p.export.GameData, p.macs, user, false); err != nil {
+	if err := s.st.ImportServerConfig(r.Context(), p.export.GameData, p.export.World, p.macs, user, false); err != nil {
 		s.renderServer(w, r, http.StatusUnprocessableEntity, "", "O banco recusou os dados, e nada mudou: "+err.Error(), p)
 		return
 	}
@@ -401,7 +388,7 @@ func (s *Server) applyImport(w http.ResponseWriter, r *http.Request) {
 	s.mu.Unlock()
 	s.log.Warn("server configuration imported", "admin", user, "snapshot", snapshot, "files_changed", len(p.changed), "settings_changed", p.settings)
 	msg := "Importação concluída. A configuração anterior está em " + snapshot + "."
-	if p.settings || len(p.changed) > 0 {
+	if p.settings || p.world || len(p.changed) > 0 {
 		msg += " Reinicie o DBSRV e os canais para valerem o tmsrv.yaml e os arquivos."
 	}
 	http.Redirect(w, r, "/server?msg="+url.QueryEscape(msg), http.StatusSeeOther)
@@ -410,10 +397,7 @@ func (s *Server) applyImport(w http.ResponseWriter, r *http.Request) {
 func (s *Server) writeImportedFiles(p *pendingImport) error {
 	for _, rel := range p.changed {
 		i := slices.IndexFunc(p.export.Files, func(f ExportFile) bool { return f.Path == rel })
-		path := filepath.Join(s.cfg.DataDir, filepath.FromSlash(rel))
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return err
-		}
+		path := filepath.Join(s.cfg.ConfigDir, rel)
 		tmp := path + ".import"
 		if err := os.WriteFile(tmp, p.export.Files[i].Content, 0o644); err != nil {
 			return err

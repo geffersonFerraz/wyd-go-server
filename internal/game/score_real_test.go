@@ -19,19 +19,13 @@ func TestScoreMatchesCpp(t *testing.T) {
 	if dsn == "" {
 		t.Skip("SCORE_REAL_DSN not set")
 	}
-	if _, err := os.Stat(realDataDir); err != nil {
-		t.Skip("no TMSRV data folder")
-	}
 	ctx := context.Background()
 	st, err := store.OpenUnprivileged(ctx, dsn, time.Local)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer st.Close()
-	d, err := LoadData(realDataDir)
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := LoadRealData(t)
 	applyLegacyGameData(t, d)
 	g := New(Config{Channel: 1, NewbieZone: 35}, d, slog.New(slog.DiscardHandler))
 	accounts, err := st.SearchAccounts(ctx, "", 500)

@@ -2,22 +2,33 @@ package admin
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"testing"
+	"time"
 )
 
+// memAsset is an AssetSource with one file.
+type memAsset struct {
+	content []byte
+	at      time.Time
+}
+
+func (m *memAsset) AssetUpdatedAt(context.Context, string) (time.Time, bool, error) {
+	return m.at, m.content != nil, nil
+}
+
+func (m *memAsset) LoadAsset(context.Context, string) ([]byte, time.Time, error) {
+	return m.content, m.at, nil
+}
+
 func TestItemListHandler(t *testing.T) {
-	want, err := os.ReadFile("../../data/client/ItemList.bin")
-	if err != nil {
-		t.Fatal(err)
-	}
+	want := bytes.Repeat([]byte{0x5A}, 6500*156)
 	mux := http.NewServeMux()
-	mux.Handle("GET "+ItemListPath, ItemListHandler("../../data/client/ItemList.bin", slog.New(slog.DiscardHandler)))
+	mux.Handle("GET "+ItemListPath, ItemListHandler(&memAsset{content: want, at: time.Now()}, slog.New(slog.DiscardHandler)))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 	res, err := http.Get(srv.URL + ItemListPath)
@@ -26,7 +37,7 @@ func TestItemListHandler(t *testing.T) {
 	}
 	defer res.Body.Close()
 	got, _ := io.ReadAll(res.Body)
-	if res.StatusCode != http.StatusOK || !bytes.Equal(got, want) || len(got) != 6500*156 {
+	if res.StatusCode != http.StatusOK || !bytes.Equal(got, want) {
 		t.Fatalf("status %d, %d bytes", res.StatusCode, len(got))
 	}
 	if res.Header.Get("Last-Modified") == "" || res.Header.Get("Content-Type") != "application/octet-stream" {
@@ -45,22 +56,12 @@ func TestItemListHandler(t *testing.T) {
 	}
 }
 
-func TestItemListHandlerMissingAndReplaced(t *testing.T) {
-	p := filepath.Join(t.TempDir(), "ItemList.bin")
-	srv := httptest.NewServer(ItemListHandler(p, slog.New(slog.DiscardHandler)))
+func TestItemListHandlerMissing(t *testing.T) {
+	srv := httptest.NewServer(ItemListHandler(&memAsset{}, slog.New(slog.DiscardHandler)))
 	defer srv.Close()
 	res, err := http.Get(srv.URL)
 	if err != nil || res.StatusCode != http.StatusNotFound {
 		t.Fatalf("missing file: %v %v", res.StatusCode, err)
 	}
 	res.Body.Close()
-	os.WriteFile(p, []byte("novo"), 0o644)
-	res, err = http.Get(srv.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer res.Body.Close()
-	if b, _ := io.ReadAll(res.Body); string(b) != "novo" {
-		t.Fatalf("got %q", b)
-	}
 }

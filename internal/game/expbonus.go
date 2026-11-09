@@ -1,65 +1,26 @@
 package game
 
-import (
-	"bufio"
-	"bytes"
-	"os"
-	"strconv"
-	"strings"
-
-	"dbsrv/internal/wire"
-)
+import "dbsrv/internal/wire"
 
 // The experience rules of GetExpApply_2 (GetFunc.cpp) that the first port
 // left out: per zone and evolution bonuses ("Controlador EXP" files), the
 // experience chest (affect 39 of the killer) and the fairy bonus, plus
 // CMob::CheckQuarter (the 1/4, 2/4, 3/4 messages that refill HP and MP).
 
-// ExpBonus holds the sServer.Bonus* values (LoadBonusDesertoFromTXT reads
-// ControleExp.txt, LoadBonusPergaFromTXT reads bonusmortal.txt).
+// ExpBonus holds the sServer.Bonus* values (exp_bonus of tmsrv.yaml).
 type ExpBonus struct {
-	DesertMortal, DesertArch, DesertCele, DesertSub int64 // ControleExp.txt
-	WaterMortal, WaterArch, WaterCele, WaterSub     int64 // bonusmortal.txt
-	PesaCele, PesaSub, PesaMortal, PesaArch         int64 // bonusmortal.txt
-}
-
-// expBonusKeys maps each file's keys to the fields it fills (the C++ looked
-// only for these keys in each file).
-func (b *ExpBonus) keys(file string) map[string]*int64 {
-	if file == "ControleExp.txt" {
-		return map[string]*int64{"Deserto Mortal": &b.DesertMortal, "Deserto Arch": &b.DesertArch,
-			"Deserto Cele": &b.DesertCele, "Deserto SubcCele": &b.DesertSub}
-	}
-	return map[string]*int64{"Agua Mortal": &b.WaterMortal, "Agua Arch": &b.WaterArch, "Agua Cele": &b.WaterCele,
-		"Agua Sub": &b.WaterSub, "Pesa A": &b.PesaCele, "Pesa A Sub": &b.PesaSub, "Pesa A Mortal": &b.PesaMortal,
-		"Pesa A Arch": &b.PesaArch}
-}
-
-// loadExpBonus reads "Key = value" lines of one of the two files; a missing
-// file leaves its values at 0, as in the C++.
-func (b *ExpBonus) load(path, file string) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	keys := b.keys(file)
-	sc := bufio.NewScanner(bytes.NewReader(raw))
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" || line[0] == '#' {
-			continue
-		}
-		k, v, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		if dst := keys[strings.TrimSpace(k)]; dst != nil {
-			if n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64); err == nil {
-				*dst = n
-			}
-		}
-	}
-	return sc.Err()
+	DesertMortal int64 `yaml:"desert_mortal"`
+	DesertArch   int64 `yaml:"desert_arch"`
+	DesertCele   int64 `yaml:"desert_cele"`
+	DesertSub    int64 `yaml:"desert_sub"`
+	WaterMortal  int64 `yaml:"water_mortal"`
+	WaterArch    int64 `yaml:"water_arch"`
+	WaterCele    int64 `yaml:"water_cele"`
+	WaterSub     int64 `yaml:"water_sub"`
+	PesaCele     int64 `yaml:"pesa_cele"`
+	PesaSub      int64 `yaml:"pesa_sub"`
+	PesaMortal   int64 `yaml:"pesa_mortal"`
+	PesaArch     int64 `yaml:"pesa_arch"`
 }
 
 // cut is "exp -= exp * f" on a long long (through a double).

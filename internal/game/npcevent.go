@@ -1,12 +1,7 @@
 package game
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
 
 	"dbsrv/internal/wire"
 )
@@ -28,124 +23,6 @@ type NPCEvent struct {
 	Teleport       [10][2]int
 	Msg            [10]string
 	Name           string // npcName: what the NPC says at the end
-}
-
-// loadNPCEvents mirrors LoadNPCEvento: "#" starts the next NPC,
-// "key=value" lines fill it. A missing file means no event NPCs.
-func (d *Data) loadNPCEvents(path string) error {
-	raw, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	d.NPCEvents = [maxNPCEvent]NPCEvent{}
-	npc := -1
-	sc := bufio.NewScanner(bytes.NewReader(raw))
-	for sc.Scan() {
-		line := strings.TrimRight(sc.Text(), "\r")
-		if strings.HasPrefix(line, "#") {
-			npc++
-			continue
-		}
-		if strings.HasPrefix(line, "//") || npc < 0 || npc >= maxNPCEvent {
-			continue
-		}
-		key, val, ok := strings.Cut(line, "=")
-		if !ok || key == "" || val == "" {
-			continue
-		}
-		ev := &d.NPCEvents[npc]
-		lk := strings.ToLower(key)
-		idx := func(prefix string) (int, int, bool) {
-			parts := strings.Split(lk[len(prefix):], "_")
-			a, err := strconv.Atoi(strings.TrimSpace(parts[0]))
-			if err != nil || a < 0 || a >= 10 {
-				return 0, 0, false
-			}
-			b := 0
-			if len(parts) > 1 {
-				if b, err = strconv.Atoi(strings.TrimSpace(parts[1])); err != nil || b < 0 || b >= 10 {
-					return 0, 0, false
-				}
-			}
-			return a, b, true
-		}
-		switch {
-		case strings.HasPrefix(lk, "itemrequired_"):
-			if i, _, ok := idx("itemrequired_"); ok {
-				ev.ItemRequired[i] = parseItemLine(val)
-			}
-		case strings.HasPrefix(lk, "amountrequired_"):
-			if i, _, ok := idx("amountrequired_"); ok {
-				ev.AmountRequired[i] = atoiPrefix(val)
-			}
-		case strings.HasPrefix(lk, "goldrequired"):
-			ev.GoldRequired = atoiPrefix(val)
-		case strings.HasPrefix(lk, "itemearned_"):
-			if i, j, ok := idx("itemearned_"); ok {
-				ev.ItemEarned[i][j] = parseItemLine(val)
-			}
-		case strings.HasPrefix(lk, "itemrate_"):
-			if i, _, ok := idx("itemrate_"); ok {
-				ev.Rates[i] = atoiPrefix(val)
-			}
-		case strings.HasPrefix(lk, "teleport_"):
-			if i, _, ok := idx("teleport_"); ok {
-				f := strings.Fields(val)
-				if len(f) >= 2 {
-					ev.Teleport[i] = [2]int{atoiPrefix(f[0]), atoiPrefix(f[1])}
-				}
-			}
-		case strings.HasPrefix(lk, "telemsg_"):
-			if i, _, ok := idx("telemsg_"); ok {
-				ev.Msg[i] = truncate(val, 107)
-			}
-		case strings.HasPrefix(lk, "npcname"):
-			ev.Name = truncate(val, 107)
-		}
-	}
-	return sc.Err()
-}
-
-func truncate(s string, n int) string {
-	if len(s) > n {
-		return s[:n]
-	}
-	return s
-}
-
-// atoiPrefix is atoi: the leading integer, 0 if none.
-func atoiPrefix(s string) int {
-	s = strings.TrimSpace(s)
-	end := 0
-	for end < len(s) && (s[end] >= '0' && s[end] <= '9' || end == 0 && s[end] == '-') {
-		end++
-	}
-	v, _ := strconv.Atoi(s[:end])
-	return v
-}
-
-// parseItemLine reads "index ef1 efv1 ef2 efv2 ef3 efv3" (sscanf stops at
-// the first word that is not a number, e.g. a // comment).
-func parseItemLine(s string) wire.Item {
-	var it wire.Item
-	var v [7]int
-	n := 0
-	for _, f := range strings.Fields(s) {
-		x, err := strconv.Atoi(f)
-		if err != nil || n == 7 {
-			break
-		}
-		v[n] = x
-		n++
-	}
-	it.Index = uint16(v[0])
-	for i := range 3 {
-		it.Effect[i] = wire.ItemEffect{Index: uint8(v[1+2*i]), Value: uint16(v[2+2*i])}
-	}
-	return it
 }
 
 // sendSay is SendSay: an NPC (or anyone) says a line to everyone in view.

@@ -1,19 +1,16 @@
 package admin
 
 import (
-	"errors"
-	"io/fs"
+	"context"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"dbsrv/internal/acctedit"
 )
 
 // The in-game account lock (TMSRV, RequestBlockFunc.cpp): an 8-character
-// password and eight switches, kept by TMSRV in
-// Cache/LockAccount/<LOGIN>.bin (10 bytes of password, 8 switch bytes).
+// password and eight switches, kept in the account_locks table (10 bytes of
+// password, 8 switch bytes).
 // Players who forget the password have no way out in game, so the panel can
 // remove the lock (password and switches) or give it a new password,
 // keeping the switches. Afterwards an "edit" delivery (acctedit.OpLock)
@@ -29,30 +26,20 @@ var lockSwitchNames = [8]string{"Equipar/usar itens", "Troca", "Comprar em NPC",
 
 // LockInfo is what the account page shows.
 type LockInfo struct {
-	Enabled  bool // the panel knows the TMSRV folder
+	Enabled  bool // a valid account name
 	Set      bool
 	Switches []string
 	Error    string
 }
 
-func (s *Server) lockFile(user string) string {
+func (s *Server) lockInfo(ctx context.Context, user string) LockInfo {
+	info := LockInfo{Enabled: true}
 	user = strings.ToUpper(user)
-	if s.cfg.LockDir == "" || !usernameRe.MatchString(user) {
-		return ""
-	}
-	return filepath.Join(s.cfg.LockDir, user+".bin")
-}
-
-func (s *Server) lockInfo(user string) LockInfo {
-	path := s.lockFile(user)
-	if path == "" {
+	if !usernameRe.MatchString(user) {
 		return LockInfo{}
 	}
-	info := LockInfo{Enabled: true}
-	raw, err := os.ReadFile(path)
+	raw, err := s.st.AccountLock(ctx, user)
 	switch {
-	case errors.Is(err, fs.ErrNotExist):
-		return info
 	case err != nil:
 		info.Error = err.Error()
 		return info
@@ -71,12 +58,11 @@ func (s *Server) lockInfo(user string) LockInfo {
 // removeLock deletes the lock (password and switches).
 func (s *Server) removeLock(w http.ResponseWriter, r *http.Request) {
 	user := strings.ToUpper(r.PathValue("user"))
-	path := s.lockFile(user)
-	if path == "" {
-		s.renderAccount(w, r, http.StatusUnprocessableEntity, "Lock", "A pasta da TMSRV não está configurada (-tmsrv-dir).")
+	if !usernameRe.MatchString(user) {
+		http.NotFound(w, r)
 		return
 	}
-	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := s.st.DeleteAccountLock(r.Context(), user); err != nil {
 		s.fail(w, err)
 		return
 	}
@@ -87,11 +73,10 @@ func (s *Server) removeLock(w http.ResponseWriter, r *http.Request) {
 // resetLockPassword gives the lock a new password, keeping its switches.
 func (s *Server) resetLockPassword(w http.ResponseWriter, r *http.Request) {
 	user := strings.ToUpper(r.PathValue("user"))
-	path := s.lockFile(user)
 	pw, pw2 := r.PostFormValue("lockpass"), r.PostFormValue("lockpass2")
 	switch {
-	case path == "":
-		s.renderAccount(w, r, http.StatusUnprocessableEntity, "Lock", "A pasta da TMSRV não está configurada (-tmsrv-dir).")
+	case !usernameRe.MatchString(user):
+		http.NotFound(w, r)
 		return
 	case !validLockPassword(pw):
 		s.renderAccount(w, r, http.StatusUnprocessableEntity, "Lock", "A senha de bloqueio deve ter exatamente 8 letras ou números.")
@@ -100,19 +85,19 @@ func (s *Server) resetLockPassword(w http.ResponseWriter, r *http.Request) {
 		s.renderAccount(w, r, http.StatusUnprocessableEntity, "Lock", "As senhas não conferem.")
 		return
 	}
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) || (err == nil && (len(raw) < lockFileSize || raw[0] == 0)) {
-		s.renderAccount(w, r, http.StatusUnprocessableEntity, "Lock", "Esta conta não tem bloqueio. O jogador define o bloqueio no jogo.")
-		return
-	}
+	raw, err := s.st.AccountLock(r.Context(), user)
 	if err != nil {
 		s.fail(w, err)
+		return
+	}
+	if len(raw) < lockFileSize || raw[0] == 0 {
+		s.renderAccount(w, r, http.StatusUnprocessableEntity, "Lock", "Esta conta não tem bloqueio. O jogador define o bloqueio no jogo.")
 		return
 	}
 	out := make([]byte, lockFileSize)
 	copy(out[:lockPassLen], pw)
 	copy(out[10:], raw[10:lockFileSize])
-	if err := os.WriteFile(path, out, 0o644); err != nil {
+	if err := s.st.SetAccountLock(r.Context(), user, out); err != nil {
 		s.fail(w, err)
 		return
 	}
@@ -123,7 +108,7 @@ func (s *Server) resetLockPassword(w http.ResponseWriter, r *http.Request) {
 // notifyLock queues the reload in TMSRV (when the player is in game).
 func (s *Server) notifyLock(w http.ResponseWriter, r *http.Request, user string) {
 	if msg := s.dbsrvProblem(r.Context()); msg != "" {
-		// The file already changed; it takes effect at the next login.
+		// The lock already changed; it takes effect at the next login.
 		s.renderAccount(w, r, http.StatusOK, "Lock", "Bloqueio alterado. "+msg+" Se o jogador estiver online, vale no próximo login.")
 		return
 	}

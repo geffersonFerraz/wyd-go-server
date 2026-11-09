@@ -3,15 +3,15 @@ package admin
 import (
 	"context"
 	"net/http"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
 
+	"dbsrv/internal/game"
 	"dbsrv/internal/store"
 )
 
-// City ownership: which guild holds each city (guild_zone.txt rows 0..4).
+// City ownership: which guild holds each city (the cities section of tmsrv.yaml).
 // The owner's members are recalled to the guild area, pay no recall back to
 // the city, get the city's taxes and so on. Saved in gamedata.city_owners;
 // the running TMSRVs pick it up within a second.
@@ -23,7 +23,7 @@ type cityRow struct {
 	Name      string
 	GuildID   int
 	GuildName string
-	Set       bool // set in the panel (otherwise guild_zone.txt decides)
+	Set       bool // set in the panel (otherwise tmsrv.yaml decides)
 	ChangedBy string
 	ChangedAt string
 }
@@ -70,28 +70,16 @@ func (s *Server) cityRows(r *http.Request, guilds []store.Guild, channel int) ([
 	return rows, nil
 }
 
-// SeedCityOwners copies the owners of TMSRV's guild_zone.txt into
+// SeedCityOwners copies the owners of the cities section of tmsrv.yaml into
 // gamedata.city_owners for the cities that have no row yet, so the database
 // is the only place city owners are kept (the panel manages them; the GM
 // commands +guildowner / +resetcities are gone). Run at panel startup.
-func SeedCityOwners(ctx context.Context, st *store.Store, guildZone string) (int, error) {
-	raw, err := os.ReadFile(guildZone)
-	if err != nil {
-		return 0, err
+func SeedCityOwners(ctx context.Context, st *store.Store, cities []game.CitySettings) (int, error) {
+	owners := make(map[int]int, len(cities))
+	for _, c := range cities {
+		owners[c.City] = int(c.Owner)
 	}
-	owners := map[int]int{}
-	for _, line := range strings.Split(string(raw), "\n") {
-		f := strings.Split(strings.TrimSpace(line), ",")
-		if len(f) < 2 {
-			continue
-		}
-		city, err1 := strconv.Atoi(strings.TrimSpace(f[0]))
-		guild, err2 := strconv.Atoi(strings.TrimSpace(f[1]))
-		if err1 == nil && err2 == nil {
-			owners[city] = guild
-		}
-	}
-	return st.SeedCityOwners(ctx, owners, "guild_zone.txt")
+	return st.SeedCityOwners(ctx, owners, "tmsrv.yaml")
 }
 
 // resetCities is POST /cities/reset: every city of a channel without owner.
