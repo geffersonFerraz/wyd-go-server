@@ -12,7 +12,7 @@ func TestCashShopPacketSizes(t *testing.T) {
 	for name, c := range map[string]struct {
 		v    any
 		want int
-	}{"info": {wire.CashShopInfo{}, 1096}, "buy": {wire.CashShopBuy{}, 180}, "honor": {wire.HonorShopList{}, 236}} {
+	}{"info": {wire.CashShopInfo{}, 1488}, "buy": {wire.CashShopBuy{}, 184}, "honor": {wire.HonorShopList{}, 400}} {
 		if got := binary.Size(c.v); got != c.want {
 			t.Errorf("%s = %d, want %d", name, got, c.want)
 		}

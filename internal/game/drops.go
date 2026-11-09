@@ -32,7 +32,7 @@ type DropItem struct {
 	Kills  int    `yaml:"kills"`
 	Index  uint16 `yaml:"item"`
 	Effect uint8  `yaml:"effect,omitempty"`
-	Value  uint8  `yaml:"value,omitempty"`
+	Value  uint16 `yaml:"value,omitempty"`
 }
 
 // ParseDropsTxt reads the C++ Controle.txt (loadMobDropData). It returns
@@ -77,7 +77,7 @@ func ParseDropsTxt(raw []byte) (mobs []*MobDrop, skipped []string) {
 			for i := 0; i < 4 && i < len(f); i++ {
 				v[i] = atoi(f[i])
 			}
-			cur.Items = append(cur.Items, DropItem{Kills: v[0], Index: uint16(v[1]), Effect: uint8(v[2]), Value: uint8(v[3])})
+			cur.Items = append(cur.Items, DropItem{Kills: v[0], Index: uint16(v[1]), Effect: uint8(v[2]), Value: uint16(v[3])})
 		}
 	}
 	return mobs, skipped
@@ -311,7 +311,7 @@ func agroupItem(src, dst *wire.Item) bool {
 		i := 0
 		for ; i < 3; i++ {
 			if out.Effect[i].Index == 0 {
-				out.Effect[i] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(as + ad)}
+				out.Effect[i] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(as + ad)}
 				break
 			}
 		}
@@ -324,21 +324,21 @@ func agroupItem(src, dst *wire.Item) bool {
 	as -= maxN - ad
 	for i := range 3 {
 		if dst.Effect[i].Index == EF_AMOUNT {
-			dst.Effect[i].Value = uint8(maxN)
+			dst.Effect[i].Value = uint16(maxN)
 			break
 		}
 	}
 	i := 0
 	for ; i < 3; i++ {
 		if src.Effect[i].Index == EF_AMOUNT {
-			src.Effect[i].Value = uint8(as)
+			src.Effect[i].Value = uint16(as)
 			break
 		}
 	}
 	if i == 3 {
 		for i = 0; i < 3; i++ {
 			if src.Effect[i].Index == 59 {
-				src.Effect[i] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(as)}
+				src.Effect[i] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(as)}
 				break
 			}
 		}

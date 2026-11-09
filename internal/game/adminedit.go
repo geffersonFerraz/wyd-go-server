@@ -1,6 +1,8 @@
 package game
 
 import (
+	"log/slog"
+
 	"dbsrv/internal/acctedit"
 	"dbsrv/internal/protocol"
 	"dbsrv/internal/wire"
@@ -31,6 +33,68 @@ func (g *Game) adminEdit(u *User, pkt protocol.Packet) {
 		g.log.Error("admin edit refused", "slot", u.id, "err", err)
 		return
 	}
+	g.applyAdminEdit(u, e)
+}
+
+// adminRemove is 0xC15.
+func (g *Game) adminRemove(u *User, pkt protocol.Packet) {
+	var p wire.AdminRemove
+	if wire.Unmarshal(pkt.Raw, &p) != nil || !g.deliveryFor(u, p.Username[:], "admin remove") {
+		return
+	}
+	e, err := acctedit.FromRemovePacket(&p)
+	if err != nil {
+		g.log.Error("admin edit refused", "slot", u.id, "err", err)
+		return
+	}
+	g.applyAdminEdit(u, e)
+}
+
+// liveSlot is the slot of a player in game an admin edit may change.
+func (g *Game) liveSlot(u *User, where, slot int) *wire.Item {
+	pl := &g.mobs[u.id].info.Player
+	switch where {
+	case wire.SlotEquip:
+		return &pl.Equip[slot]
+	case wire.SlotInv:
+		return &pl.Inventory[slot]
+	}
+	if u.listedSlot(slot) {
+		return nil // listed in the auction
+	}
+	return &u.account.StorageItems[slot]
+}
+
+// applySlots does an OpMove or OpRemove and tells the client.
+func (g *Game) applySlots(u *User, e *acctedit.Edit, log *slog.Logger) bool {
+	if e.ApplySlots(func(where, slot int) *wire.Item { return g.liveSlot(u, where, slot) }) != acctedit.ResOK {
+		log.Warn("admin edit refused: a slot changed", "to", e.To, "removes", len(e.Removes))
+		return false
+	}
+	refs := e.Removes
+	if e.Op == acctedit.OpMove {
+		refs = []acctedit.SlotRef{{Where: wire.SlotInv, Slot: e.Slot}, {Where: wire.SlotEquip, Slot: e.To}}
+	}
+	equip := false
+	for _, r := range refs {
+		g.sendItem(u, r.Where, r.Slot, g.liveSlot(u, r.Where, r.Slot))
+		equip = equip || r.Where == wire.SlotEquip
+	}
+	if equip {
+		g.refreshEquip(u)
+	}
+	return true
+}
+
+// refreshEquip shows a changed equipment to the player and the others.
+func (g *Game) refreshEquip(u *User) {
+	g.getCurrentScore(u.id)
+	g.sendScore(u.id)
+	g.sendEquip(u)
+	g.refreshMob(u.id)
+}
+
+func (g *Game) applyAdminEdit(u *User, e acctedit.Edit) {
 	log := g.log.With("slot", u.id, "account", wire.CString(u.account.Username[:]), "op", e.Op)
 	if e.Op == acctedit.OpAccess {
 		u.accessLevel = int32(e.Value)
@@ -101,10 +165,11 @@ func (g *Game) adminEdit(u *User, pkt protocol.Packet) {
 		*slot = acctedit.ItemOf(e.Item)
 		g.sendItem(u, e.Where, e.Slot, slot)
 		if e.Where == wire.SlotEquip {
-			g.getCurrentScore(u.id)
-			g.sendScore(u.id)
-			g.sendEquip(u)
-			g.refreshMob(u.id)
+			g.refreshEquip(u)
+		}
+	case acctedit.OpMove, acctedit.OpRemove:
+		if !g.applySlots(u, &e, log) {
+			return
 		}
 	}
 	g.saveUser(u, 0)

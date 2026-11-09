@@ -76,7 +76,7 @@ loop:
 				mountItem.Index = uint16(2360 + (mount - 2330))
 				mountItem.Effect[0] = wire.ItemEffect{Index: 0x88, Value: 0x13} // 5000 as a short
 				*level = 1
-				mountItem.Effect[1].Value = uint8(min(int(mountItem.Effect[1].Value)+rnd()%16+5, 255))
+				mountItem.Effect[1].Value = uint16(min(int(mountItem.Effect[1].Value)+rnd()%16+5, 255))
 				mountItem.Effect[2] = wire.ItemEffect{Index: 100}
 				g.clientMessage(u, "%s", g.lang(nnIncubated))
 				g.log.Info("mount grew", "slot", u.id, "item", mountItem.Index)

@@ -80,7 +80,7 @@ func setItemSanc(it *wire.Item, sanc, fails int) bool {
 		}
 		sanc = min(230+(sanc-10)*4+extra, 250)
 	}
-	sc := uint8(sanc + 10*fails)
+	sc := uint16(sanc + 10*fails)
 	if slot >= 0 {
 		it.Effect[slot].Value = sc
 		return true
@@ -213,13 +213,13 @@ func (g *Game) useDust(u *User, p *wire.UseItem, src *wire.Item, vol int) {
 		if dst.Effect[0].Value <= 1 {
 			dst.Index += 30
 			dst.Effect[0] = wire.ItemEffect{Index: 100, Value: 100}
-			dst.Effect[1] = wire.ItemEffect{Index: 1, Value: uint8(rnd()%20 + 10)}
+			dst.Effect[1] = wire.ItemEffect{Index: 1, Value: uint16(rnd()%20 + 10)}
 			dst.Effect[2] = wire.ItemEffect{Index: 30, Value: 1}
 			g.mountProcess(u.id)
 			g.clientMessage(u, "%s", g.lang(nnIncubated))
 		} else {
 			dst.Effect[0].Value--
-			dst.Effect[2] = wire.ItemEffect{Index: 84, Value: uint8(rnd()%8 + 4)}
+			dst.Effect[2] = wire.ItemEffect{Index: 84, Value: uint16(rnd()%8 + 4)}
 		}
 		sendDst()
 		g.sendEmotion(u.id, 14, 3)

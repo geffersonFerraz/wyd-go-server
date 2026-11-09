@@ -78,7 +78,7 @@ func (a *ArenaSettings) validate() error {
 	}
 	for _, list := range [][]ArenaItemSettings{a.WinnerItems, a.TopKillItems, a.ParticipantItems} {
 		for _, it := range list {
-			if it.Item < 1 || it.Item >= MaxItemList || it.Amount < 0 || it.Amount > 255 {
+			if it.Item < 1 || it.Item >= MaxItemList || it.Amount < 0 || it.Amount > 65535 {
 				return fmt.Errorf("arena: invalid prize item %d amount %d", it.Item, it.Amount)
 			}
 		}
@@ -368,7 +368,7 @@ func validateItem(where string, item int, effects [][2]int) error {
 		return fmt.Errorf("%s: an item has at most 3 effects, got %d", where, len(effects))
 	}
 	for _, e := range effects {
-		if e[0] < 0 || e[0] > 255 || e[1] < 0 || e[1] > 255 {
+		if e[0] < 0 || e[0] > 255 || e[1] < 0 || e[1] > 65535 {
 			return fmt.Errorf("%s: effect must be 0..255, got [%d, %d]", where, e[0], e[1])
 		}
 	}
@@ -428,7 +428,7 @@ func (s *Settings) validateShops() error {
 func makeItem(id int, effects [][2]int) wire.Item {
 	it := wire.Item{Index: uint16(id)}
 	for i, e := range effects {
-		it.Effect[i] = wire.ItemEffect{Index: uint8(e[0]), Value: uint8(e[1])}
+		it.Effect[i] = wire.ItemEffect{Index: uint8(e[0]), Value: uint16(e[1])}
 	}
 	return it
 }

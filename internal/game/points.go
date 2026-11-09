@@ -365,9 +365,9 @@ func (g *Game) requestUngroupItem(u *User, pkt protocol.Packet) {
 		g.sendItem(u, wire.SlotInv, slot, it)
 		return
 	}
-	it.Effect[stack].Value -= uint8(amount)
+	it.Effect[stack].Value -= uint16(amount)
 	pl.Inventory[free] = wire.Item{Index: it.Index}
-	pl.Inventory[free].Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(amount)}
+	pl.Inventory[free].Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(amount)}
 	g.log.Info("ungrouped", "slot", u.id, "item", it.Index, "amount", amount, "from", slot, "to", free)
 	g.sendItem(u, wire.SlotInv, slot, it)
 	g.sendItem(u, wire.SlotInv, free, &pl.Inventory[free])

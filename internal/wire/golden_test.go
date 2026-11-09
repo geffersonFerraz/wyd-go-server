@@ -77,9 +77,9 @@ func TestUnmarshalShortTMSRVSave(t *testing.T) {
 	in.Cash = 13300
 	full := MustMarshal(&in)
 
-	// TMSRV sends only 4136 bytes (no TypeBlock).
+	// TMSRV sends only 5800 bytes (no TypeBlock).
 	var out SaveCharacter
-	if err := Unmarshal(full[:4136], &out); err != nil {
+	if err := Unmarshal(full[:5800], &out); err != nil {
 		t.Fatal(err)
 	}
 	if CString(out.User[:]) != "ANDERSON" || out.Cash != 13300 || CString(out.PassBlock[:]) != "1234" {
@@ -112,5 +112,20 @@ func TestLegacyMobWidensValues(t *testing.T) {
 	}
 	if m.Gold != 2_000_000_000 || m.Status.CurHP != 150_000 || m.BStatus.Attack != 90_000 || m.Equip[3].Index != 777 {
 		t.Errorf("%+v", m)
+	}
+}
+
+func TestEffectValueIs16Bits(t *testing.T) {
+	in := Item{Index: 412}
+	in.Effect[1] = ItemEffect{Index: 61, Value: 40000}
+	var out Item
+	if err := Unmarshal(MustMarshal(&in), &out); err != nil || out != in {
+		t.Fatalf("%v %+v", err, out)
+	}
+	var old [20]legacyItem
+	old[3].Index, old[3].Effect[0].Index, old[3].Effect[0].Value = 805, 43, 200
+	var eq [20]Item
+	if err := UnmarshalEquip(MustMarshal(&old), &eq); err != nil || eq[3].Index != 805 || eq[3].Effect[0].Value != 200 {
+		t.Fatalf("old row: %v %+v", err, eq[3])
 	}
 }

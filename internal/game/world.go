@@ -143,7 +143,7 @@ func (g *Game) fixBoots(u *User, it *wire.Item) bool {
 	}
 	for i := range it.Effect {
 		if it.Effect[i].Index == EF_DAMAGE {
-			it.Effect[i] = wire.ItemEffect{Index: EF_DAMAGE2, Value: uint8(limit)}
+			it.Effect[i] = wire.ItemEffect{Index: EF_DAMAGE2, Value: uint16(limit)}
 			g.log.Info("boots fixed", "slot", u.id, "item", it.Index, "bonus", total)
 			return true
 		}
@@ -180,7 +180,7 @@ func (g *Game) fixItemsOnLogin(u *User, items []wire.Item) {
 			for e := range 3 {
 				if it.Effect[e].Index == EF_CRITICAL {
 					it.Effect[e].Index = EF_CRITICAL2
-					it.Effect[e].Value += uint8(g.data.effectValueByIndex(it.Index, EF_CRITICAL))
+					it.Effect[e].Value += uint16(g.data.effectValueByIndex(it.Index, EF_CRITICAL))
 				}
 			}
 		}

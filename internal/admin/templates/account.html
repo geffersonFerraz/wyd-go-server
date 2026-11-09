@@ -70,7 +70,7 @@
           <div class="fields">
             <label>Efeito {{add1 $i}} <select name="ef{{$i}}"><option value="0">—</option>
               {{range $.EffectNames}}<option value="{{.ID}}"{{if eq (printf "%d" .ID) $sel}} selected{{end}}>{{.ID}} · {{.Name}}</option>{{end}}</select></label>
-            <label>Valor <input name="ev{{$i}}" type="number" min="0" max="255" value="{{$.ItemForm.Get (printf "ev%d" $i)}}"></label>
+            <label>Valor <input name="ev{{$i}}" type="number" min="0" max="65535" value="{{$.ItemForm.Get (printf "ev%d" $i)}}"></label>
           </div>
           {{end}}
         </details>

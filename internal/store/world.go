@@ -61,7 +61,7 @@ func (s *Store) ReplaceDonateStore(ctx context.Context, slots []DonateSlot) erro
 				INSERT INTO donate_store (store, slot, price, loop, available, item_id, ef1, efv1, ef2, efv2, ef3, efv3)
 				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
 				d.Store, d.Slot, d.Price, d.Loop, d.Available, int32(d.Item.Index),
-				int16(e[0].Index), int16(e[0].Value), int16(e[1].Index), int16(e[1].Value), int16(e[2].Index), int16(e[2].Value)); err != nil {
+				int16(e[0].Index), int32(e[0].Value), int16(e[1].Index), int32(e[1].Value), int16(e[2].Index), int32(e[2].Value)); err != nil {
 				return err
 			}
 		}

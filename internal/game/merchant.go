@@ -417,7 +417,7 @@ func (g *Game) npcMountMaster(u *User, click uint32) {
 			}
 		}
 		g.clientMessage(u, "%s", g.lang(nnCured))
-		mount.Effect[1].Value = uint8(life)
+		mount.Effect[1].Value = uint16(life)
 		mount.Effect[0] = wire.ItemEffect{Index: 20, Value: 0} // 20 HP
 		mount.Effect[2].Index = 5
 	}
@@ -485,21 +485,21 @@ func randomAmuletEffects(it *wire.Item) {
 	for e := 1; e <= 2; e++ {
 		switch rnd() & 7 {
 		case 0:
-			it.Effect[e] = wire.ItemEffect{Index: EF_HP, Value: uint8(rnd()%41 + 20)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_HP, Value: uint16(rnd()%41 + 20)}
 		case 1:
-			it.Effect[e] = wire.ItemEffect{Index: EF_DAMAGE, Value: uint8(rnd()%21 + 5)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_DAMAGE, Value: uint16(rnd()%21 + 5)}
 		case 2:
-			it.Effect[e] = wire.ItemEffect{Index: EF_ATTSPEED, Value: uint8(rnd()%11 + 5)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_ATTSPEED, Value: uint16(rnd()%11 + 5)}
 		case 3:
-			it.Effect[e] = wire.ItemEffect{Index: EF_MP, Value: uint8(rnd()%51 + 20)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_MP, Value: uint16(rnd()%51 + 20)}
 		case 4:
-			it.Effect[e] = wire.ItemEffect{Index: EF_MAGIC, Value: uint8(rnd()%7 + 2)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_MAGIC, Value: uint16(rnd()%7 + 2)}
 		case 5:
-			it.Effect[e] = wire.ItemEffect{Index: EF_STR, Value: uint8(rnd()&15 + 5)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_STR, Value: uint16(rnd()&15 + 5)}
 		case 6:
-			it.Effect[e] = wire.ItemEffect{Index: EF_INT, Value: uint8(rnd()&15 + 5)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_INT, Value: uint16(rnd()&15 + 5)}
 		case 7:
-			it.Effect[e] = wire.ItemEffect{Index: EF_DEX, Value: uint8(rnd()&15 + 5)}
+			it.Effect[e] = wire.ItemEffect{Index: EF_DEX, Value: uint16(rnd()&15 + 5)}
 		}
 	}
 }

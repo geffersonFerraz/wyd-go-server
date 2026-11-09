@@ -376,7 +376,7 @@ func (g *Game) familiarLosesRefine(id int) {
 	} else {
 		for e := range it.Effect {
 			if it.Effect[e].Index == EF_SANC {
-				it.Effect[e].Value = uint8(sanc - 1)
+				it.Effect[e].Value = uint16(sanc - 1)
 				break
 			}
 		}

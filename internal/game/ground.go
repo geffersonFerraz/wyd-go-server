@@ -68,6 +68,7 @@ type CreateGroundItem struct {
 	HeightGrid uint8
 	Create     uint8
 	Owner      uint16
+	_          [2]byte
 }
 
 // RemoveGroundItem mirrors p16F / MSG_DecayItem (16 bytes).
@@ -191,9 +192,9 @@ func (g *Game) initGroundItems() {
 		}
 		it := wire.Item{Index: uint16(towerFirst + min(max(int(z.WinCount), 0), towerLast-towerFirst))}
 		if z.OwnerIndex != 0 {
-			it.Effect[0] = wire.ItemEffect{Index: EF_HWORDGUILD, Value: uint8(z.OwnerIndex / 257)}
-			it.Effect[1] = wire.ItemEffect{Index: EF_LWORDGUILD, Value: uint8(z.OwnerIndex)}
-			it.Effect[2] = wire.ItemEffect{Index: 59, Value: uint8(rnd() % 255)} // EF_UNIQUE
+			it.Effect[0] = wire.ItemEffect{Index: EF_HWORDGUILD, Value: uint16(z.OwnerIndex / 257)}
+			it.Effect[1] = wire.ItemEffect{Index: EF_LWORDGUILD, Value: uint16(uint8(z.OwnerIndex))}
+			it.Effect[2] = wire.ItemEffect{Index: 59, Value: uint16(rnd() % 255)} // EF_UNIQUE
 		}
 		if g.createGroundItem(int(z.TowerX), int(z.TowerY), it, 3, 0) <= 0 {
 			g.log.Warn("guild tower not placed", "city", i)

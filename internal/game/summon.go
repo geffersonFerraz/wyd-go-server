@@ -523,6 +523,6 @@ func (g *Game) mountKillExp(killer, dead int) {
 		g.mountProcess(owner)
 		return
 	}
-	mount.Effect[2].Value = uint8(kills)
+	mount.Effect[2].Value = uint16(kills)
 	g.sendItem(u, wire.SlotEquip, 14, mount)
 }

@@ -86,6 +86,7 @@ type RollInfo struct {
 	BoxID  int8
 	KeyID  int8
 	Item   [11]wire.Item
+	_      [2]byte
 }
 
 // Mission is TOD_MissionInfo (the parts SendMissionInfo shows).
@@ -147,7 +148,7 @@ func (d *Data) loadDailyReward(path string) error {
 		}
 		it := wire.Item{Index: uint16(f[2])}
 		for k := 0; k < 3 && 4+2*k < len(f); k++ {
-			it.Effect[k] = wire.ItemEffect{Index: uint8(f[3+2*k]), Value: uint8(f[4+2*k])}
+			it.Effect[k] = wire.ItemEffect{Index: uint8(f[3+2*k]), Value: uint16(f[4+2*k])}
 		}
 		d.DailyReward[f[0]][f[1]] = it
 	}
@@ -256,9 +257,9 @@ func (d *Data) loadMissions(path string) error {
 					amount[it.Index] = min(max(*it.Amount, 0), 120)
 				}
 				dst[it.Index] = wire.Item{Index: uint16(it.ItemID), Effect: [3]wire.ItemEffect{
-					{Index: uint8(it.Ef0), Value: uint8(it.Efv0)},
-					{Index: uint8(it.Ef1), Value: uint8(it.Efv1)},
-					{Index: uint8(it.Ef2), Value: uint8(it.Efv2)},
+					{Index: uint8(it.Ef0), Value: uint16(it.Efv0)},
+					{Index: uint8(it.Ef1), Value: uint16(it.Efv1)},
+					{Index: uint8(it.Ef2), Value: uint16(it.Efv2)},
 				}}
 			}
 		}
@@ -344,7 +345,7 @@ func (d *Data) loadRoulette(path string) error {
 				continue
 			}
 			b.Roll[last] = wire.Item{Index: uint16(v[0]), Effect: [3]wire.ItemEffect{
-				{Index: uint8(v[1]), Value: uint8(v[2])}, {Index: uint8(v[3]), Value: uint8(v[4])}, {Index: uint8(v[5]), Value: uint8(v[6])},
+				{Index: uint8(v[1]), Value: uint16(v[2])}, {Index: uint8(v[3]), Value: uint16(v[4])}, {Index: uint8(v[5]), Value: uint16(v[6])},
 			}}
 			var m [5]int
 			for i := range m {
@@ -474,7 +475,7 @@ func (g *Game) requestCollectDaily(u *User, _ protocol.Packet) {
 		}
 	} else {
 		for i := range items {
-			items[i].Effect[0] = wire.ItemEffect{Index: 61, Value: uint8(day)}
+			items[i].Effect[0] = wire.ItemEffect{Index: 61, Value: uint16(day)}
 		}
 	}
 	for i := range items {

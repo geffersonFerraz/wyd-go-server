@@ -339,10 +339,10 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 		}
 		it := wire.Item{Index: uint16(p.ItemID)}
 		for i, e := range p.Effects {
-			if e[0] < 0 || e[0] > 255 || e[1] < 0 || e[1] > 255 {
+			if e[0] < 0 || e[0] > 255 || e[1] < 0 || e[1] > 65535 {
 				return resInvalid + ": effect out of range", true, nil
 			}
-			it.Effect[i] = wire.ItemEffect{Index: uint8(e[0]), Value: uint8(e[1])}
+			it.Effect[i] = wire.ItemEffect{Index: uint8(e[0]), Value: uint16(e[1])}
 		}
 		slot := -1
 		online := s.sess.withOffline(user, func() { slot, err = s.st.PutInStorage(ctx, user, it) })

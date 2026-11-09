@@ -73,7 +73,7 @@ func (g *Game) useLanhouseTicket(u *User, p *wire.UseItem, src *wire.Item) bool 
 		refuse("Somente utilize em uma cidade!")
 		return true
 	}
-	if !entry.allowed(m.info.Player.Equip[0].Effect[1].Value) {
+	if !entry.allowed(uint8(m.info.Player.Equip[0].Effect[1].Value)) {
 		refuse(entry.refusal)
 		return true
 	}

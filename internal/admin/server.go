@@ -421,7 +421,7 @@ func (s *Server) renderAccount(w http.ResponseWriter, r *http.Request, code int,
 		s.fail(w, err)
 		return
 	}
-	names, err := s.st.EffectNameList(r.Context())
+	names, err := s.effectNames(r.Context())
 	if err != nil {
 		s.fail(w, err)
 		return

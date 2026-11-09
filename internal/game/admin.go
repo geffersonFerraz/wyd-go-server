@@ -66,7 +66,7 @@ func (g *Game) adminCommand(u *User, value string) {
 		for k := 0; k < 3; k++ {
 			ef, _ := num(from + 1 + 2*k)
 			efv, _ := num(from + 2 + 2*k)
-			it.Effect[k] = wire.ItemEffect{Index: uint8(ef), Value: uint8(efv)}
+			it.Effect[k] = wire.ItemEffect{Index: uint8(ef), Value: uint16(efv)}
 		}
 		return it, true
 	}

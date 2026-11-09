@@ -80,6 +80,15 @@ func (s *Store) ItemNames(ctx context.Context, ids []int) (map[int]string, error
 	return out, err
 }
 
+// ItemPositions returns the equipment position bits of the items.
+func (s *Store) ItemPositions(ctx context.Context, ids []int) (map[int]int, error) {
+	rows, _ := s.pool.Query(ctx, `SELECT id, pos FROM gamedata.items WHERE id = ANY($1)`, ids)
+	out := map[int]int{}
+	var id, pos int
+	_, err := pgx.ForEachRow(rows, []any{&id, &pos}, func() error { out[id] = pos; return nil })
+	return out, err
+}
+
 // GetItem loads one item with its effects.
 func (s *Store) GetItem(ctx context.Context, id int) (*Item, error) {
 	var it Item

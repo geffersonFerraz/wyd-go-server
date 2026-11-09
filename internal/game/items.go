@@ -335,7 +335,7 @@ func (d *Data) canEquip(it *wire.Item, mob *wire.Mob, slot int) bool {
 func anctCode(it *wire.Item, usingCostume bool) byte {
 	if it.Index >= 2360 && it.Index < 2389 {
 		if it.Effect[2].Value >= 11 {
-			return it.Effect[2].Value
+			return byte(min(it.Effect[2].Value, 255))
 		}
 		return 0
 	}
@@ -351,7 +351,7 @@ func anctCode(it *wire.Item, usingCostume bool) byte {
 		for i := 0; i < 3; i++ {
 			if it.Effect[i].Index >= 116 && it.Effect[i].Index <= 125 {
 				if usingCostume {
-					return it.Effect[i].Value
+					return byte(min(it.Effect[i].Value, 255))
 				}
 				return it.Effect[i].Index
 			}

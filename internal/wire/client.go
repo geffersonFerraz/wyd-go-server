@@ -89,11 +89,12 @@ type OpenShop struct {
 	FindName [24]byte
 }
 
-// ShopList mirrors p17C (236 bytes): the 27 items an NPC sells.
+// ShopList mirrors p17C (400 bytes): the 27 items an NPC sells.
 type ShopList struct {
 	Header Header
 	Unknow int32 // the NPC's merchant type
 	Item   [27]Item
+	_      [2]byte
 	Taxes  int32
 }
 
@@ -115,7 +116,7 @@ type SellShop struct {
 	SellSlot int32
 }
 
-// Repurchase mirrors p3E8 (172 bytes): the last 10 items sold.
+// Repurchase mirrors p3E8 (252 bytes): the last 10 items sold.
 type Repurchase struct {
 	Header Header
 	Item   [10]RepurchaseItem
@@ -124,6 +125,7 @@ type Repurchase struct {
 type RepurchaseItem struct {
 	Index     int32
 	Item      Item
+	_         [2]byte
 	SellPrice int32
 }
 
@@ -139,51 +141,51 @@ type AttackTarget struct {
 type Attack struct {
 	Header         Header
 	_              [4]byte
-	Hold           int64    // 16
-	ReqMP          int64    // 24
-	CurrentExp     int64    // 32
-	Unknow         int16    // 40
-	AttackerPos    Position // 42
-	TargetPos      Position // 46
-	AttackerID     int16    // 50
-	AttackCount    int16    // 52
-	Motion         uint8    // 54
+	Hold           int64
+	ReqMP          int64
+	CurrentExp     int64
+	Unknow         int16
+	AttackerPos    Position
+	TargetPos      Position
+	AttackerID     int16
+	AttackCount    int16
+	Motion         uint8
 	SkillParm      uint8
-	DoubleCritical uint8 // 56
+	DoubleCritical uint8
 	FlagLocal      uint8
 	Rsv            int16
 	_              [4]byte
-	CurrentMP      int64 // 64
-	SkillID        int16 // 72
+	CurrentMP      int64
+	SkillID        int16
 	ReqMp          int16
 	_              [4]byte
-	Target         [13]AttackTarget // 80
+	Target         [13]AttackTarget
 }
 
 // Killed mirrors p338 (40 bytes): a mob died.
 type Killed struct {
 	Header Header
 	_      [4]byte
-	Hold   int64 // 16
-	Killed int16 // 24
+	Hold   int64
+	Killed int16
 	Killer int16
 	Unknow int32
-	Exp    int64 // 32
+	Exp    int64
 }
 
 // SetHpMp mirrors p181 (48 bytes).
 type SetHpMp struct {
 	Header                     Header
 	_                          [4]byte
-	CurHP, CurMP, MaxHP, MaxMP int64 // 16
+	CurHP, CurMP, MaxHP, MaxMP int64
 }
 
 // HpChange mirrors p18A (32 bytes).
 type HpChange struct {
 	Header  Header
 	_       [4]byte
-	CurHP   int64 // 16
-	Incress int64 // 24
+	CurHP   int64
+	Incress int64
 }
 
 // PartyInvite mirrors p37F (44 bytes).
@@ -229,7 +231,7 @@ type PartyExit struct {
 	_      [2]byte // sizeof(p37E) = 16; the client reads an int (MSG_STANDARDPARM)
 }
 
-// Compor mirrors pCompor (84 bytes): the item window of the compounder
+// Compor mirrors pCompor (132 bytes): the item window of the compounder
 // NPCs (Anct 0x3A6, Lindy 0x2C3, Shany 0x2C4, Odin 0x2D2, Ehre 0x2D3,
 // Alchemy 0x2E1, Aylin 0x3B5, Agatha 0x3BA, Tiny 0x3C0, 0x2FD1). Slot -1
 // is an empty place.
@@ -288,33 +290,33 @@ type AffectList struct {
 	Affect [32]Affect
 }
 
-// Trade mirrors p383 (168 bytes).
+// Trade mirrors p383 (256 bytes).
 type Trade struct {
 	Header   Header
-	Item     [15]Item // 12
-	Slot     [15]int8 // 132: inventory slot of each item, -1 = none
+	Item     [15]Item
+	Slot     [15]int8 // inventory slot of each item, -1 = none
 	Unknow   uint8
-	_        [4]byte
-	Gold     int64 // 152
-	Confirm  uint8 // 160 (bool)
+	_        [2]byte
+	Gold     int64
+	Confirm  uint8 // (bool)
 	_        [1]byte
-	ClientID uint16 // 162: the other player
+	ClientID uint16 // the other player
 	_        [4]byte
 }
 
-// Carry mirrors p185 (536 bytes).
+// Carry mirrors p185 (920 bytes).
 type Carry struct {
 	Header Header
 	Item   [64]Item
 	_      [4]byte
-	Gold   int64 // 528
+	Gold   int64
 }
 
 // CargoCoin mirrors p339 (24 bytes): storage gold.
 type CargoCoin struct {
 	Header Header
 	_      [4]byte
-	Gold   int64 // 16
+	Gold   int64
 }
 
 // Message128 mirrors TMSRV's p101 (140 bytes): a system message.
@@ -327,11 +329,11 @@ type Message128 struct {
 // 0x36C walk) both ways.
 type Action struct {
 	Header    Header
-	LastPos   Position // 12
-	MoveType  uint32   // 16
-	MoveSpeed uint32   // 20
-	Command   [24]byte // 24: route, one direction digit per step
-	Destiny   Position // 48
+	LastPos   Position
+	MoveType  uint32
+	MoveSpeed uint32
+	Command   [24]byte // route, one direction digit per step
+	Destiny   Position
 }
 
 // Chat mirrors p333 (144 bytes).
@@ -367,12 +369,13 @@ const (
 	SlotStorage = 2
 )
 
-// ItemUpdate mirrors p182 (24 bytes): one item slot changed.
+// ItemUpdate mirrors p182 (32 bytes): one item slot changed.
 type ItemUpdate struct {
 	Header  Header
 	InvType int16
 	InvSlot int16
 	Item    Item
+	_       [2]byte
 }
 
 // Equipment mirrors p36B (72 bytes): what others see a character wearing.
@@ -387,25 +390,25 @@ type Equipment struct {
 // use the same 16 bytes as Name[16] (p364_Mob).
 type CreateMob struct {
 	Header          Header
-	CurrentX        int16 // 12
+	CurrentX        int16
 	CurrentY        int16
-	Index           int16           // 16
-	Name            [12]byte        // 18
-	ChaosPoints     uint8           // 30
-	CurrentKill     uint8           // 31
-	TotalKill       uint16          // 32
-	ItemRefine      [20]uint16      // 34
-	Affect          [32]AffectBrief // 74
-	GuildIndex      uint16          // 138
-	GuildMemberType int8            // 140
+	Index           int16
+	Name            [12]byte
+	ChaosPoints     uint8
+	CurrentKill     uint8
+	TotalKill       uint16
+	ItemRefine      [20]uint16
+	Affect          [32]AffectBrief
+	GuildIndex      uint16
+	GuildMemberType int8
 	_               [1]byte
-	Unknow          uint16   // 142
-	Status          Status   // 144
-	SpawnType       uint16   // 224
-	AnctCode        [20]byte // 226
-	Tab             [26]byte // 246
-	Unknow02        [4]byte  // 272
-	Life            int32    // 276
+	Unknow          uint16
+	Status          Status
+	SpawnType       uint16
+	AnctCode        [20]byte
+	Tab             [26]byte
+	Unknow02        [4]byte
+	Life            int32
 }
 
 // AffectBrief is the 2-byte affect entry in p364 (time first).
@@ -418,19 +421,19 @@ type AffectBrief struct {
 type UpdateScore struct {
 	Header       Header
 	_            [4]byte
-	Score        Status     // 16
-	Critical     int8       // 96
-	SaveMana     int8       // 97
-	Affect       [32]uint16 // 98: index<<8 | time
-	Guild        uint16     // 162
-	GuildLevel   uint16     // 164
-	Resist       [4]int8    // 166
+	Score        Status
+	Critical     int8
+	SaveMana     int8
+	Affect       [32]uint16 // index<<8 | time
+	Guild        uint16
+	GuildLevel   uint16
+	Resist       [4]int8
 	_            [6]byte
-	ReqHP        int64  // 176
-	ReqMP        int64  // 184
-	Magician     uint16 // 192
-	Rsv          uint16 // 194
-	LearnedSkill int8   // 196
+	ReqHP        int64
+	ReqMP        int64
+	Magician     uint16
+	Rsv          uint16
+	LearnedSkill int8
 	_            [3]byte
 }
 
@@ -438,12 +441,12 @@ type UpdateScore struct {
 type Etc struct {
 	Header       Header
 	_            [4]byte
-	Hold         int64     // 16
-	Exp          int64     // 24
-	LearnedSkill [2]uint32 // 32
-	ScoreBonus   int16     // 40
+	Hold         int64
+	Exp          int64
+	LearnedSkill [2]uint32
+	ScoreBonus   int16
 	SpecialBonus int16
 	SkillBonus   int16
 	_            [2]byte
-	Coin         int64 // 48
+	Coin         int64
 }

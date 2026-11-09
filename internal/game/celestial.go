@@ -170,7 +170,7 @@ func (g *Game) subCythera(u *User) {
 			break
 		}
 	}
-	cyt.Effect = [3]wire.ItemEffect{keep, {Index: EF_HP, Value: adds[i][1]}, {Index: EF_AC, Value: adds[i][0]}}
+	cyt.Effect = [3]wire.ItemEffect{keep, {Index: EF_HP, Value: uint16(adds[i][1])}, {Index: EF_AC, Value: uint16(adds[i][0])}}
 	m.info.Info |= flags[i]
 	g.sendItem(u, wire.SlotEquip, 1, cyt)
 }
@@ -449,7 +449,7 @@ func (g *Game) mountTimer(u *User) {
 	mount := &m.info.Player.Equip[14]
 	if mount.Index >= 2300 && mount.Index < 2330 {
 		if d := g.data.itemAbility(mount, EF_INCUDELAY); d > 0 {
-			mount.Effect[2].Value = uint8(d - 1) // where the C++ kept it
+			mount.Effect[2].Value = uint16(d - 1) // where the C++ kept it
 			g.sendItem(u, wire.SlotEquip, 14, mount)
 			g.clientMessage(u, "%s", g.lang(nnIncuProceed))
 		}

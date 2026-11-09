@@ -74,7 +74,7 @@ func TestApply(t *testing.T) {
 }
 
 func TestPacketRoundTrip(t *testing.T) {
-	if n := binary.Size(wire.AdminEdit{}); n != 80 {
+	if n := binary.Size(wire.AdminEdit{}); n != 112 {
 		t.Fatalf("AdminEdit is %d bytes", n)
 	}
 	e := Edit{Op: OpItem, Char: 1, Where: wire.SlotInv, Slot: 7, Item: []int{412, 61, 3, 0, 0, 0, 0}, Expect: []int{0, 0, 0, 0, 0, 0, 0}}
@@ -93,5 +93,62 @@ func TestPacketRoundTrip(t *testing.T) {
 	}
 	if got.Op != OpItem || got.Char != 1 || got.Slot != 7 || got.Item[0] != 412 || got.Item[2] != 3 || got.Expect == nil {
 		t.Fatalf("round trip: %+v", got)
+	}
+}
+
+func TestMoveSwapsInventoryAndEquipment(t *testing.T) {
+	var a wire.Account
+	wire.PutCString(a.Mob[1].Player.Name[:], "X")
+	pl := &a.Mob[1].Player
+	pl.Inventory[4] = ItemOf([]int{805, 43, 300, 0, 0, 0, 0})
+	pl.Equip[6] = ItemOf([]int{806, 0, 0, 0, 0, 0, 0})
+	e := Edit{Op: OpMove, Char: 1, Slot: 4, To: 6, Expect: Ints(pl.Inventory[4]), ExpectTo: Ints(pl.Equip[6])}
+	if msg := e.Validate(); msg != "" {
+		t.Fatal(msg)
+	}
+	if r := e.Apply(&a); r != ResOK || pl.Equip[6].Index != 805 || pl.Equip[6].Effect[0].Value != 300 || pl.Inventory[4].Index != 806 {
+		t.Fatalf("%q: %+v / %+v", r, pl.Equip[6], pl.Inventory[4])
+	}
+	if r := e.Apply(&a); r != ResChanged {
+		t.Fatalf("second move: %q", r)
+	}
+	cape := e
+	cape.To = 15
+	if cape.Validate() == "" {
+		t.Error("the cape slot must be refused")
+	}
+}
+
+func TestRemoveIsAllOrNothing(t *testing.T) {
+	var a wire.Account
+	wire.PutCString(a.Mob[0].Player.Name[:], "X")
+	pl := &a.Mob[0].Player
+	pl.Inventory[1], pl.Equip[2] = ItemOf([]int{412, 0, 0, 0, 0, 0, 0}), ItemOf([]int{805, 0, 0, 0, 0, 0, 0})
+	refs := []SlotRef{{Where: wire.SlotInv, Slot: 1, Expect: Ints(pl.Inventory[1])}, {Where: wire.SlotEquip, Slot: 2, Expect: []int{999, 0, 0, 0, 0, 0, 0}}}
+	e := Edit{Op: OpRemove, Removes: refs}
+	if msg := e.Validate(); msg != "" {
+		t.Fatal(msg)
+	}
+	if r := e.Apply(&a); r != ResChanged || pl.Inventory[1].Index != 412 {
+		t.Fatalf("changed slot: %q, inventory %+v", r, pl.Inventory[1])
+	}
+	refs[1].Expect = Ints(pl.Equip[2])
+	if r := e.Apply(&a); r != ResOK || pl.Inventory[1].Index != 0 || pl.Equip[2].Index != 0 {
+		t.Fatalf("remove: %q", r)
+	}
+	p := e.RemovePacket("ACC", 3)
+	back, err := FromRemovePacket(&p)
+	if err != nil || len(back.Removes) != 2 || back.Removes[1].Slot != 2 {
+		t.Fatalf("packet: %v %+v", err, back)
+	}
+	for _, bad := range []Edit{
+		{Op: OpRemove},
+		{Op: OpRemove, Removes: []SlotRef{refs[0], refs[0]}},
+		{Op: OpRemove, Removes: []SlotRef{refs[0], {Where: wire.SlotStorage, Slot: 1, Expect: refs[0].Expect}}},
+		{Op: OpRemove, Removes: []SlotRef{{Where: wire.SlotEquip, Slot: 0, Expect: refs[0].Expect}}},
+	} {
+		if bad.Validate() == "" {
+			t.Errorf("accepted %+v", bad)
+		}
 	}
 }

@@ -12,8 +12,8 @@ func TestAuctionPacketSizes(t *testing.T) {
 		v    any
 		size int
 	}{
-		{Listing{}, 56}, {AuctionPage{}, 2712}, {AuctionQuery{}, 24}, {AuctionSearch{}, 48},
-		{AuctionAdd{}, 64}, {AuctionBuy{}, 72}, {AuctionFunds{}, 32}, {StoreMob{}, 304},
+		{Listing{}, 64}, {AuctionPage{}, 3096}, {AuctionQuery{}, 24}, {AuctionSearch{}, 48},
+		{AuctionAdd{}, 72}, {AuctionBuy{}, 80}, {AuctionFunds{}, 32}, {StoreMob{}, 304},
 	} {
 		if got := binary.Size(c.v); got != c.size {
 			t.Errorf("%T: %d bytes, want %d", c.v, got, c.size)

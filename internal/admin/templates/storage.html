@@ -4,6 +4,7 @@
 {{template "editnotice" .}}
 {{if .Online}}<p class="muted small">Com o jogador na seleção de personagem, alterações no baú esperam ele entrar no jogo.</p>{{end}}
 
+{{template "removebar" (dict "Root" . "Char" 0)}}
 <div class="grid">
   <div>
     <section class="card">

@@ -11,7 +11,7 @@ func mountHP(it *wire.Item) int {
 
 func setMountHP(it *wire.Item, hp int) {
 	v := uint16(int16(hp))
-	it.Effect[0].Index, it.Effect[0].Value = uint8(v), uint8(v>>8)
+	it.Effect[0].Index, it.Effect[0].Value = uint8(v), uint16(v>>8)
 }
 
 // feedMount is volatile 15 ("rações"): food 2420+n feeds the mount whose

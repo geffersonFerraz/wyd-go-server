@@ -12,7 +12,7 @@ func celestialAt(g *Game, level int16, ev uint8) (*User, *Mob) {
 	m := &g.mobs[1]
 	pl := &m.info.Player
 	pl.ClassInfo = 0
-	pl.Equip[0].Effect[1].Value = ev
+	pl.Equip[0].Effect[1].Value = uint16(ev)
 	pl.BStatus.Level, pl.Status.Level = level, level
 	pl.BStatus.STR, pl.BStatus.INT = uint16(baseSIDCHM[0][0]), uint16(baseSIDCHM[0][1])
 	pl.BStatus.DEX, pl.BStatus.CON = uint16(baseSIDCHM[0][2]), uint16(baseSIDCHM[0][3])

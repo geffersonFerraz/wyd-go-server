@@ -609,7 +609,7 @@ func (g *Game) requestEhre(u *User, pkt protocol.Packet) {
 				total += rnd()%3 + 1
 			}
 			it := wire.Item{Index: 4719}
-			it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(total)}
+			it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(total)}
 			g.give(c, 0, it)
 			g.clientMessage(u, "%s", g.lang(nnSuccessComp))
 		} else {
@@ -710,11 +710,11 @@ func (g *Game) ehreStone(c *compor) bool {
 		success = true
 		for x := range 3 {
 			if value == int(start) && items[2].Effect[x].Index == 0 {
-				items[2].Effect[x] = wire.ItemEffect{Index: eff, Value: start}
+				items[2].Effect[x] = wire.ItemEffect{Index: eff, Value: uint16(start)}
 				break
 			}
 			if value != int(start) && items[2].Effect[x].Index == eff {
-				items[2].Effect[x].Value += start
+				items[2].Effect[x].Value += uint16(start)
 				break
 			}
 		}
@@ -779,7 +779,7 @@ func (g *Game) ehreCostume(c *compor) bool {
 		return false
 	}
 	it := pl.Inventory[c.slot(0)]
-	it.Effect[2].Value = uint8(costume)
+	it.Effect[2].Value = uint16(costume)
 	g.give(c, 0, it)
 	g.take(c, 1)
 	g.payGold(u, 1000000)
@@ -1069,14 +1069,14 @@ func (g *Game) makeOdinExtraction(it *wire.Item, sanc int) {
 			value = 8
 		}
 	}
-	it.Effect[e] = wire.ItemEffect{Index: 87, Value: uint8(value)}
+	it.Effect[e] = wire.ItemEffect{Index: 87, Value: uint16(value)}
 	data := g.data.Item(it.Index)
 	for i := range 3 {
 		idx := it.Effect[i].Index
 		if idx == EF_SANC || (idx >= 116 && idx <= 125) || idx == 0 || idx == 87 || data.Pos > 32 {
 			continue
 		}
-		it.Effect[i].Value += uint8(g.data.effectValueByIndex(it.Index, int(idx)))
+		it.Effect[i].Value += uint16(g.data.effectValueByIndex(it.Index, int(idx)))
 	}
 	it.Index = itemExtractionType(int(data.Pos))
 }
@@ -1259,7 +1259,7 @@ func (g *Game) requestAylin(u *User, pkt protocol.Packet) {
 		it.Index = uint16(int(it.Index) - (int(d.Grade) - 5) + (sanc - 230))
 	}
 	if e := sancEffect(it); e >= 0 {
-		it.Effect[e].Value = uint8(sanc)
+		it.Effect[e].Value = uint16(sanc)
 	}
 	g.take(c, 2, 3, 4, 5, 6)
 	g.sendItem(u, wire.SlotInv, c.slot(0), &pl.Inventory[c.slot(0)])
@@ -1531,7 +1531,7 @@ func (g *Game) requestExtraction(u *User, pkt protocol.Packet) {
 		g.clientMessage(u, "Necessario que o item possua alguma classe ([A],[B],[C] ....)")
 		return
 	}
-	it.Effect[e] = wire.ItemEffect{Index: 87, Value: uint8(class)}
+	it.Effect[e] = wire.ItemEffect{Index: 87, Value: uint16(class)}
 	// GetStaticItemAbility(EF_DAMAGE): the ItemList damage (no refine left).
 	base := 0
 	for _, ef := range data.Effect {
@@ -1541,7 +1541,7 @@ func (g *Game) requestExtraction(u *User, pkt protocol.Packet) {
 	}
 	for i := 1; i < 3; i++ {
 		if int(it.Effect[i].Index) == EF_DAMAGE {
-			it.Effect[i].Value += uint8(base)
+			it.Effect[i].Value += uint16(base)
 		}
 	}
 	it.Index = result

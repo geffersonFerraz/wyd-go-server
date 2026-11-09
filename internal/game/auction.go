@@ -48,7 +48,7 @@ const (
 	nnOnlyVillage = 172
 )
 
-// Listing mirrors LeilaoStoreAux (56 bytes).
+// Listing mirrors LeilaoStoreAux (64 bytes).
 type Listing struct {
 	Name     [24]byte // store name
 	Price    int64    // 24
@@ -56,10 +56,11 @@ type Listing struct {
 	SlotBank int32 // storage slot of the item
 	Category int32 // 1 donate, 2 gold, 3 bars
 	TaxRate  int32
-	Item     wire.Item
+	Item     wire.Item // 48
+	_        [2]byte
 }
 
-// AuctionPage mirrors MSG_LeilaoStore (2712 bytes), both the client's
+// AuctionPage mirrors MSG_LeilaoStore (3096 bytes), both the client's
 // "open my store" and the server's list pages.
 type AuctionPage struct {
 	Header      wire.Header
@@ -86,7 +87,7 @@ type AuctionSearch struct {
 	Name      [24]byte
 }
 
-// AuctionAdd mirrors pAddItemLeilaoStore (64 bytes).
+// AuctionAdd mirrors pAddItemLeilaoStore (72 bytes).
 type AuctionAdd struct {
 	Header   wire.Header
 	ItemType int32
@@ -95,9 +96,10 @@ type AuctionAdd struct {
 	Price    int64 // 24
 	Name     [24]byte
 	Item     wire.Item
+	_        [2]byte
 }
 
-// AuctionBuy mirrors pStartNegotiation (72 bytes).
+// AuctionBuy mirrors pStartNegotiation (80 bytes).
 type AuctionBuy struct {
 	Header   wire.Header
 	ItemType int32
@@ -108,6 +110,7 @@ type AuctionBuy struct {
 	Seller   int32
 	Name     [24]byte
 	Item     wire.Item
+	_        [2]byte
 }
 
 // AuctionFunds mirrors st_SaldoLeilao (32 bytes).
@@ -717,7 +720,7 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 		} else {
 			for e := range bar.Effect {
 				if bar.Effect[e].Index == EF_AMOUNT {
-					bar.Effect[e].Value = uint8(left)
+					bar.Effect[e].Value = uint16(left)
 				}
 			}
 		}
@@ -730,7 +733,7 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 	s.account.StorageItems[bank] = wire.Item{}
 	if cat == auctionBars {
 		pack := wire.Item{Index: 4011}
-		pack.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(price)}
+		pack.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(price)}
 		s.account.StorageItems[sellerBarSlot] = pack
 		g.sendItem(s, wire.SlotStorage, sellerBarSlot, &pack)
 	}

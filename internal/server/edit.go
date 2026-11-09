@@ -76,8 +76,7 @@ func (s *Server) deliverEdit(ctx context.Context, user string, raw json.RawMessa
 	if ch == nil {
 		return waitOffline, false, nil
 	}
-	out := e.Packet(user, online.key.Client)
-	ch.send(&out)
+	ch.send(e.Wire(user, online.key.Client))
 	return resSentOnline, true, nil
 }
 

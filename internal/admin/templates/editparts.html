@@ -26,26 +26,26 @@
 {{define "itemrows"}}
 <div class="table-wrap">
 <table class="items">
-  <thead><tr><th>Slot</th><th>Item</th><th>Adicionais</th><th></th></tr></thead>
+  <thead><tr><th class="check"><input type="checkbox" data-select-all aria-label="Selecionar todos"></th><th>Slot</th><th>Item</th><th>Adicionais</th><th></th></tr></thead>
   <tbody>
   {{range .Cells}}
     <tr{{if .Picked}} class="picked"{{end}}>
+      <td class="check">{{if not .Empty}}<input type="checkbox" form="remove-form" name="sel" value="{{.Where}}:{{.Slot}}:{{.Expect}}" aria-label="Selecionar slot {{.Label}}">{{end}}</td>
       <td>{{.Label}}</td>
       <td>{{if .Empty}}<span class="muted">vazio</span>{{else}}{{if .Name}}{{.Name}}{{else}}item{{end}} <small>[{{.Item.Index}}]</small>{{end}}</td>
       <td class="effects">{{join .Effects ", "}}</td>
       <td class="actions">
         <a href="{{$.Root.Back}}?where={{.Where}}&amp;slot={{.Slot}}#editor">{{if .Empty}}Colocar{{else}}Editar{{end}}</a>
-        {{if not .Empty}}
-        <form method="post" action="/accounts/{{pathescape $.Root.Username}}/edit" class="inline">
+        {{if .EquipTo}}
+        <form method="post" action="/accounts/{{pathescape $.Root.Username}}/edit" class="inline equip">
           <input type="hidden" name="csrf" value="{{$.Root.CSRF}}">
           <input type="hidden" name="back" value="{{$.Root.Back}}">
-          <input type="hidden" name="op" value="item">
-          <input type="hidden" name="remove" value="1">
+          <input type="hidden" name="op" value="move">
           <input type="hidden" name="char" value="{{$.Char}}">
-          <input type="hidden" name="where" value="{{.Where}}">
           <input type="hidden" name="slot" value="{{.Slot}}">
           <input type="hidden" name="expect" value="{{.Expect}}">
-          <button class="link danger" data-confirm="Remover {{if .Name}}{{.Name}}{{else}}o item{{end}} do slot {{.Label}}?">Remover</button>
+          <select name="to" aria-label="Slot de equipamento">{{range .EquipTo}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
+          <button class="link">Equipar</button>
         </form>
         {{end}}
       </td>
@@ -54,6 +54,18 @@
   </tbody>
 </table>
 </div>
+{{end}}
+
+{{/* removebar: dict "Root" "Char" */}}
+{{define "removebar"}}
+<form id="remove-form" method="post" action="/accounts/{{pathescape .Root.Username}}/edit" class="removebar">
+  <input type="hidden" name="csrf" value="{{.Root.CSRF}}">
+  <input type="hidden" name="back" value="{{.Root.Back}}">
+  <input type="hidden" name="op" value="remove">
+  <input type="hidden" name="char" value="{{.Char}}">
+  <span class="muted" data-remove-count>Nenhum item selecionado</span>
+  <button class="danger" data-remove-button data-confirm="Remover os itens selecionados?">Remover selecionados</button>
+</form>
 {{end}}
 
 {{/* itemeditor: dict "Root" "Char" */}}
@@ -76,10 +88,10 @@
     <div class="fields">
       <label>Efeito {{add1 $k}} <select name="ef{{$k}}"><option value="0">—</option>
         {{range $.Root.EffectNames}}<option value="{{.ID}}"{{if eq .ID $cur}} selected{{end}}>{{.ID}} · {{.Name}}</option>{{end}}</select></label>
-      <label>Valor <input name="ev{{$k}}" type="number" min="0" max="255" value="{{effval $it $k}}"></label>
+      <label>Valor <input name="ev{{$k}}" type="number" min="0" max="65535" value="{{effval $it $k}}"></label>
     </div>
     {{end}}
-    <p class="muted small">Quantidade: efeito 61 (EF_AMOUNT). Refino: efeito 43 (EF_SANC; +10 em diante = 230 + 4 por nível). Se o slot mudar no jogo antes de aplicar, o pedido é recusado.</p>
+    <p class="muted small">Quantidade: efeito 61. Refino: efeito 43 (+10 em diante = 230 + 4 por nível). Se o slot mudar no jogo antes de aplicar, o pedido é recusado.</p>
     <button class="primary">Salvar item</button>
   </form>
 </section>

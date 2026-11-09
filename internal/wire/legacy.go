@@ -4,6 +4,39 @@ package wire
 // were written by the C++ servers and keep the 32-bit layout of STRUCT_MOB.
 // They are read through these structs and never written back.
 
+type legacyItem struct {
+	Index  uint16
+	Effect [3]struct{ Index, Value uint8 }
+}
+
+func (l legacyItem) item() Item {
+	it := Item{Index: l.Index}
+	for i, e := range l.Effect {
+		it.Effect[i] = ItemEffect{Index: e.Index, Value: uint16(e.Value)}
+	}
+	return it
+}
+
+func legacyItems(in []legacyItem, out []Item) {
+	for i := range in {
+		out[i] = in[i].item()
+	}
+}
+
+// UnmarshalEquip decodes a stored [20]Item, including rows saved with the
+// 8-byte item before the 16-bit effect values.
+func UnmarshalEquip(b []byte, out *[20]Item) error {
+	if len(b) == 20*8 {
+		var l [20]legacyItem
+		if err := Unmarshal(b, &l); err != nil {
+			return err
+		}
+		legacyItems(l[:], out[:])
+		return nil
+	}
+	return Unmarshal(b, out)
+}
+
 type legacyStatus struct {
 	Level    int16
 	_        [2]byte
@@ -47,8 +80,8 @@ type legacyMob struct {
 	Last            Position
 	BStatus         legacyStatus
 	Status          legacyStatus
-	Equip           [20]Item
-	Inventory       [64]Item
+	Equip           [20]legacyItem
+	Inventory       [64]legacyItem
 	Learn           [2]uint32
 	StatusPoint     uint16
 	MasterPoint     uint16
@@ -77,11 +110,13 @@ func UnmarshalLegacyMob(b []byte, m *Mob) error {
 		ClassInfo: l.ClassInfo, AffectInfo: l.AffectInfo, QuestInfo: l.QuestInfo,
 		Gold: int64(l.Gold), Exp: l.Exp, Last: l.Last,
 		BStatus: l.BStatus.status(), Status: l.Status.status(),
-		Equip: l.Equip, Inventory: l.Inventory, Learn: l.Learn,
+		Learn:       l.Learn,
 		StatusPoint: l.StatusPoint, MasterPoint: l.MasterPoint, SkillPoint: l.SkillPoint,
 		Critical: l.Critical, SaveMana: l.SaveMana, SkillBar1: l.SkillBar1,
 		GuildMemberType: l.GuildMemberType, MagicIncrement: l.MagicIncrement,
 		RegenHP: l.RegenHP, RegenMP: l.RegenMP, Resist: l.Resist,
 	}
+	legacyItems(l.Equip[:], m.Equip[:])
+	legacyItems(l.Inventory[:], m.Inventory[:])
 	return nil
 }

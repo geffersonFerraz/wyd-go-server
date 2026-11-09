@@ -246,7 +246,7 @@ func TestArenaSettingsValidation(t *testing.T) {
 		"hour":   {Hours: []int{24}},
 		"repeat": {Hours: []int{11, 11}},
 		"item":   {TopKillItems: []ArenaItemSettings{{Item: MaxItemList}}},
-		"amount": {WinnerItems: []ArenaItemSettings{{Item: 3251, Amount: 256}}},
+		"amount": {WinnerItems: []ArenaItemSettings{{Item: 3251, Amount: 65536}}},
 	} {
 		if err := a.validate(); err == nil {
 			t.Errorf("%s: accepted", name)

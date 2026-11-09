@@ -48,44 +48,44 @@ type Parm3 struct {
 // AccountLogin mirrors p20D (120 bytes), 0x803 in and 0x52A out.
 type AccountLogin struct {
 	Header   Header
-	Password [12]byte // 12
-	Login    [16]byte // 24
-	Unknow   [52]byte // 40: TempKey for server change: "server enc0..enc7 slot"
-	CliVer   uint32   // 92
-	Unknow84 uint32   // 96: nonzero = kick previous session
-	Mac      [8]byte  // 100
-	Keys     [12]byte // 108
+	Password [12]byte
+	Login    [16]byte
+	Unknow   [52]byte // TempKey for server change: "server enc0..enc7 slot"
+	CliVer   uint32
+	Unknow84 uint32 // nonzero = kick previous session
+	Mac      [8]byte
+	Keys     [12]byte
 }
 
-// CharList mirrors st_CharList (1112 bytes).
+// CharList mirrors st_CharList (1592 bytes).
 type CharList struct {
 	PositionX [4]int16
 	PositionY [4]int16
 	Name      [4][16]byte
-	Status    [4]Status   // 80
-	Equip     [4][20]Item // 400
-	GuildID   [4]uint16   // 1040
-	Gold      [4]int64    // 1048
-	Exp       [4]int64    // 1080
+	Status    [4]Status
+	Equip     [4][20]Item
+	GuildID   [4]uint16
+	Gold      [4]int64
+	Exp       [4]int64
 }
 
-// CNFAccountLogin mirrors p416 (2520 bytes), sent as 0x416.
+// CNFAccountLogin mirrors p416 (4008 bytes), sent as 0x416.
 type CNFAccountLogin struct {
 	Header      Header
-	Keys        [16]byte  // 12
-	Unkw        int32     // 28
-	CharList    CharList  // 32
-	Storage     [168]Item // 1144
-	GoldStorage int64     // 2488
-	UserName    [16]byte  // 2496
-	Unknow      [8]byte   // 2512
+	Keys        [16]byte
+	Unkw        int32
+	CharList    CharList
+	Storage     [168]Item
+	GoldStorage int64
+	UserName    [16]byte
+	Unknow      [8]byte
 }
 
-// CharListPacket mirrors p418 (1128 bytes), sent as 0x418 / 0x419.
+// CharListPacket mirrors p418 (1608 bytes), sent as 0x418 / 0x419.
 type CharListPacket struct {
 	Header   Header
 	_        [4]byte
-	CharList CharList // 16
+	CharList CharList
 }
 
 // CharacterLogin mirrors p213 (32 bytes), 0x804.
@@ -95,35 +95,35 @@ type CharacterLogin struct {
 	Zero      [16]byte
 }
 
-// CNFCharacterLogin mirrors p114 (1224 bytes), sent as 0x417.
+// CNFCharacterLogin mirrors p114 (1728 bytes), sent as 0x417.
 type CNFCharacterLogin struct {
 	Header      Header
-	WorldPos    Position // 12
-	Mob         Mob      // 16
-	CurrentKill uint16   // 928
+	WorldPos    Position
+	Mob         Mob
+	CurrentKill uint16
 	TotalKill   uint16
-	SlotIndex   int16 // 932
+	SlotIndex   int16
 	ClientIndex int16
 	Weather     int16
-	SkillBar2   [16]byte // 938
+	SkillBar2   [16]byte
 	_           [2]byte
-	Affect      [32]Affect // 956
+	Affect      [32]Affect
 	_           [4]byte
-	Hold        int64 // 1216
+	Hold        int64
 }
 
-// CNFCharacterLoginExtra mirrors p820 (2192 bytes), sent as 0x820.
+// CNFCharacterLoginExtra mirrors p820 (2848 bytes), sent as 0x820.
 type CNFCharacterLoginExtra struct {
 	Header    Header
 	_         [4]byte
-	Mob       CharInfo // 16
-	Cash      int32    // 2128
+	Mob       CharInfo
+	Cash      int32
 	Honra     int32
 	Novato    int32
-	Pass      [16]byte // 2140
-	Blocked   int32    // 2156
-	PassBlock [16]byte // 2160
-	TypeBlock [10]byte // 2176
+	Pass      [16]byte
+	Blocked   int32
+	PassBlock [16]byte
+	TypeBlock [10]byte
 	_         [6]byte
 }
 
@@ -131,22 +131,22 @@ type CNFCharacterLoginExtra struct {
 // no TypeBlock), sent as 0x415.
 type AdditionalAccountInfo struct {
 	Header     Header
-	Access     int32 // 12
-	Unique     int64 // 16
-	Daily      Daily // 24
-	Water      Water // 36
+	Access     int32
+	Unique     int64
+	Daily      Daily
+	Water      Water
 	Divina     ItemDate
-	Sephira    ItemDate // 52
+	Sephira    ItemDate
 	_          [4]byte
-	SingleGift uint64   // 64
-	Ban        ItemDate // 72
-	BanType    uint32   // 80
+	SingleGift uint64
+	Ban        ItemDate
+	BanType    uint32
 	IsBanned   int32
 	Cash       int32
 	Honra      int32
 	Novato     int32
-	PassBlock  [16]byte // 100
-	TypeBlock  [10]byte // 116
+	PassBlock  [16]byte
+	TypeBlock  [10]byte
 	_          [2]byte
 }
 
@@ -176,38 +176,38 @@ type DeleteCharacter struct {
 	Pwd       [12]byte
 }
 
-// SaveCharacter mirrors STRUCT_SAVECHARACTER (4152 bytes; TMSRV's copy is
-// 4136, it has no TypeBlock), 0x806 / 0x807.
+// SaveCharacter mirrors STRUCT_SAVECHARACTER (5816 bytes; TMSRV's copy is
+// 5800, it has no TypeBlock), 0x806 / 0x807.
 type SaveCharacter struct {
 	Header     Header
-	CharSlot   uint32       // 12
-	Mob        CharInfo     // 16
-	Storage    [168]Item    // 2128
-	Coin       int64        // 3472
-	SkillBar   [20]byte     // 3480: [0:4] -> SkillBar1, [4:20] -> CharInfo.SkillBar
-	User       [16]byte     // 3500
-	Arg2       uint32       // 3516: nonzero = also export
-	Friends    [30][16]byte // 3520
-	Pass       [16]byte     // 4000
-	Blocked    int32        // 4016
+	CharSlot   uint32
+	Mob        CharInfo
+	Storage    [168]Item
+	Coin       int64
+	SkillBar   [20]byte // [0:4] -> SkillBar1, [4:20] -> CharInfo.SkillBar
+	User       [16]byte
+	Arg2       uint32 // nonzero = also export
+	Friends    [30][16]byte
+	Pass       [16]byte
+	Blocked    int32
 	Cash       int32
 	Honra      int32
-	Novato     int32    // 4028
-	Insignia   int64    // 4032
-	BanType    uint32   // 4040
-	Ban        ItemDate // 4044
-	Position   Position // 4052
-	Slot       int16    // 4056
+	Novato     int32
+	Insignia   int64
+	BanType    uint32
+	Ban        ItemDate
+	Position   Position
+	Slot       int16
 	_          [6]byte
-	Unique     int64 // 4064
-	Daily      Daily // 4072
-	Water      Water // 4084
+	Unique     int64
+	Daily      Daily
+	Water      Water
 	Divina     ItemDate
-	Sephira    ItemDate // 4100
+	Sephira    ItemDate
 	_          [4]byte
-	SingleGift uint64   // 4112
-	PassBlock  [16]byte // 4120
-	TypeBlock  [10]byte // 4136
+	SingleGift uint64
+	PassBlock  [16]byte
+	TypeBlock  [10]byte
 	_          [6]byte
 }
 
@@ -339,8 +339,8 @@ type RankUpdate struct {
 type HpMode struct {
 	Header Header
 	_      [4]byte
-	CurHP  int64 // 16
-	Status int16 // 24
+	CurHP  int64
+	Status int16
 	_      [6]byte
 }
 
@@ -392,8 +392,8 @@ type DropMob struct {
 	Name  [64]byte
 	X, Y  int16
 	_     [4]byte
-	Exp   int64 // 72
-	Gold  int64 // 80
+	Exp   int64
+	Gold  int64
 	Carry [64]Item
 }
 
@@ -424,6 +424,7 @@ type RollItem struct {
 	Evol   int16
 	Item   [20]Item
 	Rare   [20]int16
+	_      [2]byte
 }
 
 // Recaptcha is MSG_pRecaptcha (5269), the same both ways.
@@ -461,6 +462,7 @@ type CashShopInfo struct {
 	Aba        int16
 	Page       int16
 	LastUpdate ItemDate
+	_          [2]byte
 }
 
 // CashShopBuy is MSG_BuyPremiumStore (0xF03).
@@ -470,7 +472,6 @@ type CashShopBuy struct {
 	Price     int16
 	Item      Item
 	Quant     int16
-	_         [2]byte
 	Aba       int32
 	Page      int32
 	Categoria [128]byte
@@ -482,6 +483,7 @@ type HonorShopList struct {
 	Header Header
 	NPC    int32
 	Item   [27]Item
+	_      [2]byte
 	Taxes  int32
 }
 
@@ -496,12 +498,13 @@ const (
 	AlertWPE = 1 // the client's protection saw WPE (packet editor)
 )
 
-// ItemDelivery mirrors pCOF (40 bytes), sent as 0xC0F.
+// ItemDelivery mirrors pCOF (48 bytes), sent as 0xC0F.
 type ItemDelivery struct {
 	Header   Header
 	Val      int32
 	Username [16]byte
 	Item     Item
+	_        [2]byte
 }
 
 // CashDelivery mirrors pCOE (72 bytes), sent as 0xC0E.
@@ -518,7 +521,7 @@ type CashDelivery struct {
 }
 
 // BanNotify mirrors pC10 (40 bytes), sent as 0xC10.
-// AdminEdit is a staff edit of a player in game (Go only, 0xC11, 80 bytes;
+// AdminEdit is a staff edit of a player in game (Go only, 0xC11, 112 bytes;
 // see package acctedit).
 type AdminEdit struct {
 	Header    Header
@@ -531,8 +534,31 @@ type AdminEdit struct {
 	Value     int64
 	Item      Item
 	Expect    Item
+	ExpectTo  Item
+	_         [2]byte
 	HasExpect int32
+	To        int32 // equipment slot of a move
 	_         [4]byte
+}
+
+// AdminRemoveMax is the most slots one AdminRemove can clear (a whole storage).
+const AdminRemoveMax = 128
+
+// AdminRemoveSlot is one slot of an AdminRemove.
+type AdminRemoveSlot struct {
+	Where  uint16
+	Slot   uint16
+	Expect Item
+}
+
+// AdminRemove (Go only, 0xC15): a staff removal of several items of a player
+// in game, applied all together or not at all.
+type AdminRemove struct {
+	Header   Header
+	Username [16]byte
+	Char     int32
+	Count    int32
+	Slots    [AdminRemoveMax]AdminRemoveSlot
 }
 
 type BanNotify struct {
@@ -592,7 +618,7 @@ type SignalValue struct {
 type SignalValue64 struct {
 	Header Header
 	_      [4]byte
-	Value  int64 // 16
+	Value  int64
 }
 
 // SealInfoReply mirrors MSG_SEALINFO (56 bytes).
@@ -643,10 +669,10 @@ func (m MSVCString) String() string { return string(m.Buf[:min(int(m.Size), 15)]
 // GuildInfo mirrors STRUCT_GUILDINFO as laid out in memory (112 bytes).
 type GuildInfo struct {
 	Name     MSVCString
-	SubGuild [3]MSVCString // 24
-	Kingdom  uint8         // 96
+	SubGuild [3]MSVCString
+	Kingdom  uint8
 	_        [3]byte
-	Fame     int32 // 100
+	Fame     int32
 	Citizen  int32
 	Wins     int32
 }

@@ -593,7 +593,7 @@ func (g *Game) curScore(id int) {
 			if evolution(mob) >= evoCelestial {
 				sanc = 9
 			}
-			mob.Equip[0].Effect[0] = wire.ItemEffect{Index: 43, Value: uint8(sanc)}
+			mob.Equip[0].Effect[0] = wire.ItemEffect{Index: 43, Value: uint16(sanc)}
 			lo, hi := tb.MinAttack+atkBonus, tb.MaxAttack+atkBonus
 			v := (hi-lo)*value/300 + lo
 			if mob.Equip[0].Index == 22 {

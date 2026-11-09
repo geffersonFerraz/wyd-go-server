@@ -96,3 +96,34 @@ func TestAdminLockReload(t *testing.T) {
 		t.Fatalf("lock after removal %+v", u.lock)
 	}
 }
+
+func TestAdminMoveAndRemoveInGame(t *testing.T) {
+	g := worldGame(t)
+	u := placePlayer(g, 2112, 2042, 0)
+	listen(u)
+	pl := &g.mobs[1].info.Player
+	pl.Inventory[4] = wire.Item{Index: 805, Effect: [3]wire.ItemEffect{{Index: EF_SANC, Value: 300}}}
+	pl.Inventory[5] = wire.Item{Index: 412}
+	pl.Equip[6] = wire.Item{Index: 806}
+
+	g.applyAdminEdit(u, acctedit.Edit{Op: acctedit.OpMove, Slot: 4, To: 6,
+		Expect: acctedit.Ints(pl.Inventory[4]), ExpectTo: acctedit.Ints(pl.Equip[6])})
+	if pl.Equip[6].Index != 805 || pl.Equip[6].Effect[0].Value != 300 || pl.Inventory[4].Index != 806 {
+		t.Fatalf("move: %+v / %+v", pl.Equip[6], pl.Inventory[4])
+	}
+
+	// One stale slot refuses the whole removal.
+	refs := []acctedit.SlotRef{{Where: wire.SlotInv, Slot: 5, Expect: acctedit.Ints(pl.Inventory[5])},
+		{Where: wire.SlotEquip, Slot: 6, Expect: []int{1, 0, 0, 0, 0, 0, 0}}}
+	p := (&acctedit.Edit{Op: acctedit.OpRemove, Removes: refs}).RemovePacket(wire.CString(u.account.Username[:]), 1)
+	g.adminRemove(u, packet(&p))
+	if pl.Inventory[5].Index != 412 {
+		t.Fatal("a removal with a changed slot was applied")
+	}
+	refs[1].Expect = acctedit.Ints(pl.Equip[6])
+	p = (&acctedit.Edit{Op: acctedit.OpRemove, Removes: refs}).RemovePacket(wire.CString(u.account.Username[:]), 1)
+	g.adminRemove(u, packet(&p))
+	if pl.Inventory[5].Index != 0 || pl.Equip[6].Index != 0 {
+		t.Fatalf("remove: %+v / %+v", pl.Inventory[5], pl.Equip[6])
+	}
+}

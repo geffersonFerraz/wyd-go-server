@@ -125,7 +125,7 @@ func (g *Game) giveBox(u *User, p *wire.UseItem, src *wire.Item, items []wire.It
 func stackOf(pz prize, noTrade bool) wire.Item {
 	it := wire.Item{Index: pz.id}
 	if pz.amount > 1 {
-		it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(pz.amount)}
+		it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(pz.amount)}
 		if noTrade {
 			it.Effect[1] = wire.ItemEffect{Index: EF_NOTRADE, Value: 1}
 		}
@@ -133,7 +133,7 @@ func stackOf(pz prize, noTrade bool) wire.Item {
 		it.Effect[0] = wire.ItemEffect{Index: EF_NOTRADE, Value: 1}
 	}
 	if pz.ef != 0 {
-		it.Effect[0] = wire.ItemEffect{Index: pz.ef, Value: pz.ev}
+		it.Effect[0] = wire.ItemEffect{Index: pz.ef, Value: uint16(pz.ev)}
 	}
 	return it
 }
@@ -367,7 +367,7 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 		if pz.id == 3338 { // each 3338 is its own item
 			items = nil
 			for range pz.amount {
-				items = append(items, wire.Item{Index: 3338, Effect: [3]wire.ItemEffect{{Index: pz.ef, Value: pz.ev}}})
+				items = append(items, wire.Item{Index: 3338, Effect: [3]wire.ItemEffect{{Index: pz.ef, Value: uint16(pz.ev)}}})
 			}
 		}
 		g.giveBox(u, p, src, items, 2)
@@ -388,10 +388,10 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 		}
 		it := wire.Item{Effect: [3]wire.ItemEffect{{Index: EF_SANC}}}
 		if rnd()%50 <= 25 {
-			it.Effect[1] = wire.ItemEffect{Index: EF_DAMAGE, Value: dmgV[rnd()%len(dmgV)]}
+			it.Effect[1] = wire.ItemEffect{Index: EF_DAMAGE, Value: uint16(dmgV[rnd()%len(dmgV)])}
 			it.Index = dmgW[rnd()%len(dmgW)]
 		} else {
-			it.Effect[1] = wire.ItemEffect{Index: EF_MAGIC, Value: magV[rnd()%len(magV)]}
+			it.Effect[1] = wire.ItemEffect{Index: EF_MAGIC, Value: uint16(magV[rnd()%len(magV)])}
 			it.Index = magW[rnd()%len(magW)]
 		}
 		box(it)
@@ -471,23 +471,23 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 		var add wire.ItemEffect
 		if id == 4686 {
 			if rnd()%100 < 50 {
-				add = wire.ItemEffect{Index: EF_DAMAGE, Value: uint8(27 + rnd()%7*3)}
+				add = wire.ItemEffect{Index: EF_DAMAGE, Value: uint16(27 + rnd()%7*3)}
 			} else {
-				add = wire.ItemEffect{Index: EF_MAGIC, Value: uint8(5 + rnd()%6)}
+				add = wire.ItemEffect{Index: EF_MAGIC, Value: uint16(5 + rnd()%6)}
 			}
 		} else {
 			switch rnd() % 4 {
 			case 0:
-				add = wire.ItemEffect{Index: EF_AC, Value: uint8(70 + rnd()%4*10)}
+				add = wire.ItemEffect{Index: EF_AC, Value: uint16(70 + rnd()%4*10)}
 			case 1:
 				add = wire.ItemEffect{Index: EF_RESISTALL, Value: 10}
 				if rnd()%11 <= 5 {
 					add.Value = 8
 				}
 			case 2:
-				add = wire.ItemEffect{Index: efHPAdd2, Value: uint8(4 + rnd()%3*2)}
+				add = wire.ItemEffect{Index: efHPAdd2, Value: uint16(4 + rnd()%3*2)}
 			default:
-				add = wire.ItemEffect{Index: efMPAdd2, Value: uint8(4 + rnd()%3*2)}
+				add = wire.ItemEffect{Index: efMPAdd2, Value: uint16(4 + rnd()%3*2)}
 			}
 		}
 		sanc := itemSanc(d)
@@ -522,13 +522,13 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 		var add wire.ItemEffect
 		switch r := rnd() % 100; {
 		case r <= 25:
-			add = wire.ItemEffect{Index: efHPAdd2, Value: uint8(rnd()%4 + 3)}
+			add = wire.ItemEffect{Index: efHPAdd2, Value: uint16(rnd()%4 + 3)}
 		case r <= 50:
-			add = wire.ItemEffect{Index: efMPAdd2, Value: uint8(rnd()%4 + 3)}
+			add = wire.ItemEffect{Index: efMPAdd2, Value: uint16(rnd()%4 + 3)}
 		case r <= 75:
-			add = wire.ItemEffect{Index: EF_DAMAGE, Value: uint8(rnd()%26 + 15)}
+			add = wire.ItemEffect{Index: EF_DAMAGE, Value: uint16(rnd()%26 + 15)}
 		default:
-			add = wire.ItemEffect{Index: EF_MAGIC, Value: uint8(rnd()%7 + 4)}
+			add = wire.ItemEffect{Index: EF_MAGIC, Value: uint16(rnd()%7 + 4)}
 		}
 		for i := 1; i < 3; i++ {
 			if d.Effect[i].Index != EF_SANC {

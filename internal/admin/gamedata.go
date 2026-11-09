@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"dbsrv/internal/acctedit"
 	"dbsrv/internal/store"
 	"dbsrv/internal/wire"
 )
@@ -103,7 +104,7 @@ func (s *Server) itemPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderItem(w http.ResponseWriter, r *http.Request, code int, it *store.Item, msg, errMsg string) {
-	names, err := s.st.EffectNameList(r.Context())
+	names, err := s.effectNames(r.Context())
 	if err != nil {
 		s.fail(w, err)
 		return
@@ -363,7 +364,7 @@ func (s *Server) saveDrop(w http.ResponseWriter, r *http.Request) {
 			Kills:  f.int(fmt.Sprintf("kills%d", i), fmt.Sprintf("Kills (linha %d)", i+1), 1, 2000000000),
 			Item:   f.int(fmt.Sprintf("item%d", i), fmt.Sprintf("Item (linha %d)", i+1), 1, 6499),
 			Effect: f.int(fmt.Sprintf("effect%d", i), fmt.Sprintf("Efeito (linha %d)", i+1), 0, 255),
-			Value:  f.int(fmt.Sprintf("value%d", i), fmt.Sprintf("Valor (linha %d)", i+1), 0, 255),
+			Value:  f.int(fmt.Sprintf("value%d", i), fmt.Sprintf("Valor (linha %d)", i+1), 0, acctedit.MaxEffect),
 		}
 		d.Items = append(d.Items, row)
 	}

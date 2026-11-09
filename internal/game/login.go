@@ -14,20 +14,20 @@ import (
 var clientMinSize = map[uint16]int{
 	wire.OpCliLogin:         120,
 	wire.OpCliNumericPass:   32,
-	wire.OpCliTrade:         168,
+	wire.OpCliTrade:         256,
 	wire.OpCliUseItem:       36,
 	wire.OpCliMotion:        20,
 	opMissionAccept:         16,
-	opCliCompounder:         84,
-	opCliLindy:              84,
-	opCliShany:              84,
-	opCliOdin:               84,
-	opCliEhre:               84,
-	opCliAlchemy:            84,
-	opCliAylin:              84,
-	opCliAgatha:             84,
-	opCliTiny:               84,
-	opCliCompoNova:          84,
+	opCliCompounder:         132,
+	opCliLindy:              132,
+	opCliShany:              132,
+	opCliOdin:               132,
+	opCliEhre:               132,
+	opCliAlchemy:            132,
+	opCliAylin:              132,
+	opCliAgatha:             132,
+	opCliTiny:               132,
+	opCliCompoNova:          132,
 	opCliExtraction:         20,
 	opCliSealInfo:           16,
 	opCliRecruit:            20,
@@ -507,6 +507,8 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 		g.banNotify(u, pkt)
 	case wire.OpAdminEdit: // 0xC11
 		g.adminEdit(u, pkt)
+	case wire.OpAdminRemove: // 0xC15
+		g.adminRemove(u, pkt)
 	case wire.OpNewCharFail: // 0x41D
 		g.signal(u, 0, wire.OpSrvCreateFail)
 		u.status = userSelChar

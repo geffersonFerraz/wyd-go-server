@@ -12,7 +12,7 @@ func TestGroundPacketSizes(t *testing.T) {
 		v    any
 		size int
 	}{
-		{CreateGroundItem{}, 32}, {RemoveGroundItem{}, 16}, {GateState{}, 20},
+		{CreateGroundItem{}, 40}, {RemoveGroundItem{}, 16}, {GateState{}, 20},
 		{PickItem{}, 28}, {DropGroundItem{}, 32}, {DropItemAck{}, 28},
 		{AddPoint{}, 20}, {DeleteItem{}, 20}, {UngroupItem{}, 24},
 		{MerchantClick{}, 20}, {PartyEvocation{}, 88},

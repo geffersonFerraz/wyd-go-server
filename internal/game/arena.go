@@ -262,7 +262,7 @@ func (g *Game) giveArenaItems(u *User, items []ArenaItemSettings, why string) {
 	for _, reward := range items {
 		it := wire.Item{Index: uint16(reward.Item)}
 		if reward.Amount > 0 {
-			it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(reward.Amount)}
+			it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(reward.Amount)}
 		}
 		if !g.putItem(u, &it) {
 			g.clientMessage(u, "Sem espaço no inventário para o prêmio da Arena: [%s]", g.data.Item(it.Index).Name)

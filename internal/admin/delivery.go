@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"dbsrv/internal/acctedit"
 	"dbsrv/internal/store"
 )
 
@@ -51,7 +52,7 @@ func readItemForm(r *http.Request) (itemRequest, string) {
 	var extra [][2]int
 	for i := range 3 {
 		ef := f.int(fmt.Sprintf("ef%d", i), fmt.Sprintf("O efeito %d", i+1), 0, 255)
-		ev := f.int(fmt.Sprintf("ev%d", i), fmt.Sprintf("O valor %d", i+1), 0, 255)
+		ev := f.int(fmt.Sprintf("ev%d", i), fmt.Sprintf("O valor %d", i+1), 0, acctedit.MaxEffect)
 		if ef != 0 {
 			extra = append(extra, [2]int{ef, ev})
 		}

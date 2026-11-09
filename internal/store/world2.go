@@ -47,7 +47,7 @@ func (s *Store) DonateStore(ctx context.Context) ([]DonateSlot, error) {
 		var id, e1, v1, e2, v2, e3, v3 int32
 		err := r.Scan(&d.Store, &d.Slot, &d.Price, &d.Loop, &d.Available, &id, &e1, &v1, &e2, &v2, &e3, &v3)
 		d.Item = wire.Item{Index: uint16(id), Effect: [3]wire.ItemEffect{
-			{Index: uint8(e1), Value: uint8(v1)}, {Index: uint8(e2), Value: uint8(v2)}, {Index: uint8(e3), Value: uint8(v3)}}}
+			{Index: uint8(e1), Value: uint16(v1)}, {Index: uint8(e2), Value: uint16(v2)}, {Index: uint8(e3), Value: uint16(v3)}}}
 		return d, err
 	})
 }
@@ -233,8 +233,8 @@ func (s *Store) PutInStorage(ctx context.Context, username string, it wire.Item)
 		_, err = tx.Exec(ctx, `
 			INSERT INTO items (account_id, char_slot, container, slot, item_id, ef1, efv1, ef2, efv2, ef3, efv3)
 			VALUES ($1, -1, 2, $2, $3, $4, $5, $6, $7, $8, $9)`,
-			id, slot, int32(it.Index), int16(e[0].Index), int16(e[0].Value), int16(e[1].Index), int16(e[1].Value),
-			int16(e[2].Index), int16(e[2].Value))
+			id, slot, int32(it.Index), int16(e[0].Index), int32(e[0].Value), int16(e[1].Index), int32(e[1].Value),
+			int16(e[2].Index), int32(e[2].Value))
 		return err
 	})
 	return slot, err

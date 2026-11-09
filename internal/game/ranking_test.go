@@ -14,7 +14,7 @@ func TestRankPacketSizes(t *testing.T) {
 	for name, c := range map[string]struct {
 		v    any
 		want int
-	}{"p528": {wire.RankList{}, 1784}, "p487": {wire.CharProfile{}, 240}, "p292": {wire.HpMode{}, 32}} {
+	}{"p528": {wire.RankList{}, 1784}, "p487": {wire.CharProfile{}, 360}, "p292": {wire.HpMode{}, 32}} {
 		if got := binary.Size(c.v); got != c.want {
 			t.Errorf("%s = %d bytes, want %d", name, got, c.want)
 		}
@@ -138,10 +138,10 @@ func TestHpModeWhenDead(t *testing.T) {
 }
 
 func TestDropListPacketSizes(t *testing.T) {
-	if got := binary.Size(wire.DropList{}); got != 30016 {
+	if got := binary.Size(wire.DropList{}); got != 49216 {
 		t.Errorf("p2568 = %d", got)
 	}
-	if got := binary.Size(wire.FilterDropMsg{}); got != 216 {
+	if got := binary.Size(wire.FilterDropMsg{}); got != 360 {
 		t.Errorf("filter = %d", got)
 	}
 }

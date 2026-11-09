@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"net/http"
@@ -32,6 +33,13 @@ type itemCell struct {
 	Effects []string
 	Expect  string // the item as "id,ef,efv,..." for the edit's Expect
 	Picked  bool   // open in the editor
+	EquipTo []equipOption
+}
+
+// equipOption is an equipment slot an inventory item can go to.
+type equipOption struct {
+	Value string // "slot|expected item in it"
+	Label string
 }
 
 func (c itemCell) Empty() bool { return c.Item.Index == 0 }
@@ -69,6 +77,21 @@ func parseExpect(raw string) ([]int, bool) {
 		out[i] = v
 	}
 	return out, true
+}
+
+// parseSlotRef reads a selection: "where:slot:id,ef,efv,...".
+func parseSlotRef(raw string) (acctedit.SlotRef, bool) {
+	f := strings.SplitN(raw, ":", 3)
+	if len(f) != 3 {
+		return acctedit.SlotRef{}, false
+	}
+	where, err1 := strconv.Atoi(f[0])
+	slot, err2 := strconv.Atoi(f[1])
+	exp, ok := parseExpect(f[2])
+	if err1 != nil || err2 != nil || !ok || exp == nil {
+		return acctedit.SlotRef{}, false
+	}
+	return acctedit.SlotRef{Where: where, Slot: slot, Expect: exp}, true
 }
 
 // cells builds the editor rows for a container.
@@ -126,7 +149,7 @@ func (s *Server) editorData(w http.ResponseWriter, r *http.Request) (string, *st
 		s.fail(w, err)
 		return "", nil, nil, nil, false
 	}
-	list, err := s.st.EffectNameList(r.Context())
+	list, err := s.effectNames(r.Context())
 	if err != nil {
 		s.fail(w, err)
 		return "", nil, nil, nil, false
@@ -201,11 +224,46 @@ func (s *Server) characterPage(w http.ResponseWriter, r *http.Request) {
 	data["Evolution"] = int16(pl.Equip[0].Effect[1].Value)
 	data["Gold"] = pl.Gold
 	data["Exp"] = pl.Exp
+	if err := s.addEquipOptions(r, inv, equip); err != nil {
+		s.fail(w, err)
+		return
+	}
 	data["Equip"] = equip[1:] // the face (0) is not editable
 	data["Inv"] = inv
 	data["Pick"] = picked(equip, inv)
 	data["Back"] = fmt.Sprintf("/accounts/%s/chars/%d", url.PathEscape(user), slot)
 	s.page(w, r, http.StatusOK, "character", data)
+}
+
+// addEquipOptions offers each inventory item the equipment slots its
+// position allows. An occupied slot is a swap.
+func (s *Server) addEquipOptions(r *http.Request, inv, equip []itemCell) error {
+	var ids []int
+	for _, c := range inv {
+		if !c.Empty() {
+			ids = append(ids, int(c.Item.Index))
+		}
+	}
+	pos, err := s.st.ItemPositions(r.Context(), ids)
+	if err != nil {
+		return err
+	}
+	for i := range inv {
+		if inv[i].Empty() {
+			continue
+		}
+		for _, to := range equip[1:acctedit.MoveEquipEnd] {
+			if pos[int(inv[i].Item.Index)]>>to.Slot&1 == 0 {
+				continue
+			}
+			label := to.Label
+			if !to.Empty() {
+				label += " (troca com " + cmp.Or(to.Name, "item") + ")"
+			}
+			inv[i].EquipTo = append(inv[i].EquipTo, equipOption{Value: fmt.Sprintf("%d|%s", to.Slot, to.Expect), Label: label})
+		}
+	}
+	return nil
 }
 
 func (s *Server) storagePage(w http.ResponseWriter, r *http.Request) {
@@ -254,15 +312,12 @@ func (s *Server) submitEdit(w http.ResponseWriter, r *http.Request) {
 		e.Char = f.int("char", "O personagem", 0, 3)
 		e.Where = f.int("where", "O local", 0, 2)
 		e.Slot = f.int("slot", "O slot", 0, acctedit.StorageSize-1)
-		id := 0
-		if r.PostFormValue("remove") == "" {
-			id = f.int("item_id", "O item", 0, 6499)
-		}
+		id := f.int("item_id", "O item", 0, 6499)
 		e.Item = []int{id, 0, 0, 0, 0, 0, 0}
 		if id != 0 {
 			for k := range 3 {
 				e.Item[1+2*k] = f.int(fmt.Sprintf("ef%d", k), fmt.Sprintf("O efeito %d", k+1), 0, 255)
-				e.Item[2+2*k] = f.int(fmt.Sprintf("ev%d", k), fmt.Sprintf("O valor %d", k+1), 0, 255)
+				e.Item[2+2*k] = f.int(fmt.Sprintf("ev%d", k), fmt.Sprintf("O valor %d", k+1), 0, acctedit.MaxEffect)
 			}
 		}
 		exp, ok := parseExpect(r.PostFormValue("expect"))
@@ -279,6 +334,45 @@ func (s *Server) submitEdit(w http.ResponseWriter, r *http.Request) {
 				s.fail(w, err)
 				return
 			}
+		}
+	case acctedit.OpMove:
+		e.Char = f.int("char", "O personagem", 0, 3)
+		e.Slot = f.int("slot", "O slot", 0, acctedit.InvSize-1)
+		to, expectTo, ok := strings.Cut(r.PostFormValue("to"), "|")
+		e.To, _ = strconv.Atoi(to)
+		var ok1, ok2 bool
+		e.Expect, ok1 = parseExpect(r.PostFormValue("expect"))
+		e.ExpectTo, ok2 = parseExpect(expectTo)
+		if !ok || !ok1 || !ok2 || e.Expect == nil || e.ExpectTo == nil {
+			fail("Item esperado inválido; recarregue a página.")
+			return
+		}
+		if msg := f.err(); msg != "" {
+			fail(msg)
+			return
+		}
+		it, err := s.st.GetItem(r.Context(), e.Expect[0])
+		if errors.Is(err, store.ErrNotFound) || (err == nil && it.Pos>>e.To&1 == 0) {
+			fail("Este item não pode ser equipado nesse slot.")
+			return
+		} else if err != nil {
+			s.fail(w, err)
+			return
+		}
+	case acctedit.OpRemove:
+		e.Char = f.int("char", "O personagem", 0, 3)
+		sel := r.PostForm["sel"]
+		if len(sel) == 0 {
+			fail("Selecione ao menos um item para remover.")
+			return
+		}
+		for _, v := range sel {
+			ref, ok := parseSlotRef(v)
+			if !ok {
+				fail("Seleção inválida; recarregue a página.")
+				return
+			}
+			e.Removes = append(e.Removes, ref)
 		}
 	default:
 		fail("Operação desconhecida.")
@@ -334,6 +428,13 @@ func editLabel(d store.DeliveryInfo) string {
 		return fmt.Sprintf("acesso = %d", e.Value)
 	case acctedit.OpLock:
 		return "bloqueio da conta (avisar o jogo)"
+	case acctedit.OpMove:
+		return fmt.Sprintf("%s: item [%d] do inventário slot %d para %s", char, e.Expect[0], e.Slot, equipNames[e.To])
+	case acctedit.OpRemove:
+		if e.CharScoped() {
+			return fmt.Sprintf("remover %d itens de %s", len(e.Removes), char)
+		}
+		return fmt.Sprintf("remover %d itens do baú", len(e.Removes))
 	case acctedit.OpItem:
 		place := fmt.Sprintf("%s slot %d", whereNames[e.Where], e.Slot)
 		if e.Where != wire.SlotStorage {

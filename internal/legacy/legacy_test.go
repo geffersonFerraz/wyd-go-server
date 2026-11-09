@@ -59,7 +59,7 @@ func TestParseAnderson(t *testing.T) {
 	check("mob0.move", m.Player.BStatus.Move, uint8(82))
 	check("mob0.mastery3", m.Player.BStatus.Mastery[3], uint16(255))
 	check("mob0.curDefense", m.Player.Status.Defense, int32(3837))
-	ef := func(i, v uint8) wire.ItemEffect { return wire.ItemEffect{Index: i, Value: v} }
+	ef := func(i, v uint8) wire.ItemEffect { return wire.ItemEffect{Index: i, Value: uint16(v)} }
 	check("mob0.equip13", m.Player.Equip[13], wire.Item{Index: 3908, Effect: [3]wire.ItemEffect{ef(106, 6), ef(107, 13), ef(108, 7)}})
 	check("mob0.inv63", m.Player.Inventory[63], wire.Item{Index: 547, Effect: [3]wire.ItemEffect{ef(150, 0), ef(0, 0), ef(77, 0)}})
 	check("mob0.inv62 (absent)", m.Player.Inventory[62], wire.Item{})

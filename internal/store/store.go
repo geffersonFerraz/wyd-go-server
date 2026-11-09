@@ -128,9 +128,9 @@ func scanItemRow(row pgx.CollectableRow) (itemRow, error) {
 	var id, e1, v1, e2, v2, e3, v3 int32
 	err := row.Scan(&it.CharSlot, &it.Container, &it.Slot, &id, &e1, &v1, &e2, &v2, &e3, &v3)
 	it.Item.Index = uint16(id)
-	it.Item.Effect[0].Index, it.Item.Effect[0].Value = uint8(e1), uint8(v1)
-	it.Item.Effect[1].Index, it.Item.Effect[1].Value = uint8(e2), uint8(v2)
-	it.Item.Effect[2].Index, it.Item.Effect[2].Value = uint8(e3), uint8(v3)
+	it.Item.Effect[0].Index, it.Item.Effect[0].Value = uint8(e1), uint16(v1)
+	it.Item.Effect[1].Index, it.Item.Effect[1].Value = uint8(e2), uint16(v2)
+	it.Item.Effect[2].Index, it.Item.Effect[2].Value = uint8(e3), uint16(v3)
 	return it, err
 }
 
@@ -201,8 +201,8 @@ func (s *Store) saveAccountTx(ctx context.Context, tx pgx.Tx, rec *AccountRecord
 				it := items[i]
 				e := it.Item.Effect
 				return []any{id, it.CharSlot, it.Container, it.Slot, int32(it.Item.Index),
-					int16(e[0].Index), int16(e[0].Value), int16(e[1].Index), int16(e[1].Value),
-					int16(e[2].Index), int16(e[2].Value)}, nil
+					int16(e[0].Index), int32(e[0].Value), int16(e[1].Index), int32(e[1].Value),
+					int16(e[2].Index), int32(e[2].Value)}, nil
 			}))
 		if err != nil {
 			return err

@@ -58,7 +58,7 @@ func setGuilty(pl *wire.Mob, v int) { pl.Inventory[63].Effect[1].Index = uint8(m
 
 func curKill(pl *wire.Mob) int { return int(pl.Inventory[63].Effect[0].Value) }
 
-func setCurKill(pl *wire.Mob, v int) { pl.Inventory[63].Effect[0].Value = uint8(min(max(v, 0), 200)) }
+func setCurKill(pl *wire.Mob, v int) { pl.Inventory[63].Effect[0].Value = uint16(min(max(v, 0), 200)) }
 
 func totKill(pl *wire.Mob) int {
 	return int(pl.Inventory[63].Effect[1].Value) | int(pl.Inventory[63].Effect[2].Value)<<8
@@ -66,8 +66,8 @@ func totKill(pl *wire.Mob) int {
 
 func setTotKill(pl *wire.Mob, v int) {
 	v = min(max(v, 0), 32767)
-	pl.Inventory[63].Effect[1].Value = uint8(v % 256)
-	pl.Inventory[63].Effect[2].Value = uint8(v >> 8)
+	pl.Inventory[63].Effect[1].Value = uint16(v % 256)
+	pl.Inventory[63].Effect[2].Value = uint16(v >> 8)
 }
 
 // markGuilty sets the guilty mark (8) on an attacker outside arenas,

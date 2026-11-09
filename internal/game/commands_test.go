@@ -13,7 +13,7 @@ func TestCommandPacketSizes(t *testing.T) {
 		v    any
 		size int
 	}{
-		{DailyRewardInfo{}, 248}, {MissionInfo{}, 360}, {MissionTimes{}, 524}, {RollInfo{}, 104},
+		{DailyRewardInfo{}, 416}, {MissionInfo{}, 432}, {MissionTimes{}, 524}, {RollInfo{}, 172},
 		{GroupListEntry{}, 40}, {GroupList{}, 424}, {GroupSearch{}, 32}, {GroupInfo{}, 36},
 		{ClientInfo{}, 52}, {SummonCall{}, 32},
 	} {

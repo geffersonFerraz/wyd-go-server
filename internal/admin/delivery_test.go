@@ -12,7 +12,7 @@ func TestDeliverItem(t *testing.T) {
 	seedGameData(h)
 	csrf := h.login()
 
-	if _, body, _ := h.get("/accounts/EXISTING"); !strings.Contains(body, "Entregar item") || !strings.Contains(body, "61 · EF_AMOUNT") {
+	if _, body, _ := h.get("/accounts/EXISTING"); !strings.Contains(body, "Entregar item") || !strings.Contains(body, "61 · Quantidade") {
 		t.Fatal("no item form on the account page")
 	}
 	form := func(kv ...string) url.Values {

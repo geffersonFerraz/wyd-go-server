@@ -143,7 +143,7 @@ func parseItemLine(s string) wire.Item {
 	}
 	it.Index = uint16(v[0])
 	for i := range 3 {
-		it.Effect[i] = wire.ItemEffect{Index: uint8(v[1+2*i]), Value: uint8(v[2+2*i])}
+		it.Effect[i] = wire.ItemEffect{Index: uint8(v[1+2*i]), Value: uint16(v[2+2*i])}
 	}
 	return it
 }
@@ -216,7 +216,7 @@ func (g *Game) combine(u *User, searched, earned uint16) {
 		if k < 0 {
 			continue
 		}
-		it.Effect[k] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(amount + 1)}
+		it.Effect[k] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(amount + 1)}
 		g.sendItem(u, wire.SlotInv, i, it)
 		return
 	}
@@ -416,11 +416,11 @@ func (g *Game) setItemBonusLevel(it *wire.Item, level, sanc, bonus int) {
 	}
 	switch {
 	case it.Effect[1].Index == 0 && v1 > 0:
-		it.Effect[1] = wire.ItemEffect{Index: uint8(ef1), Value: uint8(v1 * base1)}
+		it.Effect[1] = wire.ItemEffect{Index: uint8(ef1), Value: uint16(v1 * base1)}
 	case it.Effect[1].Index == 0 && pos == 32:
 		it.Effect[1] = wire.ItemEffect{Index: uint8(ef1)}
 	case it.Effect[1].Index == 0:
-		it.Effect[1] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint8(rnd() % 127)}
+		it.Effect[1] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint16(rnd() % 127)}
 	}
 
 	roll2 := rnd() % 100
@@ -467,9 +467,9 @@ func (g *Game) setItemBonusLevel(it *wire.Item, level, sanc, bonus int) {
 	}
 	switch {
 	case v2 > 0 && it.Effect[2].Index == 0:
-		it.Effect[2] = wire.ItemEffect{Index: uint8(ef2), Value: uint8(v2 * base2)}
+		it.Effect[2] = wire.ItemEffect{Index: uint8(ef2), Value: uint16(v2 * base2)}
 	case it.Effect[2].Index == 0:
-		it.Effect[2] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint8(rnd() % 127)}
+		it.Effect[2] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint16(rnd() % 127)}
 	}
 
 	if it.Effect[0].Index != 0 {
@@ -500,7 +500,7 @@ func (g *Game) setItemBonusLevel(it *wire.Item, level, sanc, bonus int) {
 			}[gradeSanc]
 			for _, s := range steps {
 				if r < s[0] {
-					it.Effect[0].Value = uint8(s[1])
+					it.Effect[0].Value = uint16(s[1])
 					break
 				}
 			}
@@ -513,9 +513,9 @@ func (g *Game) setItemBonusLevel(it *wire.Item, level, sanc, bonus int) {
 		k := rnd() % 10
 		rg := bonusRanges[k][min(tier, 2)]
 		span := max(rg[1]+1-rg[0], 1)
-		it.Effect[0] = wire.ItemEffect{Index: uint8(bonusEffects[k]), Value: uint8(rnd()%span + rg[0])}
+		it.Effect[0] = wire.ItemEffect{Index: uint8(bonusEffects[k]), Value: uint16(rnd()%span + rg[0])}
 	default:
-		it.Effect[0] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint8(rnd() % 127)}
+		it.Effect[0] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint16(rnd() % 127)}
 	}
 }
 

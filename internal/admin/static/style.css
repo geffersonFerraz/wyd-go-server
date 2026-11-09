@@ -137,3 +137,9 @@ form.inline { display: inline; margin: 0; }
 /* guild marks (16x12 pixel art) */
 img.mark { image-rendering: pixelated; vertical-align: middle; border: 1px solid var(--border); background: #000; }
 .mark-preview { margin: 0 0 12px; }
+
+table.items th.check, table.items td.check { width: 28px; text-align: center; }
+table.items form.equip { display: inline-flex; gap: 6px; align-items: center; }
+table.items form.equip select { max-width: 190px; padding: 2px 4px; }
+.removebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 12px; }
+button.danger:disabled { opacity: .45; cursor: default; }

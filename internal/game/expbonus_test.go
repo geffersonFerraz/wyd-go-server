@@ -27,7 +27,7 @@ func TestZoneExp(t *testing.T) {
 	pl := &m.info.Player
 	at := func(zx, zy int) { m.target = wire.Position{X: uint16(zx*128 + 5), Y: uint16(zy*128 + 5)} }
 	setEv := func(ev uint8, level int16) {
-		pl.Equip[0].Effect[1].Value = ev
+		pl.Equip[0].Effect[1].Value = uint16(ev)
 		pl.Status.Level, pl.BStatus.Level = level, level
 	}
 	for _, c := range []struct {

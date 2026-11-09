@@ -156,9 +156,9 @@ func (p *parser) item(field string, x xItem) wire.Item {
 	return wire.Item{
 		Index: uint16(p.num(field+".itemId", x.ItemID)),
 		Effect: [3]wire.ItemEffect{
-			{Index: uint8(p.num(field+".ef0", x.Ef0)), Value: uint8(p.num(field+".efv0", x.Efv0))},
-			{Index: uint8(p.num(field+".ef1", x.Ef1)), Value: uint8(p.num(field+".efv1", x.Efv1))},
-			{Index: uint8(p.num(field+".ef2", x.Ef2)), Value: uint8(p.num(field+".efv2", x.Efv2))},
+			{Index: uint8(p.num(field+".ef0", x.Ef0)), Value: uint16(p.num(field+".efv0", x.Efv0))},
+			{Index: uint8(p.num(field+".ef1", x.Ef1)), Value: uint16(p.num(field+".efv1", x.Efv1))},
+			{Index: uint8(p.num(field+".ef2", x.Ef2)), Value: uint16(p.num(field+".efv2", x.Efv2))},
 		},
 	}
 }

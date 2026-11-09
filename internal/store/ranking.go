@@ -51,7 +51,7 @@ func (s *Store) Ranking(ctx context.Context) ([]RankEntry, error) {
 			&e.Fame, &e.Citizen, &e.PvPKill, &e.PvMKill, &e.Mantle, &e.Exp, &equip); err != nil {
 			return e, err
 		}
-		if err := wire.Unmarshal(equip, &e.Equip); err != nil {
+		if err := wire.UnmarshalEquip(equip, &e.Equip); err != nil {
 			return e, fmt.Errorf("ranking %s: %w", e.Name, err)
 		}
 		return e, nil

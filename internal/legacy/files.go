@@ -163,9 +163,9 @@ func ReadDonate(path string) ([]DonateSlot, []string, error) {
 		out = append(out, DonateSlot{
 			Store: int(v[0]), Slot: int(v[1]), Available: int(v[2]), Price: v[3], Loop: int(v[4]),
 			Item: wire.Item{Index: uint16(v[5]), Effect: [3]wire.ItemEffect{
-				{Index: uint8(v[6]), Value: uint8(v[7])},
-				{Index: uint8(v[8]), Value: uint8(v[9])},
-				{Index: uint8(v[10]), Value: uint8(v[11])},
+				{Index: uint8(v[6]), Value: uint16(v[7])},
+				{Index: uint8(v[8]), Value: uint16(v[9])},
+				{Index: uint8(v[10]), Value: uint16(v[11])},
 			}},
 		})
 	}

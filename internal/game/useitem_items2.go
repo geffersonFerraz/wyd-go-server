@@ -269,14 +269,14 @@ func (g *Game) useItemByID2(u *User, p *wire.UseItem, src *wire.Item) bool {
 		if left <= 0 {
 			d.Index = 2330 + d.Index - 2300
 			setMountHP(d, 5000)
-			d.Effect[1] = wire.ItemEffect{Index: 1, Value: uint8(rnd()%20 + 10)}
+			d.Effect[1] = wire.ItemEffect{Index: 1, Value: uint16(rnd()%20 + 10)}
 			d.Effect[2] = wire.ItemEffect{Index: 30, Value: 1}
 			g.clientMessage(u, "%s", g.lang(nnIncubated))
 			g.mountProcess(u.id)
 		} else {
 			for i := range 3 {
 				if d.Effect[i].Index == EF_INCUBATE {
-					d.Effect[i].Value = uint8(left)
+					d.Effect[i].Value = uint16(left)
 					break
 				}
 			}
@@ -302,7 +302,7 @@ func (g *Game) useItemByID2(u *User, p *wire.UseItem, src *wire.Item) bool {
 		d.Index += 30
 		setMountHP(d, 5000)
 		d.Effect[1].Index = 1
-		d.Effect[1].Value = uint8(min(int(d.Effect[1].Value)+rnd()%16+5, 255))
+		d.Effect[1].Value = uint16(min(int(d.Effect[1].Value)+rnd()%16+5, 255))
 		d.Effect[2] = wire.ItemEffect{Index: 100}
 		g.mountProcess(u.id)
 		g.clientMessage(u, "%s", g.lang(nnIncubated))
@@ -324,7 +324,7 @@ func (g *Game) useItemByID2(u *User, p *wire.UseItem, src *wire.Item) bool {
 			refuse("%s", g.lang(nnMountNotMatch))
 			return true
 		}
-		d.Effect[1].Value = uint8(min(int(d.Effect[1].Value)+rnd()%3+1, 60))
+		d.Effect[1].Value = uint16(min(int(d.Effect[1].Value)+rnd()%3+1, 60))
 		g.sendItem(u, int(p.DstType), int(p.DstSlot), d)
 		amountMinus(src)
 		g.sendEmotion(u.id, 14, 3)
@@ -377,7 +377,7 @@ func (g *Game) useAnctGem(u *User, p *wire.UseItem, src *wire.Item) {
 	}
 	if e := refineEffect(d); e != -1 && (pos <= 32 || d.Effect[e].Value > 9) {
 		v := int(d.Effect[e].Value)
-		d.Effect[e].Value = uint8(v + stone - (v - anctBase(v)))
+		d.Effect[e].Value = uint16(v + stone - (v - anctBase(v)))
 	}
 	if weapon && pos != 128 && grade >= 5 && grade <= 8 {
 		d.Index = uint16(int(d.Index) + stone - (grade - 5))

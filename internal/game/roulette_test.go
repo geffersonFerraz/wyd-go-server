@@ -25,7 +25,7 @@ func rouletteGame(t *testing.T) (*Game, *User, *wire.CharInfo) {
 }
 
 func TestRollItemSize(t *testing.T) {
-	if got := binary.Size(wire.RollItem{}); got != 218 {
+	if got := binary.Size(wire.RollItem{}); got != 340 {
 		t.Fatalf("MSG_RollItem = %d", got)
 	}
 }

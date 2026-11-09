@@ -253,11 +253,11 @@ func (g *Game) setItemBonus(it *wire.Item) {
 	}
 	switch {
 	case it.Effect[1].Index == 0 && v1 > 0:
-		it.Effect[1] = wire.ItemEffect{Index: uint8(ef1), Value: uint8(v1 * base1)}
+		it.Effect[1] = wire.ItemEffect{Index: uint8(ef1), Value: uint16(v1 * base1)}
 	case it.Effect[1].Index == 0 && pos == 32:
 		it.Effect[1] = wire.ItemEffect{Index: uint8(ef1)}
 	case it.Effect[1].Index == 0:
-		it.Effect[1] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint8(rnd() % 127)}
+		it.Effect[1] = wire.ItemEffect{Index: EF_UNIQUE, Value: uint16(rnd() % 127)}
 	}
 	v2 := tier(rnd()%100) + mod2
 	if mobType == 1 && v2 >= 3 {
@@ -272,7 +272,7 @@ func (g *Game) setItemBonus(it *wire.Item) {
 		if pos == 16 && v > 18 {
 			v = 18
 		}
-		it.Effect[2] = wire.ItemEffect{Index: uint8(ef2), Value: uint8(v)}
+		it.Effect[2] = wire.ItemEffect{Index: uint8(ef2), Value: uint16(v)}
 	}
 }
 
@@ -491,7 +491,7 @@ func (g *Game) useItemByID(u *User, p *wire.UseItem, src *wire.Item, vol int) bo
 				left--
 			}
 		}
-		pl.Inventory[slot] = wire.Item{Index: 3447 + id - 3445, Effect: [3]wire.ItemEffect{{Index: EF_AMOUNT, Value: uint8(total)}}}
+		pl.Inventory[slot] = wire.Item{Index: 3447 + id - 3445, Effect: [3]wire.ItemEffect{{Index: EF_AMOUNT, Value: uint16(total)}}}
 		amountMinus(src)
 		g.sendCarry(u)
 
@@ -652,10 +652,10 @@ func (g *Game) useMythrilBar(u *User, p *wire.UseItem, src *wire.Item, typ int) 
 		}
 		switch {
 		case roll >= 70:
-			d.Effect[i].Value += uint8(step)
+			d.Effect[i].Value += uint16(step)
 			g.clientMessage(u, "Adicional aumentou")
 		case roll <= 20:
-			d.Effect[i].Value = uint8(max(int(d.Effect[i].Value)-step, 0))
+			d.Effect[i].Value = uint16(max(int(d.Effect[i].Value)-step, 0))
 			g.clientMessage(u, "Adicional reduziu")
 		}
 		break

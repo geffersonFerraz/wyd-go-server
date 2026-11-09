@@ -5,15 +5,17 @@ package wire
 // Offsets in comments are MSVC x64 /Zp8 byte offsets; sizes are checked in
 // sizes_test.go.
 
-// Item mirrors STRUCT_ITEM (8 bytes).
+// Item mirrors STRUCT_ITEM (14 bytes, 2-aligned).
 type Item struct {
 	Index  uint16
 	Effect [3]ItemEffect
 }
 
+// ItemEffect mirrors STRUCT_BONUSEFFECT (4 bytes): the value is 16-bit.
 type ItemEffect struct {
 	Index uint8
-	Value uint8
+	_     uint8
+	Value uint16
 }
 
 // Position mirrors STRUCT_POSITION (4 bytes).
@@ -42,72 +44,71 @@ type ItemDate struct {
 
 // Status mirrors STRUCT_STATUS (80 bytes).
 type Status struct {
-	Level    int16 // 0
+	Level    int16
 	_        [6]byte
-	Defense  int64 // 8
-	Attack   int64 // 16
-	Merchant uint8 // 24 bitfield union: Merchant:4 | Direction:4
-	Move     uint8 // 25 bitfield union: Speed:4 | ChaosRate:4
+	Defense  int64
+	Attack   int64
+	Merchant uint8 // bitfield union: Merchant:4 | Direction:4
+	Move     uint8 // bitfield union: Speed:4 | ChaosRate:4
 	_        [6]byte
-	MaxHP    int64 // 32
+	MaxHP    int64
 	MaxMP    int64
 	CurHP    int64
 	CurMP    int64
-	STR      uint16 // 64
+	STR      uint16
 	INT      uint16
 	DEX      uint16
 	CON      uint16
-	Mastery  [4]uint16 // 72
+	Mastery  [4]uint16
 }
 
-// Mob mirrors STRUCT_MOB (912 bytes). The NPC files on disk keep the old
+// Mob mirrors STRUCT_MOB (1416 bytes). The NPC files on disk keep the old
 // 848-byte layout; see UnmarshalLegacyMob.
 type Mob struct {
-	Name            [16]byte // 0
-	CapeInfo        int8     // 16
-	Info            uint8    // 17 bitfield: Merchant:6 | CityID:2
-	GuildIndex      uint16   // 18
-	ClassInfo       uint8    // 20
-	AffectInfo      uint8    // 21 bitfield
-	QuestInfo       uint16   // 22 bitfield
-	Gold            int64    // 24
-	Exp             int64    // 32
-	Last            Position // 40
+	Name            [16]byte
+	CapeInfo        int8
+	Info            uint8 // bitfield: Merchant:6 | CityID:2
+	GuildIndex      uint16
+	ClassInfo       uint8
+	AffectInfo      uint8  // bitfield
+	QuestInfo       uint16 // bitfield
+	Gold            int64
+	Exp             int64
+	Last            Position
 	_               [4]byte
-	BStatus         Status    // 48
-	Status          Status    // 128
-	Equip           [20]Item  // 208
-	Inventory       [64]Item  // 368
-	Learn           [2]uint32 // 880
-	StatusPoint     uint16    // 888
+	BStatus         Status
+	Status          Status
+	Equip           [20]Item
+	Inventory       [64]Item
+	Learn           [2]uint32
+	StatusPoint     uint16
 	MasterPoint     uint16
 	SkillPoint      uint16
-	Critical        uint8 // 894
+	Critical        uint8
 	SaveMana        uint8
-	SkillBar1       [4]uint8 // 896
-	GuildMemberType int8     // 900
+	SkillBar1       [4]uint8
+	GuildMemberType int8
 	_               [1]byte
-	MagicIncrement  uint16 // 902
+	MagicIncrement  uint16
 	RegenHP         uint8
 	RegenMP         uint8
-	Resist          [4]uint8 // 906: Fogo, Gelo, Sagrado, Trovao
+	Resist          [4]uint8 // Fogo, Gelo, Sagrado, Trovao
 	_               [2]byte  // tail pad to 8
 }
 
-// SubInfo mirrors STRUCT_SUBINFO (416 bytes).
+// SubInfo mirrors STRUCT_SUBINFO (424 bytes).
 type SubInfo struct {
-	Status    int32 // 0
+	Status    int32
 	_         [4]byte
-	SubStatus Status    // 8
-	Equip     [2]Item   // 88
-	SkillBar  [20]uint8 // 104
-	_         [4]byte
-	Exp       int64  // 128
-	Learn     uint32 // 136
+	SubStatus Status
+	Equip     [2]Item
+	SkillBar  [20]uint8
+	Exp       int64
+	Learn     uint32
 	SecLearn  uint32
-	Affect    [32]Affect // 144
-	Info      uint64     // 400 UNION_QUESTINFO
-	Soul      uint8      // 408
+	Affect    [32]Affect
+	Info      uint64 // UNION_QUESTINFO
+	Soul      uint8
 	_         [7]byte
 }
 
@@ -124,11 +125,11 @@ type DailyQuest struct {
 	QuestID    int32
 	MobCount   [5]uint32
 	ItemCount  [5]uint32
-	IsAccepted bool // 44
+	IsAccepted bool
 	_          [1]byte
-	LastUpdate ItemDate // 46
-	BattlePass ItemDate // 54
-	_          [2]byte  // 64
+	LastUpdate ItemDate
+	BattlePass ItemDate
+	_          [2]byte
 }
 
 type Contribution struct {
@@ -141,9 +142,9 @@ type Contribution struct {
 type FilterDrop struct {
 	IsEnabled bool
 	_         [1]byte
-	Items     [24]Item // 2
+	Items     [24]Item
 	_         [2]byte
-	Type      int32 // 196
+	Type      int32
 }
 
 type Roleta struct {
@@ -152,39 +153,39 @@ type Roleta struct {
 	DropMsg int8
 }
 
-// CharInfo mirrors STRUCT_CHARINFO (2112 bytes).
+// CharInfo mirrors STRUCT_CHARINFO (2768 bytes).
 type CharInfo struct {
-	Player           Mob        // 0
-	Affects          [32]Affect // 912
-	Info             uint64     // 1168 UNION_QUESTINFO
-	HallEnter        uint32     // 1176
-	Fame             uint32     // 1180
-	PesaEnter        int8       // 1184
+	Player           Mob
+	Affects          [32]Affect
+	Info             uint64 // UNION_QUESTINFO
+	HallEnter        uint32
+	Fame             uint32
+	PesaEnter        int8
 	Citizen          uint8
 	Soul             uint8
 	_                [5]byte
-	Hold             int64     // 1192
-	SkillBar         [16]uint8 // 1200
-	MagicIncrement   uint32    // 1216
-	MortalSlot       int32     // 1220
-	Divina           ItemDate  // 1224
+	Hold             int64
+	SkillBar         [16]uint8
+	MagicIncrement   uint32
+	MortalSlot       int32
+	Divina           ItemDate
 	Sephira          ItemDate
 	Saude            ItemDate
 	Escritura        ItemDate
 	Revigorante      ItemDate
-	Sub              SubInfo     // 1264
-	AffectInfo       int32       // 1680
-	Nightmare        [3]Position // 1684
-	Counters         Counters    // 1696
+	Sub              SubInfo
+	AffectInfo       int32
+	Nightmare        [3]Position
+	Counters         Counters
 	_                [4]byte
-	Insignias01      uint64       // 1760
-	Insignias02      uint64       // 1768
-	DailyQuest       DailyQuest   // 1776
-	Contribution     Contribution // 1840
-	FilterDrop       FilterDrop   // 1892
-	LastGuildKickOut ItemDate     // 2092
-	RvRPoints        int32        // 2100
-	Roleta           Roleta       // 2104
+	Insignias01      uint64
+	Insignias02      uint64
+	DailyQuest       DailyQuest
+	Contribution     Contribution
+	FilterDrop       FilterDrop
+	LastGuildKickOut ItemDate
+	RvRPoints        int32
+	Roleta           Roleta
 	_                [5]byte
 }
 
@@ -199,45 +200,45 @@ type Water struct {
 	Total int32
 }
 
-// Account mirrors STRUCT_ACCOUNT (10584 bytes). Only the admin protocol ever
+// Account mirrors STRUCT_ACCOUNT (14216 bytes). Only the admin protocol ever
 // put it on the wire; DBSRV uses it as its in-memory/session model.
 type Account struct {
-	Username     [16]byte     // 0
-	Password     [36]byte     // 16
-	Cash         uint32       // 52
-	Honra        uint32       // 56
-	Novato       uint32       // 60
-	BanType      uint32       // 64
-	Ban          ItemDate     // 68
-	SecondPass   [16]byte     // 76
-	AccessLevel  uint32       // 92
-	Year         int32        // 96
-	YearDay      int32        // 100
-	StorageCoin  int64        // 104
-	StorageItems [168]Item    // 112
-	BlockPass    [16]byte     // 1456
-	BlockDesc    [8]int8      // 1472: CanUnequip, CanTrade, CanBuy, CanSell, CanAutoTrade, CanUsePremium, CanCargo, Compound
-	Mob          [4]CharInfo  // 1480
-	Friends      [30][16]byte // 9928
-	Insignias    uint64       // 10408
-	TempKey      [52]byte     // 10416
-	CharSlot     int16        // 10468
-	Position     Position     // 10470
+	Username     [16]byte
+	Password     [36]byte
+	Cash         uint32
+	Honra        uint32
+	Novato       uint32
+	BanType      uint32
+	Ban          ItemDate
+	SecondPass   [16]byte
+	AccessLevel  uint32
+	Year         int32
+	YearDay      int32
+	StorageCoin  int64
+	StorageItems [168]Item
+	BlockPass    [16]byte
+	BlockDesc    [8]int8 // CanUnequip, CanTrade, CanBuy, CanSell, CanAutoTrade, CanUsePremium, CanCargo, Compound
+	Mob          [4]CharInfo
+	Friends      [30][16]byte
+	Insignias    uint64
+	TempKey      [52]byte
+	CharSlot     int16
+	Position     Position
 	_            [6]byte
-	Unique       uint64  // 10480 bitfields: PresenteFB_01, PresenteEmail_01, Novato
-	UniqueNovato bool    // 10488 NovatoUsed (non-bitfield member after the int64 unit)
+	Unique       uint64  // bitfields: PresenteFB_01, PresenteEmail_01, Novato
+	UniqueNovato bool    // NovatoUsed (non-bitfield member after the int64 unit)
 	_            [7]byte //
-	Daily        Daily   // 10496
-	Water        Water   // 10508
+	Daily        Daily
+	Water        Water
 	Divina       ItemDate
 	Sephira      ItemDate
-	NovatoDate   ItemDate // 10532
+	NovatoDate   ItemDate
 	_            [4]byte
-	SingleGift   uint64 // 10544
-	AlreadyReset bool   // 10552
+	SingleGift   uint64
+	AlreadyReset bool
 	_            [7]byte
-	LastPenalty  int64    // 10560 time_t
-	PassBlock    [16]byte // 10568
+	LastPenalty  int64 // time_t
+	PassBlock    [16]byte
 }
 
 // SealInfo mirrors STRUCT_SEALINFO (44 bytes).

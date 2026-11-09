@@ -142,7 +142,7 @@ func (d *Data) ApplyGameData(gd *store.GameData) error {
 	for _, r := range gd.Drops {
 		m := &MobDrop{Name: r.Name, Section: r.Section, MaxDrops: r.MaxDrops, Gold: r.Gold}
 		for _, it := range r.Items {
-			m.Items = append(m.Items, DropItem{Kills: it.Kills, Index: uint16(it.Item), Effect: uint8(it.Effect), Value: uint8(it.Value)})
+			m.Items = append(m.Items, DropItem{Kills: it.Kills, Index: uint16(it.Item), Effect: uint8(it.Effect), Value: uint16(it.Value)})
 		}
 		drops[wire.EncodeGame(r.Name)] = m
 	}

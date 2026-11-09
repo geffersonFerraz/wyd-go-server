@@ -25,7 +25,7 @@ func window(g *Game, u *User, op uint16, slots ...int) wire.Compor {
 func stack(id uint16, n int) wire.Item {
 	it := wire.Item{Index: id}
 	if n > 1 {
-		it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint8(n)}
+		it.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(n)}
 	}
 	return it
 }

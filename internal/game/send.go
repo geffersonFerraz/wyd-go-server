@@ -111,8 +111,8 @@ func (g *Game) createMobPacket(id int) wire.CreateMob {
 
 	if !npc {
 		inv63 := &pl.Inventory[63]
-		p.ChaosPoints = inv63.Effect[0].Index // GetPKPoint
-		p.CurrentKill = inv63.Effect[0].Value // GetCurKill
+		p.ChaosPoints = inv63.Effect[0].Index        // GetPKPoint
+		p.CurrentKill = uint8(inv63.Effect[0].Value) // GetCurKill
 		p.TotalKill = uint16(inv63.Effect[1].Value) | uint16(inv63.Effect[2].Value)<<8
 		if g.guilty(id) > 0 {
 			p.ChaosPoints = 0

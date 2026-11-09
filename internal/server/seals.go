@@ -143,8 +143,8 @@ func (s *Server) handlePutInSeal(ctx context.Context, ch *channel, pkt protocol.
 		// only right on channel 0.
 		Header: wire.NewHeader(wire.OpItemDelivery, client),
 		Item: wire.Item{Index: sealItemIndex, Effect: [3]wire.ItemEffect{
-			{Index: sealItemEffect, Value: uint8(id / 256)},
-			{Index: sealItemEffect, Value: uint8(id % 256)},
+			{Index: sealItemEffect, Value: uint16(id / 256)},
+			{Index: sealItemEffect, Value: uint16(id % 256)},
 		}},
 	}
 	wire.PutCString(item.Username[:], sess.username)

@@ -51,12 +51,25 @@ func TestAccountEditor(t *testing.T) {
 		t.Fatalf("queued %s %s %s %v", kind, user, by, payload)
 	}
 
-	// Remove an item: the expected item goes along.
-	h.post("/accounts/EXISTING/edit", url.Values{"csrf": {csrf}, "back": {back}, "op": {"item"}, "remove": {"1"},
-		"char": {"1"}, "where": {"1"}, "slot": {"3"}, "expect": {"412,61,2,0,0,0,0"}})
+	// Remove several items in one request, each with the item the admin saw.
+	h.post("/accounts/EXISTING/edit", url.Values{"csrf": {csrf}, "back": {back}, "op": {"remove"}, "char": {"1"},
+		"sel": {"1:3:412,61,2,0,0,0,0", "0:6:805,0,0,0,0,0,0"}})
 	_, _, _, payload = h.lastPayload()
-	if item := payload["item"].([]any); item[0] != float64(0) || payload["expect"].([]any)[0] != float64(412) {
+	removes, _ := payload["removes"].([]any)
+	if payload["op"] != "remove" || len(removes) != 2 || removes[0].(map[string]any)["expect"].([]any)[0] != float64(412) {
 		t.Fatalf("remove payload %v", payload)
+	}
+	before2, _ := h.st.PendingDeliveries(h.ctx, 100)
+	if _, _, loc := h.post("/accounts/EXISTING/edit", url.Values{"csrf": {csrf}, "back": {back}, "op": {"remove"}, "char": {"1"}}); !strings.Contains(loc.Get("Location"), "err=") {
+		t.Fatalf("empty selection accepted: %s", loc.Get("Location"))
+	}
+	if after2, _ := h.st.PendingDeliveries(h.ctx, 100); len(after2) != len(before2) {
+		t.Fatal("empty selection was queued")
+	}
+
+	// Readable effect names, on the page and in the editor.
+	if _, body, _ := h.get("/accounts/EXISTING/chars/1?where=1&slot=3"); !strings.Contains(body, "Quantidade 2") || !strings.Contains(body, "61 · Quantidade") || strings.Contains(body, "EF_AMOUNT") {
+		t.Fatal("effects are not shown with readable names")
 	}
 
 	// GM access from the account page.
