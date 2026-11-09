@@ -321,7 +321,9 @@ func (s *Server) renderGuilds(w http.ResponseWriter, r *http.Request, code int, 
 	data := map[string]any{"Title": "Guildas", "Guilds": rows, "Total": len(list), "WithMark": withMark,
 		"Q": r.URL.Query().Get("q"), "Picked": picked, "Enabled": s.cfg.GuildMarkDir != "",
 		"MaxClientGuild": markMaxClientGuild, "Msg": msg, "Error": errMsg}
-	cities, err := s.cityRows(r, list)
+	channel := s.pickChannel(r)
+	data["Channel"], data["ChannelList"] = channel, s.channels()
+	cities, err := s.cityRows(r, list, channel)
 	if err != nil {
 		s.fail(w, err)
 		return

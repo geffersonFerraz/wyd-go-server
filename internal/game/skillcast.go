@@ -266,10 +266,10 @@ func (g *Game) skillOnTarget(u *User, p *wire.Attack, i, tid int, sc *skillCast,
 			}
 			dam = itemSanc(&me.info.Player.Equip[13])*familiarDamage[skill] + int(me.info.Player.Status.Level)*8
 		} else if pvp {
-			dam = g.skillDamagePvP(skill, u.id, 0)
+			dam = g.skillDamagePvP(skill, u.id, g.weather)
 			def *= 3
 		} else {
-			dam = g.skillDamagePvM(skill, u.id, 0)
+			dam = g.skillDamagePvM(skill, u.id, g.weather)
 		}
 		me.combat.attackCount = (me.combat.attackCount + 1) & 0x3FF
 		dam = skillDamage2(dam, def, master)
@@ -294,9 +294,9 @@ func (g *Game) skillOnTarget(u *User, p *wire.Attack, i, tid int, sc *skillCast,
 		}
 		if skill == 79 {
 			if pvp {
-				dam = getDamage(g.skillDamagePvP(skill, u.id, 0), int(mob.info.Player.Status.Defense)*2, master)
+				dam = getDamage(g.skillDamagePvP(skill, u.id, g.weather), int(mob.info.Player.Status.Defense)*2, master)
 			} else {
-				dam = getDamage(g.skillDamagePvM(skill, u.id, 0), int(mob.info.Player.Status.Defense), master)
+				dam = getDamage(g.skillDamagePvM(skill, u.id, g.weather), int(mob.info.Player.Status.Defense), master)
 			}
 		}
 		switch typ {

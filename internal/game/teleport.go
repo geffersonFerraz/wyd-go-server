@@ -40,7 +40,12 @@ func (g *Game) requestTeleport(u *User) {
 				g.clientMessage(u, "Necessario a Fada do Vale para ser teleportado")
 				return
 			}
-			// TODO(phase E): one account per computer inside the valley.
+			for _, o := range g.users[1:] {
+				if o != u && o.status == userPlay && o.mac == u.mac && insideValley(g.mobs[o.id].target) {
+					g.clientMessage(u, "Somente uma conta por computador")
+					return
+				}
+			}
 		}
 		if t.Price != 0 {
 			if pl.Gold < int64(t.Price) {
@@ -58,10 +63,7 @@ func (g *Game) requestTeleport(u *User) {
 			m.info.HallEnter--
 			g.clientMessage(u, cFormat(g.lang(nnHallEnter)), m.info.HallEnter)
 		case 6:
-			// TODO(phase E): RvR. Outside the event the C++ sends players
-			// to the RvR lobby.
-			g.clientMessage(u, "Use as 20:00hrs de segunda a sabado para ir na RVR.")
-			g.teleportar(u.id, 1178, 1722)
+			g.rvrPortal(u)
 			return
 		case 43:
 			g.teleportar(u.id, 2284+rnd()%2, 3688+rnd()%2)
@@ -82,4 +84,9 @@ func cFormat(s string) string {
 		}
 	}
 	return string(out)
+}
+
+// insideValley is CMob::IsInsideValley.
+func insideValley(t wire.Position) bool {
+	return t.X >= 2177 && t.X <= 2304 && t.Y >= 3584 && t.Y <= 3839
 }

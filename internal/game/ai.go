@@ -176,7 +176,7 @@ func (m *Mob) routeSteps() int { return min(moveSpeed(&m.info.Player.Status)*8/4
 func (g *Game) nextPos(id int, battle bool) (int, int, bool) {
 	m := &g.mobs[id]
 	pl := &m.info.Player
-	if pl.BStatus.Move&0x0F == 0 || pl.Equip[0].Index == 219 || pl.Equip[0].Index == 220 {
+	if pl.BStatus.Move&0x0F == 0 || pl.Equip[0].Index == 219 || pl.Equip[0].Index == 220 || m.npc.generateID == genKefra {
 		return int(m.target.X), int(m.target.Y), false
 	}
 	steps := m.routeSteps()
@@ -476,6 +476,9 @@ func (g *Game) battle(id int) int {
 	}
 	tx, ty := int(g.mobs[tgt].target.X), int(g.mobs[tgt].target.Y)
 	rng := g.data.mobAbility(pl, EF_RANGE)
+	if m.npc.generateID == genKefra {
+		rng = 25
+	}
 	dist := distance(int(m.target.X), int(m.target.Y), tx, ty)
 	n := &m.npc
 	if n.routeType != 5 && (int(m.target.X) > n.curX+30 || int(m.target.X) < n.curX-30 ||
@@ -724,12 +727,16 @@ func (g *Game) mobTimer() {
 			}
 		}
 		r := g.battle(id)
+		if r == 0 && m.mode == modeNPCIdle {
+			g.kingdomPeace(m.npc.generateID)
+		}
 		switch {
 		case r&aiDelete != 0:
 			g.deleteMob(id, 35)
 			continue
 		case r&aiAreaAttack != 0:
-			continue // TODO(phase E): Kefra area attack
+			g.areaAttack(id)
+			continue
 		}
 		if r&aiAttack != 0 {
 			g.mobAttack(id)
@@ -800,7 +807,7 @@ func (g *Game) mobAttack(id int) {
 	t := &g.mobs[tgt]
 	dam := int(p.Target[0].Damage)
 	if tgt < MaxPlayer && dam > 0 {
-		if rnd()%1000 < g.parryRate(id, tgt, -2) {
+		if m.npc.generateID != genKefra && rnd()%1000 < g.parryRate(id, tgt, -2) {
 			dam = -3
 			if t.info.Player.AffectInfo&affResist != 0 {
 				dam = -4

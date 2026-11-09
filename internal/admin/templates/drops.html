@@ -10,8 +10,8 @@
     </form>
     {{if .Drops}}
     <div class="table-wrap"><table>
-      <thead><tr><th>Monstro</th><th>Seção</th><th class="num">Linhas</th><th class="num">Máx./morte</th><th class="num">Gold</th></tr></thead>
-      <tbody>{{range .Drops}}<tr><td><a href="{{dropurl .Name}}">{{spaces .Name}}</a></td><td>{{.Section}}</td><td class="num">{{.Lines}}</td><td class="num">{{.MaxDrops}}</td><td class="num">{{.Gold}}</td></tr>{{end}}</tbody>
+      <thead><tr><th>Monstro</th><th>Seção</th><th class="num">Fixos</th><th class="num">Por chance</th><th class="num">Máx./morte</th><th class="num">Gold fixo</th></tr></thead>
+      <tbody>{{range .Drops}}<tr><td><a href="{{dropurl .Name}}">{{spaces .Name}}</a></td><td>{{.Section}}</td><td class="num">{{.Lines}}</td><td class="num">{{.RateLines}}</td><td class="num">{{.MaxDrops}}</td><td class="num">{{.Gold}}</td></tr>{{end}}</tbody>
     </table></div>
     <p class="muted">␣ = espaço no final do nome. O nome precisa ser igual ao do monstro, inclusive esses espaços.</p>
     {{else}}<p class="muted">Nenhum monstro encontrado.</p>{{end}}

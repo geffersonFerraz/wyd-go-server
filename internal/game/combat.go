@@ -83,8 +83,21 @@ func (g *Game) setBattle(id, enemy int) {
 		int(m.target.Y) < int(e.target.Y)-viewGrid || int(m.target.Y) > int(e.target.Y)+viewGrid {
 		return
 	}
+	if m.mode != modeBattle {
+		g.kingdomHit(m.npc.generateID)
+	}
 	m.mode = modeBattle
 	m.addEnemy(enemy)
+	if m.npc.generateID == genKefra {
+		g.forEachPlaying(func(o *User) {
+			t := g.mobs[o.id].target
+			if d := int(t.X) - int(m.target.X); d >= -30 && d <= 30 {
+				if d := int(t.Y) - int(m.target.Y); d >= -30 && d <= 30 {
+					m.addEnemy(o.id)
+				}
+			}
+		})
+	}
 }
 
 // addEnemy is CMob::AddEnemyList.
@@ -254,6 +267,14 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 			continue
 		}
 		if mob.info.Player.Status.CurHP <= 0 {
+			t.Index, t.Damage = 0, 0
+			continue
+		}
+		if g.hitEventProgress(u, tid) {
+			t.Index, t.Damage = 0, 0
+			break
+		}
+		if g.warHitBlocked(u.id, tid) {
 			t.Index, t.Damage = 0, 0
 			continue
 		}

@@ -120,7 +120,7 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	g.sendGridMob(u.id)
 	g.sendScore(u.id)
 	g.sendEtc(u)
-	g.sendWarInfo(u)
+	g.warLogin(u)
 	g.mountProcess(u.id)
 	g.block199(u)
 	g.fixStoredBoots(u)
@@ -205,6 +205,16 @@ func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 	g.cancelTrade(u) // moving closes the trade window on both sides
 	var p wire.Action
 	if wire.Unmarshal(pkt.Raw, &p) != nil {
+		return
+	}
+	if g.pistaMoved(u, int(m.target.X), int(m.target.Y)) {
+		return
+	}
+	if g.rvrWallBlocked(int(m.info.Player.CapeInfo), int(p.Destiny.X), int(p.Destiny.Y), int(m.target.Y)) {
+		stop := g.action(u.id, int(m.target.X), int(m.target.Y))
+		stop.Header.PacketID = wire.OpCliMoveStop
+		stop.MoveSpeed = p.MoveSpeed
+		g.queue(u, &stop)
 		return
 	}
 	now := g.now()
@@ -360,7 +370,8 @@ func (g *Game) requestChat(u *User, pkt protocol.Packet) {
 		g.sendGuildList(u)
 		return
 	} else if strings.HasPrefix(t, "guildtax") {
-		return // TODO(phase D): city taxes (guild zone owners)
+		g.guildTaxCommand(u, t)
+		return
 	}
 	g.multicast2(int(m.target.X), int(m.target.Y), &p, u.id)
 }
@@ -503,6 +514,8 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 func (g *Game) charLogout(u *User) {
 	g.cancelTrade(u)
 	g.arenaUnregister(u)
+	g.zakumUnregister(u.id)
+	g.pistaUnregister(u.id)
 	if u.status == userPlay {
 		g.removeParty(u.id)
 	}
@@ -576,6 +589,8 @@ func (g *Game) saveUser(u *User, arg2 uint32) {
 // the save with 0x40B.
 func (g *Game) closeUser(u *User) {
 	g.arenaUnregister(u)
+	g.zakumUnregister(u.id)
+	g.pistaUnregister(u.id)
 	if u.status == userPlay {
 		g.settleRouletteReward(u)
 		g.cancelTrade(u)

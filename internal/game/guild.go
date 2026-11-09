@@ -206,10 +206,6 @@ func (g *Game) guildEntry(id int) *Guild {
 	return x
 }
 
-// isWarTime is IsWarTime: tower war, castle war or the war week day.
-// TODO(phase E): those wars are not ported, so it is never war time.
-func (g *Game) isWarTime() bool { return false }
-
 // doAlly is DoAlly: ally 0 cancels the guild's alliance.
 func (g *Game) doAlly(guild, ally int) {
 	if guild <= 0 || ally < 0 || guild >= maxGuild || ally >= maxGuild || g.isWarTime() {
@@ -272,8 +268,7 @@ func (g *Game) sendWarInfo(u *User) {
 	if guild != 0 && war != 0 && g.guildWar[war] != guild {
 		enemy = war
 	}
-	// TODO(phase E): sServer.CapeWin (the kingdom war winner).
-	g.queue(u, &wire.Parm3{Header: wire.NewHeader(opSrvWarInfo, wire.ClientIDSystem), Parm1: int32(enemy), Parm3: int32(ally)})
+	g.queue(u, &wire.Parm3{Header: wire.NewHeader(opSrvWarInfo, wire.ClientIDSystem), Parm1: int32(enemy), Parm2: g.war.capeWin, Parm3: int32(ally)})
 }
 
 // sendGuildList is SendGuildList: members online, wars and alliances.

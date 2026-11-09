@@ -62,6 +62,18 @@ func (s *Server) handle(ch *channel, pkt protocol.Packet) {
 		s.handleSecurityAlert(ctx, ch, pkt)
 	case wire.OpRankUpdate:
 		s.handleRankUpdate(ctx, ch, pkt)
+	case wire.OpChannelState:
+		s.handleChannelState(ctx, ch, pkt)
+	case wire.OpCityOwner:
+		s.handleCityOwner(ctx, ch, pkt)
+	case wire.OpMacBan:
+		s.handleMacBan(ctx, ch, pkt)
+	case wire.OpOpenStore:
+		s.handleOpenStore(ctx, ch, pkt)
+	case wire.OpGMMessage:
+		s.handleGMMessage(ctx, ch, pkt)
+	case wire.OpPanelCommandResult:
+		s.handlePanelCommandResult(ctx, ch, pkt)
 	default:
 		if s.handleWorld(ctx, ch, pkt) {
 			return

@@ -100,6 +100,7 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 		return fmt.Errorf("game data: %w", err)
 	}
 	defer st.Close()
+	data.ApplyCityOwners(cfg.Channel, gd.CityOwners)
 	if err := data.ApplyGameData(gd); err != nil {
 		return fmt.Errorf("game data: %w", err)
 	}
@@ -159,6 +160,11 @@ func refreshRanking(ctx context.Context, st *store.Store, g *game.Game, log *slo
 		} else if ctx.Err() == nil {
 			log.Warn("ranking", "err", err)
 		}
+		if macs, err := st.MacBans(ctx); err == nil {
+			g.SetMacBans(macs)
+		} else if ctx.Err() == nil {
+			log.Warn("mac bans", "err", err)
+		}
 		select {
 		case <-ctx.Done():
 			return
@@ -183,6 +189,11 @@ func loadGuilds(ctx context.Context, st *store.Store, g *game.Game, log *slog.Lo
 		return err
 	}
 	g.SetGuilds(guilds, ally, war)
+	state, err := st.LoadChannelState(ctx, g.ChannelNumber())
+	if err != nil {
+		return err
+	}
+	g.RestoreChannelState(state)
 	log.Info("guilds loaded from database", "guilds", len(guilds), "alliances", len(ally), "wars", len(war))
 	return nil
 }

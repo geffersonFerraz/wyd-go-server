@@ -554,3 +554,23 @@ arena:
     - {item: 3251, amount: 3}
   participant_items:
     - {item: 3251, amount: 0}
+
+# Guerras (substitui os horários do gameconfig_v2.xml). Cada canal tem as
+# suas guerras e os seus donos de cidade.
+#   city_hour:   domingo, guerra de cidades. C++: cityHour = 20.
+#   castle_hour: domingo, guerra de Noatun. C++: noatunHour = 21.
+#   tower_hour:  segunda a sexta, Torre de Erion. C++: towerHour = 22.
+#   rvr_hour:    segunda a sábado, guerra de reinos. C++: fixo às 20.
+wars:
+  city_hour: 20
+  castle_hour: 21
+  tower_hour: 22
+  rvr_hour: 20
+
+# Chefes que renascem sozinhos (substitui o Data/Boss.xml, que não existe no
+# servidor C++ entregue; por isso a lista começa vazia).
+#   fame:           fame dada à guild de quem matar.
+#   reborn_seconds: tempo até nascer de novo.
+#   max_seconds:    tempo máximo vivo sem estar em combate.
+#   geners:         ids do NPCGener; um deles é sorteado a cada nascimento.
+bosses: []

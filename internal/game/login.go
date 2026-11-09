@@ -200,6 +200,12 @@ func (g *Game) handleClient(u *User, pkt protocol.Packet) {
 		g.requestOpenGate(u, pkt)
 	case opCliMerchantNPC:
 		g.requestMerchantNPC(u, pkt)
+	case opCliChallenge:
+		g.requestChallenge(u, pkt)
+	case opCliDeclareWar:
+		g.requestDeclareWar(u, pkt)
+	case opCliNightmare:
+		g.requestNightmareAccept(u, pkt)
 	case opCliLock:
 		g.requestLock(u, pkt)
 	case opLockStatus:
@@ -286,6 +292,12 @@ func (g *Game) requestLogin(u *User, pkt protocol.Packet) {
 	p.Password[11] = 0
 	if u.status != userAccept {
 		g.clientMessage(u, "Login now, wait a moment.")
+		g.flush(u)
+		return
+	}
+
+	if g.macBans[p.Mac] {
+		g.clientMessage(u, "Você foi banido do servidor, contate o suporte.")
 		g.flush(u)
 		return
 	}
@@ -436,10 +448,15 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 			}
 			g.sapphire = min(max(g.sapphire, 1), 35)
 		}
+	case wire.OpRebornKefra: // 0x90B
+		g.rebornKefra()
+		return
 	case wire.OpCNFChargedList: // 0x428
 		var p wire.ChargedGuildList
 		if wire.Unmarshal(pkt.Raw, &p) == nil {
+			own := g.chargedGuilds[g.cfg.Channel-1] // this channel's owners come from gamedata
 			g.chargedGuilds = p.ChargedGuildList
+			g.chargedGuilds[g.cfg.Channel-1] = own
 		}
 	case wire.OpPanelGuildList: // 0x766: the answer goes to the client as is
 		if u != nil && u.status == userPlay {
@@ -505,6 +522,8 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 		g.cashDelivery(u, pkt)
 	case wire.OpBanNotify: // 0xC10
 		g.banNotify(u, pkt)
+	case wire.OpPanelCommand: // 0xC1A
+		g.panelCommand(pkt)
 	case wire.OpAdminEdit: // 0xC11
 		g.adminEdit(u, pkt)
 	case wire.OpAdminRemove: // 0xC15

@@ -54,7 +54,6 @@ func (g *Game) lang(i int) string { return g.data.Lang[i] }
 
 // doRecall is DoRecall: back to the character's city, or to the guild
 // area of a city its guild holds.
-// TODO(phase E): RvR area and quest-time recalls.
 func (g *Game) doRecall(id int) {
 	if id > 0 && id < MaxPlayer {
 		g.clearQuestTime(g.users[id])
@@ -71,6 +70,9 @@ func (g *Game) doRecall(id int) {
 				break
 			}
 		}
+	}
+	if rx, ry, ok := g.rvrRecall(id); ok {
+		x, y = rx, ry
 	}
 	g.teleportar(id, x, y)
 }

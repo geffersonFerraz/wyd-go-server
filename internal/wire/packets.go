@@ -682,3 +682,83 @@ type PanelGuildList struct {
 	Header Header
 	Guild  [40]GuildInfo
 }
+
+// CityBid is a guild's bet on a city (STRUCT_CHALLENGEINFO).
+type CityBid struct {
+	Guild int32
+	Value int32
+}
+
+// CityState is the part of STRUCT_GUILDZONE that changes while the server
+// runs. Only the eight highest bets of a city are kept.
+type CityState struct {
+	Impost int64
+	Tax    int32
+	Wins   int32
+	Chall1 int32
+	Chall2 int32
+	Bids   [8]CityBid
+}
+
+// ChannelState (Go only, 0xC16): what the C++ kept in guild_zone.txt and
+// gameconfig_v2.xml. The channel is Header.ClientID.
+type ChannelState struct {
+	Header        Header
+	WeekMode      int32
+	CastleState   int32
+	CapeWin       int32
+	TowerGuild    int32
+	KefraDead     int32
+	KefraKiller   int32
+	KingdomWinner int32
+	RvRBonus      int32
+	Cities        [5]CityState
+}
+
+// CityOwnerUpdate (Go only, 0xC17): the war channel's new owner of a city.
+type CityOwnerUpdate struct {
+	Header Header
+	City   int32
+	Guild  int32
+}
+
+// MacBan (Go only, 0xC18): +banmac. Type 1 bans the computer.
+type MacBan struct {
+	Header Header
+	Mac    [8]byte
+	Type   int32
+}
+
+// GMMessage (Go only, 0xC19): what a player wrote with /gm.
+type GMMessage struct {
+	Header   Header
+	Channel  int32
+	Username [16]byte
+	CharName [16]byte
+	Text     [100]byte // Windows-1252
+}
+
+// PanelCommand (Go only, 0xC1A): a GM command from the admin panel. CharName
+// is the character it acts on ("" for the commands of the whole channel).
+type PanelCommand struct {
+	Header   Header
+	Delivery int64
+	CharName [16]byte
+	Command  [128]byte // Windows-1252
+}
+
+// PanelCommandResult (Go only, 0xC1B): what the command answered.
+type PanelCommandResult struct {
+	Header   Header
+	Delivery int64
+	Text     [256]byte // Windows-1252
+}
+
+// OpenStore (Go only, 0xC1C): one store open on a channel, for the panel.
+type OpenStore struct {
+	Header  Header
+	Channel int32
+	Items   int32
+	Owner   [16]byte
+	Name    [24]byte
+}

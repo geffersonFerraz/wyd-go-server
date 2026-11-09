@@ -70,6 +70,13 @@ const (
 	OpSecurityAlert          = 0xC13 // Go only: TMSRV -> DBSRV, shown in the admin panel
 	OpAdminRemove            = 0xC15 // Go only: staff removal of several items
 	OpRankUpdate             = 0xC14 // Go only: TMSRV -> DBSRV, one character's ranking row
+	OpChannelState           = 0xC16 // Go only: TMSRV -> DBSRV, war/tax state of a channel
+	OpCityOwner              = 0xC17 // Go only: TMSRV -> DBSRV, a war changed a city's owner
+	OpMacBan                 = 0xC18 // Go only: TMSRV -> DBSRV, +banmac
+	OpGMMessage              = 0xC19 // Go only: TMSRV -> DBSRV, a player's /gm
+	OpPanelCommand           = 0xC1A // Go only: DBSRV -> TMSRV, a GM command from the panel
+	OpPanelCommandResult     = 0xC1B // Go only: TMSRV -> DBSRV, what the command answered
+	OpOpenStore              = 0xC1C // Go only: TMSRV -> DBSRV, an open store, once a minute
 	OpPutInSealSuccess       = 3135  // 0xC3F
 	OpCNFCharacterLoginExtra = 0x820
 	OpNumericPasswordWrong   = 0xFDF

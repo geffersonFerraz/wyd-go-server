@@ -564,6 +564,7 @@ func (g *Game) transferGroupCommand(u *User, nick string) {
 
 // groupTransfer is GroupTransfer: to becomes the leader, from a member.
 func (g *Game) groupTransfer(from, to int) {
+	g.pistaTransfer(from, to)
 	old, nl := &g.mobs[from], &g.mobs[to]
 	nl.npc.followers = old.npc.followers
 	for i, f := range nl.npc.followers {

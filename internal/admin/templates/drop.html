@@ -9,13 +9,15 @@
       <input type="hidden" name="csrf" value="{{.CSRF}}">
       <input type="hidden" name="old_name" value="{{.OldName}}">
       <input type="hidden" name="rows" value="{{len .Rows}}">
+      <input type="hidden" name="rate_rows" value="{{len .RateRows}}">
       <div class="fields">
         <label>Nome exato <input name="name" value="{{.Drop.Name}}" maxlength="16" required></label>
         <label>Seção <input name="section" value="{{.Drop.Section}}"></label>
-        <label>Máx. itens por morte <input name="max_drops" type="number" min="0" value="{{.Drop.MaxDrops}}"></label>
-        <label>Gold por morte <input name="gold" type="number" min="0" value="{{.Drop.Gold}}"></label>
+        <label>Máx. itens fixos por morte <input name="max_drops" type="number" min="0" value="{{.Drop.MaxDrops}}"></label>
+        <label>Gold fixo por morte <input name="gold" type="number" min="0" value="{{.Drop.Gold}}"></label>
+        <label>Gold por chance <input name="rate_gold" type="number" min="0" value="{{.Drop.RateGold}}"></label>
       </div>
-      <h3>Itens</h3>
+      <h3>Drops fixos</h3>
       <p class="muted">A cada <em>kills</em> mortes (por jogador e por item) o item vai para o inventário. Deixe o item vazio para remover a linha.</p>
       <div class="table-wrap"><table>
         <thead><tr><th class="num">Kills</th><th class="num">Item</th><th>Nome</th><th class="num">Efeito</th><th class="num">Valor</th></tr></thead>
@@ -26,6 +28,21 @@
             <td>{{if $r.Item}}<a href="/gamedata/items/{{$r.Item}}">{{if $r.ItemName}}{{$r.ItemName}}{{else}}(item inexistente){{end}}</a>{{end}}</td>
             <td class="num"><input name="effect{{$i}}" type="number" min="0" max="255" value="{{$r.Effect}}" aria-label="Efeito"></td>
             <td class="num"><input name="value{{$i}}" type="number" min="0" max="65535" value="{{$r.Value}}" aria-label="Valor"></td></tr>
+        {{end}}
+        </tbody>
+      </table></div>
+      <h3>Drops por chance</h3>
+      <p class="muted">Cada linha é sorteada a cada morte. <em>Chance</em> é "1 em N"; 0 usa o slot, conforme <a href="/gamedata/droprates">Taxas de drop</a>. Deixe o item vazio para remover a linha.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="num">Slot</th><th class="num">Item</th><th>Nome</th><th class="num">Chance</th><th class="num">Ef. 1</th><th class="num">Val. 1</th><th class="num">Ef. 2</th><th class="num">Val. 2</th><th class="num">Ef. 3</th><th class="num">Val. 3</th></tr></thead>
+        <tbody>
+        {{range $i, $r := .RateRows}}
+          <tr><td class="num"><input name="rslot{{$i}}" type="number" min="0" max="63" value="{{$r.Slot}}" aria-label="Slot"></td>
+            <td class="num"><input name="ritem{{$i}}" type="number" min="0" max="6499" value="{{if $r.Item}}{{$r.Item}}{{end}}" aria-label="Item"></td>
+            <td>{{if $r.Item}}<a href="/gamedata/items/{{$r.Item}}">{{if $r.ItemName}}{{$r.ItemName}}{{else}}(item inexistente){{end}}</a>{{end}}</td>
+            <td class="num"><input name="rchance{{$i}}" type="number" min="0" max="32000" value="{{$r.Chance}}" aria-label="Chance"></td>
+            {{range $e, $x := $r.Effects}}<td class="num"><input name="ref{{$i}}_{{$e}}" type="number" min="0" max="255" value="{{$x.Effect}}" aria-label="Efeito"></td>
+            <td class="num"><input name="rval{{$i}}_{{$e}}" type="number" min="0" max="65535" value="{{$x.Value}}" aria-label="Valor"></td>{{end}}</tr>
         {{end}}
         </tbody>
       </table></div>

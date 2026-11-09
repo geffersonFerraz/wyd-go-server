@@ -189,13 +189,7 @@ func (g *Game) requestMerchantNPC(u *User, pkt protocol.Packet) {
 	case info == 10 && face == 51:
 		g.npcKibita(u)
 	case kind == 14:
-		// TODO(phase E): the Zakum castle quest (sServer.Zakum: party list,
-		// timer that ends it). Without the timer it would stay closed.
-		if firstSlotOf(pl, 751) < 0 {
-			g.clientMessage(u, "Traga-me o Emblema do Dragão para ter acesso ao Castelo de Zakum")
-			return
-		}
-		g.sendSay(npc, "%s", g.lang(nnSorry))
+		g.npcZakum(u)
 	case kind == 15:
 		g.npcGriupan(u, npc)
 	case kind == 1:

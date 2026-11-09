@@ -253,7 +253,11 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 
 	case 12: // star gem: save the warp point
 		x, y := int(m.target.X), int(m.target.Y)
-		// TODO(phase E): Nightmare areas (g_pPesaArea) and arenas.
+		if g.saveNightmareWarp(u, x, y) {
+			g.clientMessage(u, "%s", g.lang(nnSetWarp))
+			amountMinus(src)
+			return
+		}
 		if (g.data.attribute(x, y)&attrCantSummon != 0 && pl.BStatus.Level < 1000) || g.data.village(x, y) < 5 {
 			g.clientMessage(u, "%s", g.lang(nnCantUseThatHere))
 			resend()
@@ -322,7 +326,10 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 		return
 	}
 
-	if g.useLanhouseTicket(u, &p, src) || g.useDuelLetter(u, &p, src) {
+	if g.useLanhouseTicket(u, &p, src) || g.useDuelLetter(u, &p, src) || g.useWarRefusal(u, &p, src) {
+		return
+	}
+	if g.useNightmareScroll(u, &p, src, vol) || g.useWaterScroll(u, &p, src, vol) {
 		return
 	}
 

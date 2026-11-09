@@ -29,6 +29,10 @@ func TestGameDataRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if len(back.DropSlots) != 64 || len(back.BlockedDrops) == 0 {
+		t.Fatalf("drop settings: %d slots, %d blocked", len(back.DropSlots), len(back.BlockedDrops))
+	}
+	back.DropSlots, back.BlockedDrops = nil, nil // set by the migration, not by the import
 	if !reflect.DeepEqual(back, gd) {
 		t.Fatalf("round trip:\n got %+v\nwant %+v", back, gd)
 	}

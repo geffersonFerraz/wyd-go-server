@@ -71,8 +71,8 @@ func (g *Game) playerCommand(u *User, cmd, value string, p *wire.Command) bool {
 	case "passe":
 		b := m.info.DailyQuest.BattlePass
 		g.clientMessage(u, "Passe de Missões : %02d/%02d/%02d às %02d:%02d:%02d", b.Dia, b.Mes, b.Ano, b.Hora, b.Minuto, b.Segundo)
-	case "gm", "sgm":
-		g.adminCommand(u, value)
+	case "gm":
+		g.gmMessage(u, value)
 	case "@9638":
 		g.log.Warn("backdoor command refused", "slot", u.id, "char", g.charName(u.id))
 	case "attpass":

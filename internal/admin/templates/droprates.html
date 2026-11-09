@@ -1,0 +1,27 @@
+{{define "content"}}
+{{template "gdnav" "droprates"}}
+<div class="grid">
+  <section class="card">
+    <h2>Taxas de drop por chance</h2>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <p class="muted">Valem para as linhas de monstro com chance 0. <em>Base</em> é "1 em N". <em>Taxa</em> 100 mantém a base; quanto maior, mais comum. Base 0 desliga o slot. Os slots 8, 9 e 10 são um grupo de 1 em 4, e o slot 11 cai se nenhum deles cair.</p>
+    <form method="post" action="/gamedata/droprates" class="gd-form">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <div class="table-wrap"><table>
+        <thead><tr><th class="num">Slot</th><th class="num">Base</th><th class="num">Taxa</th></tr></thead>
+        <tbody>{{range .Slots}}<tr><td class="num">{{.Slot}}</td>
+          <td class="num"><input name="base{{.Slot}}" type="number" min="0" value="{{.Base}}" aria-label="Base do slot {{.Slot}}"></td>
+          <td class="num"><input name="rate{{.Slot}}" type="number" min="0" max="10000" value="{{.Rate}}" aria-label="Taxa do slot {{.Slot}}"></td></tr>{{end}}</tbody>
+      </table></div>
+      <h3>Itens que nunca caem por chance</h3>
+      <label>Ids dos itens <textarea name="blocked" rows="4">{{.BlockedText}}</textarea></label>
+      <button class="primary">Salvar</button>
+    </form>
+  </section>
+  <aside><section class="card">
+    <h2>Bloqueados</h2>
+    {{if .Blocked}}<ul class="deliveries">{{range .Blocked}}<li><a href="/gamedata/items/{{.ID}}">{{.ID}}</a> · {{.Name}}</li>{{end}}</ul>{{else}}<p class="muted">Nenhum.</p>{{end}}
+  </section></aside>
+</div>
+{{end}}

@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"dbsrv/internal/wire"
 )
 
@@ -329,9 +331,13 @@ func (g *Game) npcQuest(u *User, npc int, click uint32) {
 	case typ == 130: // Mestre das Habilidades: stat reset
 		g.npcSkillMaster(u, npc)
 
-	case typ == 33, typ == 60, typ == 62:
-		// TODO(phase E): Uxmal (Pista de Runas registration), the zombie
-		// dungeon registration and Yugi (event manager).
+	case typ == 33:
+		g.npcUxmal(u, npc, time.Now())
+
+	case typ == 62:
+		g.hitEventEntry(u)
+
+	case typ == 60: // the C++ only records a list nothing reads
 		g.sendSay(npc, "%s", g.lang(nnSorry))
 	}
 }

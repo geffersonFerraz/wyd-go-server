@@ -1,0 +1,16 @@
+{{define "content"}}
+<h1>Lojas abertas</h1>
+<section class="card">
+  <p class="muted small">Cada canal atualiza esta lista uma vez por minuto.</p>
+  {{if .Stores}}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th class="num">Canal</th><th>Personagem</th><th>Loja</th><th class="num">Itens</th><th>Atualizada</th></tr></thead>
+    <tbody>
+    {{range .Stores}}<tr><td class="num">{{.Channel}}</td><td>{{.Owner}}</td><td>{{.Name}}</td><td class="num">{{.Items}}</td><td>{{datetime .UpdatedAt}}</td></tr>{{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}<p class="muted">Nenhuma loja aberta.</p>{{end}}
+</section>
+{{end}}

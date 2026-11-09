@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"dbsrv/internal/store"
 	"dbsrv/internal/wire"
 )
 
@@ -67,5 +68,49 @@ func TestRankUpdate(t *testing.T) {
 	waitFor(t, func() bool {
 		list, err := h.st.Ranking(ctx)
 		return err == nil && len(list) == 1 && list[0].Name == name && list[0].Level == 51 && list[0].Equip[15].Index == 543
+	})
+}
+
+// A GM command from the panel goes to its channel, and the answer is kept.
+func TestGMCommandDelivery(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	tm := h.connect()
+	id, err := h.st.Enqueue(ctx, "gm_command", store.GMCommandUser, map[string]any{"channel": 1, "char_name": "Heroi", "command": "+coin 5"}, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var p wire.PanelCommand
+	tm.expect(wire.OpPanelCommand, &p)
+	if p.Delivery != id || wire.GameString(p.CharName[:]) != "Heroi" || wire.GameString(p.Command[:]) != "+coin 5" {
+		t.Fatalf("packet %+v", p)
+	}
+	r := wire.PanelCommandResult{Header: wire.NewHeader(wire.OpPanelCommandResult, 0), Delivery: id}
+	wire.PutGameString(r.Text[:255], "Gold setado")
+	tm.send(&r)
+	waitFor(t, func() bool {
+		list, _ := h.st.GMCommands(ctx, 1)
+		return len(list) == 1 && list[0].Done && list[0].Output == "Gold setado"
+	})
+	offline, _ := h.st.Enqueue(ctx, "gm_command", store.GMCommandUser, map[string]any{"channel": 2, "command": "+on"}, "test")
+	waitFor(t, func() bool {
+		done, res, _ := h.st.DeliveryResult(ctx, offline)
+		return done && res == resNotOnline
+	})
+}
+
+// /gm reaches the staff's list.
+func TestGMMessageStored(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	tm := h.connect()
+	p := wire.GMMessage{Header: wire.NewHeader(wire.OpGMMessage, 1), Channel: 1}
+	wire.PutCString(p.Username[:], "CONTA")
+	wire.PutGameString(p.CharName[:15], "Heroi")
+	wire.PutGameString(p.Text[:99], "Socorro, não consigo sair")
+	tm.send(&p)
+	waitFor(t, func() bool {
+		list, _ := h.st.GMMessages(ctx, true, 5)
+		return len(list) == 1 && list[0].Text == "Socorro, não consigo sair" && list[0].CharName == "Heroi"
 	})
 }

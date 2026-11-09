@@ -42,15 +42,17 @@ type User struct {
 	status int
 	ip     string
 
-	account     wire.Account // the TMSRV copy of STRUCT_ACCOUNT (User)
-	charList    wire.CharList
-	keys        [16]byte
-	tokenOK     bool
-	numericFail int
-	accessLevel int32
-	isBanned    bool
-	mac         [8]byte
-	charSlot    int
+	account       wire.Account // the TMSRV copy of STRUCT_ACCOUNT (User)
+	charList      wire.CharList
+	keys          [16]byte
+	tokenOK       bool
+	numericFail   int
+	accessLevel   int32
+	lastGMMessage time.Time // /gm cooldown
+	hitEventCount int       // AttackEventCount of the hit event
+	isBanned      bool
+	mac           [8]byte
+	charSlot      int
 
 	out [][]byte // queued plaintext packets, flushed by the send timer
 
@@ -163,11 +165,28 @@ type Game struct {
 	secCounter    int
 	saveCursor    int
 
-	genCount   []int // MobCount per generator
-	duel       duelLetter
-	arena      arenaState
-	minCounter int
-	npcCursor  int
+	genCount              []int // MobCount per generator
+	duel                  duelLetter
+	arena                 arenaState
+	war                   warState
+	kefra                 kefraState
+	kingdom               kingdomState
+	rvr                   rvrState
+	coliseum              coliseumState
+	nightmare             [3]nightmareRoom
+	water                 [3][9]waterRoom
+	nightmareLastMin      int
+	weather, forceWeather int
+	zakum                 zakumState
+	bosses                []bossState
+	bigCuboCount          int
+	pista                 [pistaRooms]pistaRoom
+	dropAll               int      // +drop: one rate for every slot (0 = tmsrv.yaml)
+	adminOut              []string // answers of the GM command being run
+	expRate               int      // +bonusexp (sServer.BonusEXP)
+	macBans               map[[8]byte]bool
+	minCounter            int
+	npcCursor             int
 
 	ground      [maxGroundItem]groundItem // g_pInitItem
 	itemGrid    map[int]int               // g_pItemGrid, cellKey -> ground id
@@ -185,6 +204,7 @@ type event struct {
 	pkt  protocol.Packet
 	gd   *store.GameData
 	rank *rankBoard
+	macs [][8]byte
 }
 
 type eventKind int
@@ -198,6 +218,7 @@ const (
 	evDBDown
 	evGameData
 	evRanking
+	evMacBans
 )
 
 func New(cfg Config, data *Data, log *slog.Logger) *Game {
@@ -225,6 +246,10 @@ func New(cfg Config, data *Data, log *slog.Logger) *Game {
 		g.chargedGuilds[cfg.Channel-1][i] = c.OwnerIndex
 	}
 	g.initGroundItems()
+	g.initWars()
+	g.initWater()
+	g.nightmareLastMin, g.forceWeather = -1, -1
+	g.macBans = map[[8]byte]bool{}
 	return g
 }
 
@@ -288,21 +313,33 @@ func (g *Game) handleEvent(ev event) {
 	case evDBUp:
 		g.dbUp = true
 		g.log.Info("connected to DBSRV")
+		g.reportCityOwners()
 	case evDBDown:
 		g.dbUp = false
 		g.log.Error("lost DBSRV connection")
 	case evRanking:
 		g.rankTable = ev.rank
+	case evMacBans:
+		g.macBans = make(map[[8]byte]bool, len(ev.macs))
+		for _, m := range ev.macs {
+			g.macBans[m] = true
+		}
 	case evGameData:
 		if err := g.data.ApplyGameData(ev.gd); err != nil {
 			g.log.Error("game data reload refused, keeping the current tables", "err", err)
 			return
 		}
+		g.data.ApplyCityOwners(g.cfg.Channel, ev.gd.CityOwners)
+		changed := false
 		for _, c := range ev.gd.CityOwners {
-			if c.City >= 0 && c.City < len(g.data.Cities) && g.chargedGuilds[g.cfg.Channel-1][c.City] != int32(c.GuildID) {
+			if c.Channel == g.cfg.Channel && c.City >= 0 && c.City < len(g.data.Cities) && g.chargedGuilds[g.cfg.Channel-1][c.City] != int32(c.GuildID) {
 				g.chargedGuilds[g.cfg.Channel-1][c.City] = int32(c.GuildID)
+				changed = true
 				g.log.Info("city owner changed", "city", c.City, "guild", c.GuildID, "by", c.ChangedBy)
 			}
+		}
+		if changed {
+			g.reportCityOwners()
 		}
 		g.log.Info("game data reloaded", "items", len(ev.gd.Items), "skills", len(ev.gd.Skills), "drop_mobs", len(ev.gd.Drops), "teleports", len(ev.gd.Teleports))
 	}
@@ -351,6 +388,10 @@ func (g *Game) accept(c *clientConn) {
 // autosave (one playing user per tick).
 func (g *Game) secTimer() {
 	g.secCounter++
+	g.serverAreaTimer()
+	if g.secCounter%32 == 0 {
+		g.idleTimer()
+	}
 	g.potionTimer()
 	g.mobTimer()
 	g.regenTimer()
@@ -365,6 +406,15 @@ func (g *Game) secTimer() {
 		g.lanhouseTimer()
 		g.duelLetterTimer()
 		g.arenaTimer()
+		g.guildProcessTimer()
+		g.zakumTimer()
+		g.bossTimer(time.Now())
+		g.nightmareStart(time.Now())
+	}
+	if g.secCounter%4 == 0 {
+		g.nightmareTimer()
+		g.waterTimer()
+		g.pistaTimer(time.Now())
 	}
 	for range MaxPlayer {
 		g.saveCursor++

@@ -868,7 +868,11 @@ func (g *Game) curScore(id int) {
 			defense += 20
 		}
 	}
-	// TODO(phase E): Annubis / RvR / kingdom-battle event bonuses.
+	if id < MaxPlayer {
+		bonus := g.kingdomRegen(int(mob.CapeInfo))
+		regenHP += bonus
+		regenMP += bonus
+	}
 
 	if pk := int(mob.Inventory[63].Effect[0].Index) - 75; pk < 0 && id < MaxPlayer {
 		pk = -pk

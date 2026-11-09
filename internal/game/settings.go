@@ -52,6 +52,34 @@ type Settings struct {
 	NoCPAreas  []NoCPArea          `yaml:"no_cp_areas"`
 	LevelItems []LevelItemSettings `yaml:"level_items"`
 	Arena      ArenaSettings       `yaml:"arena"`
+	Wars       WarSettings         `yaml:"wars"`
+	// Bosses replaces Data/Boss.xml.
+	Bosses []BossSettings `yaml:"bosses"`
+}
+
+// BossSettings is a boss that comes back by itself at one of its generators.
+type BossSettings struct {
+	Fame          int   `yaml:"fame"`
+	RebornSeconds int   `yaml:"reborn_seconds"`
+	MaxSeconds    int   `yaml:"max_seconds"`
+	Geners        []int `yaml:"geners"`
+}
+
+// WarSettings: replaces the hours of gameconfig_v2.xml.
+type WarSettings struct {
+	CityHour   int `yaml:"city_hour"`
+	CastleHour int `yaml:"castle_hour"`
+	TowerHour  int `yaml:"tower_hour"`
+	RvRHour    int `yaml:"rvr_hour"`
+}
+
+func (w *WarSettings) validate() error {
+	for _, h := range []int{w.CityHour, w.CastleHour, w.TowerHour, w.RvRHour} {
+		if h < 1 || h > 22 {
+			return fmt.Errorf("wars: hour %d not 1..22", h)
+		}
+	}
+	return nil
 }
 
 // ArenaSettings: when the Arena Real opens and what it pays.
@@ -224,6 +252,8 @@ func CppSettings() Settings {
 		HonorMarket: []HonorItemSettings{},
 		NoCPAreas:   []NoCPArea{},
 		LevelItems:  []LevelItemSettings{},
+		Wars:        WarSettings{CityHour: 20, CastleHour: 21, TowerHour: 22, RvRHour: 20},
+		Bosses:      []BossSettings{},
 		Arena: ArenaSettings{Hours: []int{11, 14, 16, 18, 20, 23}, WinnerItems: []ArenaItemSettings{},
 			TopKillItems: []ArenaItemSettings{{Item: 3251, Amount: 3}}, ParticipantItems: []ArenaItemSettings{{Item: 3251}}},
 	}
@@ -323,6 +353,14 @@ func (s *Settings) validate() error {
 	}
 	if err := s.validateLevels(); err != nil {
 		return err
+	}
+	if err := s.Wars.validate(); err != nil {
+		return err
+	}
+	for i, b := range s.Bosses {
+		if len(b.Geners) == 0 || b.RebornSeconds < 1 || b.MaxSeconds < 1 || b.Fame < 0 {
+			return fmt.Errorf("bosses[%d]: needs generators, reborn_seconds and max_seconds", i)
+		}
 	}
 	if err := s.Arena.validate(); err != nil {
 		return err

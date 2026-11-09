@@ -1,0 +1,38 @@
+{{define "content"}}
+<h1>Mensagens <span>· {{.Unseen}} não lidas</span></h1>
+<section class="card">
+  <p class="muted small">O que os jogadores escreveram com /gm no jogo.</p>
+  <p>{{if .All}}<a href="/messages">Mostrar só as não lidas</a>{{else}}<a href="/messages?all=1">Mostrar também as já lidas</a>{{end}}</p>
+  {{if .Messages}}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Quando</th><th>Conta</th><th>Personagem</th><th class="num">Canal</th><th>Mensagem</th><th></th></tr></thead>
+    <tbody>
+    {{range .Messages}}
+      <tr>
+        <td>{{datetime .CreatedAt}}</td>
+        <td><a href="/accounts/{{pathescape .Username}}">{{.Username}}</a></td>
+        <td>{{.CharName}}</td>
+        <td class="num">{{.Channel}}</td>
+        <td>{{.Text}}</td>
+        <td>{{if .SeenAt}}<small class="muted">lida por {{.SeenBy}}</small>{{else}}
+          <form method="post" action="/messages/{{.ID}}/seen">
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <button class="link">Marcar como lida</button>
+          </form>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{if .Unseen}}
+  <form method="post" action="/messages/0/seen">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <button class="primary">Marcar todas como lidas</button>
+  </form>
+  {{end}}
+  {{else}}
+  <p class="muted">Nenhuma mensagem.</p>
+  {{end}}
+</section>
+{{end}}

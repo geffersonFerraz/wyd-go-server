@@ -281,8 +281,9 @@ que o servidor faz ao cliente (anti-hack), e o Go não pergunta. O 0x1495
 
 Mestre Grifo (0xAD9, 0x632) feito em 08/11.
 
-**Ainda faltam:** desafio da cidade (0x28E, 0x3A0), declarar guerra (0xED7) e
-Pesadelo (0x631).
+Desafio da cidade (0x28E), declarar guerra (0xED7) e Pesadelo (0x631) feitos em
+08/11. O 0x3A0 não faz nada no C++ (`break` direto). A declaração de guerra só
+consome o item 4030, como no C++, que nunca terminou esse sistema.
 
 **Quiz (0x2C7): não será portado.** No C++ nada registra jogador no `CQuiz`:
 os tickets das Lanhouse, que o usavam, passaram para o reCaptcha. Sem jogador
@@ -350,10 +351,11 @@ item volta ([useitem.go:319](../internal/game/useitem.go)).
 | Item | Região no C++ (`RequestUseItem.cpp`) |
 |---|---|
 | ~~Pacotes de itens (volátil 210)~~ | **Sem dados:** o `PacItem.txt` não existe e nenhum item do `ItemList.csv` tem volátil 210 |
-| Pergaminhos de Pesadelo (volátil 173) | `PESADELOS` — depende do sistema de Pesadelo |
+| ~~Pergaminhos de Pesadelo (voláteis 173 a 175)~~ | **Feito (08/11).** O 173 (Pesadelo N) sempre recusa: no C++ essa sala fica desligada |
 | ~~Roleta (5381)~~ | **Feito (08/11)** |
 | ~~Masmorras Lanhouse (4111, 4112, 4113)~~ | **Feito (08/11)** |
-| Recusa de Guerra (4031) | `RECUSA DE GUERRA` — depende das guerras |
+| ~~Recusa de Guerra (4031)~~ | **Feito (08/11).** Só consome o item, como no C++ |
+| ~~Pergaminhos da Água (voláteis 21 a 30, 131 a 140, 161 a 170)~~ | **Feito (08/11)** |
 | ~~Cartas de Duelo (3172, 1731, 3171)~~ | **Feito (08/11)** |
 
 As demais regiões ativas do C++ já existem no Go.
@@ -370,15 +372,40 @@ Decisões que diferem do C++ nas Lanhouse:
 
 - Eventos do `CEventManager`: todos resolvidos. **Missão diária**, **Carta de
   Duelo** e **Arena** foram portadas; o **Quiz** não tem uso (ver 3.1).
-- Guerras: torre, castelo, RvR, Kefra (área, bônus, renascimento), Coliseu,
-  Pesadelo (Nightmare), Água (`Water.cpp`, alimenta `/countwater`); semana
-  de guerra (WeekMode / CastleState); `isWarTime` hoje é sempre falso.
-- Impostos da cidade para o dono (`/guildtax`,
-  [world.go:302](../internal/game/world.go)) e prêmios das guerras.
-- Quests de NPC: Zakum, Uxmal (Pista de Runas), dungeon zumbi, Yugi;
-  `Quests\*.c` (o servidor não traz os arquivos).
-- ~~Recompensas por nível (`LevelItem.txt`)~~ **Feito (08/11).**
-- Lojas "Honra" e de RvR, itens especiais de evento nas lojas de NPC.
+**Feito (08/11), com testes:** semana de guerra e guerra de cidades (com 5 vidas),
+apostas, castelo de Noatun (altar de 2 minutos), Torre de Erion, RvR, batalha
+de reinos (torre guardiã e rei), Kefra (morte, bônus de 50% de exp, renascimento
+de quarta), Coliseu, Pesadelo M e A, Água, Castelo de Zakum, impostos
+(`guildtax` e NPC de imposto), clima, chefes por tempo (seção `bosses`).
+O estado de cada canal fica na tabela `channel_state`, gravada a cada minuto.
+
+Decisões que diferem do C++:
+
+- **Donos das cidades são os mesmos em todos os canais** (como o painel já
+  fazia). Apostas, guerras de cidade e Noatun acontecem só em `wars.channel`.
+  A Torre de Erion, a RvR e os impostos continuam por canal.
+- O resultado da guerra é gravado em `gamedata.city_owners` (autor "guerra
+  (canal N)"), então a recarga do gamedata não desfaz mais o resultado.
+- Imposto recolhido vai todo para o gold: o limite aqui é `limits.max_gold`, e
+  as barras do C++ existiam por causa do teto de 2 bilhões.
+- RvR: no C++ o fim estava comentado e a guerra nunca acabava. Usei o bloco
+  comentado (fim aos 30 minutos, vencedor, bônus, loja). Vale de segunda a
+  sábado no horário `wars.rvr_hour`. O bônus do vencedor fica por canal.
+- As apostas sobrevivem a um reinício (o C++ perdia); guardo as 8 maiores por
+  cidade.
+- No altar, líder sem cidade não herda mais o contador do líder anterior.
+- Pesadelo M também aceita voltar após desconectar (no C++ só o A).
+
+**Ainda não portado:**
+
+- Pista de Runas (Uxmal, ~1500 linhas com regras próprias por sala).
+- Evento do NPC Yugi (`CEventHit`).
+- Ataque em área do Kefra (`aiAreaAttack`).
+- Loja da RvR: o NPC nasce, mas a lista de itens nunca era preenchida no C++.
+- Itens especiais de evento nas lojas de NPC.
+
+**Não será portado:** calabouço zumbi (no C++ o NPC só guarda o registro, nada
+usa essa lista). `Quests\*.c` não existem no servidor.
 
 **Arena (08/11):** registro com o Odin ou `/registerbattle`, 4 equipes por
 poder, até 15 minutos, meta de 15 pontos mais 10 a cada 4 jogadores acima de
@@ -401,11 +428,15 @@ UTC.
 
 ### 3.4 Arquivos de dados do C++ que o Go não lê
 
-`ReadBlockedItem`,
-`ReadRanking`, `ReadBoss` (chefes:
-renascimento e fama), `ReadBanList` (banimento por
-IP/MAC), `ReadScheduled` (tarefas agendadas). `ReadPacItens` e `LoadQuiz` não
-serão portados (ver 3.1 e 3.2).
+- `ReadBoss`: **feito (08/11)**, seção `bosses` (começa vazia: o `Boss.xml` não
+  existe).
+- `ReadBanList`: **feito (08/11)**, tabela `mac_bans`, comando `+banmac`.
+  Para desbanir: `DELETE FROM mac_bans`, ainda sem tela no painel.
+- `ReadRanking`: substituído pela tabela `ranking`.
+- `ReadScheduled`: não será portado, a execução está comentada no C++.
+- `ReadBlockedItem`: **feito**, `drops.blocked_items`. Texto antigo: o Go não
+  tem (só a tabela de drops do painel). Ver [seção 6](#6-decisão-pendente).
+- `ReadPacItens` e `LoadQuiz` não serão portados (ver 3.1 e 3.2).
 
 ### 3.5 Combate e detalhes pendentes (TODO no código)
 
@@ -427,9 +458,12 @@ serão portados (ver 3.1 e 3.2).
 
 ### 3.6 Comandos de GM ainda sem suporte
 
-Week mode, Kefra, clima, taxas de drop/exp, listas de ban, recarga dos
-arquivos do C++, `+loja`, `+create`, `+name` (respondem "Comando ADM não
-suportado").
+**Feito (08/11):** `+weekmode`, `+createkefra`, `+kill kefra`, `+weather`,
+`+bonusexp`, `+banmac`, `+reloadban`, `+create`.
+
+Continuam sem suporte: `+drop` (depende do drop por inventário), `+name` (troca
+o nome sem checar duplicidade no banco), `+loja` (loja falsa), `+reload*` (os
+dados vêm do banco e do yaml).
 
 ### 3.7 Painel admin
 
@@ -461,15 +495,13 @@ subiu para 6 (o painel avisa se o DBSRV estiver desatualizado). Testes em
    `Logs/Servidor_1/*.txt` (criação de itens, trocas). Gravar em arquivo
    por dia (ou no Postgres) as trocas, vendas da lojinha, entregas, comandos
    de GM e refinações — é o que permite investigar duplicação de itens.
-2. **`servidor.bat`**: um comando `atualizar` (parar, compilar, iniciar), ou
-   fazer o `start` avisar quando o processo em execução é mais antigo que o
-   `.exe` novo. Evita o B4.
+2. **`servidor.bat`**: **feito (08/11)**, comando `atualizar` (parar, compilar,
+   iniciar). Evita o B4.
 3. **Confirmação de entrega** TMSRV → DBSRV para itens, cash e edições
    (resolve o B2 e deixa o status do painel fiel).
 4. **GM só por nível de acesso** (B3), com registro de cada comando de GM.
-5. **Painel**: banir/desbanir, entregar cash, aviso global, lista de lojas
-   abertas, status dos canais (online, jogadores conectados) — hoje só o
-   DBSRV aparece.
+5. **Painel**: status dos canais **feito (08/11)**, no topo de cada página. Falta
+   a lista de lojas abertas.
 6. **Lojinha**: preço mínimo por moeda (B1), registro das vendas numa tabela
    para auditoria e um teste de ponta a ponta com os pacotes exatamente como
    o cliente monta.
@@ -517,7 +549,64 @@ Depois de `servidor restart`:
 8. **Carta de Duelo**: líder do grupo no Altar de Thor (1046, 1690) usa a
    carta; matar as salas e conferir a troca de sala, o contador de monstros e
    as runas no chão. Sem o Símbolo de Coragem o grupo para na terceira sala.
-9. **Arena**: com 4 contas em computadores diferentes, registrar no Odin
+9. **Guerras** (use `+weekmode` para adiantar as etapas): aposta no sábado,
+   teleporte e 5 vidas no domingo, vencedor, imposto no NPC, altar de Noatun.
+10. **RvR, Kefra, Coliseu, Pesadelo e Água**: conferir contadores e janelas no
+    cliente. Os pacotes 0x637, 0x3AD e 0x3BB seguem o C++ e nunca foram vistos
+    no cliente real.
+11. **Arena**: com 4 contas em computadores diferentes, registrar no Odin
    (2122, 2149) nos 5 primeiros minutos de uma hora da seção `arena`. No
    minuto 5 conferir equipes, grupo, etiqueta "Grupo X (kills)", respawn ao
    morrer e o fim com prêmios.
+
+---
+
+## 6. Ajustes pedidos depois da auditoria (09/11)
+
+- **Guerras e donos de cidade por canal.** `gamedata.city_owners` tem uma linha
+  por canal e cidade; a tela Guildas > Cidades escolhe o canal. O que a seção
+  3.3 diz sobre "canal único" e `wars.channel` não vale mais. Uma guilda que
+  tem cidade em outro canal não aposta; a coroa vale para o dono de Noatun em
+  qualquer canal, como no C++.
+- **Drops mistos, geridos só pelo painel.** Cada monstro tem duas listas em
+  Dados do jogo > Drops: **fixos** (a cada X mortes, a tabela que já existia) e
+  **por chance** (slot, item, efeitos e chance). Os dois valem juntos. A aba
+  **Taxas de drop** guarda a base e a taxa dos 64 slots e os itens bloqueados.
+  Uma linha com chance 0 usa o slot; com chance N é 1 em N, e os bônus de fada e
+  de drop continuam valendo. A seção `drops` saiu do `tmsrv.yaml`.
+  Na primeira subida depois da atualização, o painel copia os inventários
+  dos arquivos `npc/` para a lista por chance (4.230 linhas com os dados atuais;
+  a tabela fica com 368 monstros, 91 deles com as duas listas), uma única vez. Depois disso os arquivos não são lidos para drops. Lojas de NPC
+  continuam vendendo o inventário do arquivo. O gold por chance vem do campo
+  gold de cada monstro.
+- **GM só no painel.** Menu **Comandos GM**: canal, personagem, comando e a
+  resposta do canal. O `/gm` do jogo agora é uma mensagem para a equipe, lida
+  em **Mensagens**. O `/sgm` não existe mais.
+
+## 7. Continuação da auditoria (09/11)
+
+**Feito, com testes:** Pista de Runas (registro no Uxmal, as 7 salas, runas e
+próxima Pista para o líder), evento do NPC Yugi (HIT-HERE), ataque em área do
+Kefra, itens especiais das lojas (Teleporte Quest, baús de evento, Loja Arena),
+reset das quests a cada 10 minutos, regras do Vale (fada e uma conta por
+computador), prêmio de 250 mortes no BigCubo, desconexão por inatividade, lista
+de lojas abertas (menu **Lojas**).
+
+Correção no prêmio do BigCubo: o C++ passava as coordenadas trocadas para
+`SendPremioArea`; aqui vale a área de fato usada na contagem de mortes.
+
+**Sem efeito no C++, não portados:** `BossEvent`, `DropArea`, `Kingdom1Clear` e
+`Kingdom2Clear` (nada liga esses estados), `Scheduled` (execução comentada),
+calabouço zumbi (só guarda um registro), poção do `NewbieHour` (gera um monstro
+de sala da Água sem jogador).
+
+**Substituídos:** `AutoDonate` (arquivo por conta) pela entrega de cash do painel.
+
+**Limitações conhecidas:**
+
+- O ataque em área do Kefra sai como um golpe por alvo, não como um único
+  pacote 0x367 com vários alvos. O dano é o mesmo; a animação no cliente pode
+  mudar.
+- A loja da RvR abre como loja comum do NPC: a lista de itens própria nunca foi
+  preenchida no C++.
+- Falta conferir no cliente real os pacotes das guerras e da Pista.

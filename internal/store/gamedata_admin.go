@@ -211,30 +211,32 @@ func (s *Store) SaveSkill(ctx context.Context, k *Skill, by string) error {
 
 // DropSummary is one line of the drop list.
 type DropSummary struct {
-	Name     string
-	Section  string
-	MaxDrops int
-	Gold     int
-	Lines    int
+	Name      string
+	Section   string
+	MaxDrops  int
+	Gold      int
+	Lines     int
+	RateLines int
 }
 
 // SearchDrops lists drop table monsters (name substring, "" = all).
 func (s *Store) SearchDrops(ctx context.Context, q string) ([]DropSummary, error) {
 	pattern := "%" + strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(strings.ToLower(strings.TrimSpace(q))) + "%"
 	rows, _ := s.pool.Query(ctx, `SELECT d.name, d.section, d.max_drops, d.gold,
-		(SELECT count(*) FROM gamedata.drop_items i WHERE i.drop_name = d.name)
+		(SELECT count(*) FROM gamedata.drop_items i WHERE i.drop_name = d.name),
+		(SELECT count(*) FROM gamedata.rate_drops i WHERE i.drop_name = d.name)
 		FROM gamedata.drops d WHERE lower(d.name) LIKE $1 OR lower(d.section) LIKE $1 ORDER BY d.sort, d.name`, pattern)
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (DropSummary, error) {
 		var d DropSummary
-		return d, r.Scan(&d.Name, &d.Section, &d.MaxDrops, &d.Gold, &d.Lines)
+		return d, r.Scan(&d.Name, &d.Section, &d.MaxDrops, &d.Gold, &d.Lines, &d.RateLines)
 	})
 }
 
 // GetDrop loads one monster's drops.
 func (s *Store) GetDrop(ctx context.Context, name string) (*Drop, error) {
 	d := &Drop{}
-	err := s.pool.QueryRow(ctx, `SELECT name, section, max_drops, gold FROM gamedata.drops WHERE name = $1`, name).
-		Scan(&d.Name, &d.Section, &d.MaxDrops, &d.Gold)
+	err := s.pool.QueryRow(ctx, `SELECT name, section, max_drops, gold, rate_gold FROM gamedata.drops WHERE name = $1`, name).
+		Scan(&d.Name, &d.Section, &d.MaxDrops, &d.Gold, &d.RateGold)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -246,21 +248,33 @@ func (s *Store) GetDrop(ctx context.Context, name string) (*Drop, error) {
 		var it DropItem
 		return it, r.Scan(&it.Kills, &it.Item, &it.Effect, &it.Value)
 	})
-	return d, err
+	if err != nil {
+		return nil, err
+	}
+	rows, _ = s.pool.Query(ctx, `SELECT `+rateDropSelect+` FROM gamedata.rate_drops WHERE drop_name = $1 ORDER BY slot`, name)
+	var rn string
+	var rd RateDrop
+	if _, err = pgx.ForEachRow(rows, append([]any{&rn}, rateDropScan(&rd)...), func() error {
+		d.Rate = append(d.Rate, rd)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return d, nil
 }
 
 // SaveDrop creates (oldName "") or updates/renames a monster's drops.
 func (s *Store) SaveDrop(ctx context.Context, oldName string, d *Drop, by string) error {
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		if oldName == "" {
-			if _, err := tx.Exec(ctx, `INSERT INTO gamedata.drops (name, section, max_drops, gold, sort)
-				VALUES ($1, $2, $3, $4, (SELECT coalesce(max(sort), 0) + 1 FROM gamedata.drops))`,
-				d.Name, d.Section, d.MaxDrops, d.Gold); err != nil {
+			if _, err := tx.Exec(ctx, `INSERT INTO gamedata.drops (name, section, max_drops, gold, rate_gold, sort)
+				VALUES ($1, $2, $3, $4, $5, (SELECT coalesce(max(sort), 0) + 1 FROM gamedata.drops))`,
+				d.Name, d.Section, d.MaxDrops, d.Gold, d.RateGold); err != nil {
 				return err
 			}
 		} else {
-			tag, err := tx.Exec(ctx, `UPDATE gamedata.drops SET name = $2, section = $3, max_drops = $4, gold = $5 WHERE name = $1`,
-				oldName, d.Name, d.Section, d.MaxDrops, d.Gold)
+			tag, err := tx.Exec(ctx, `UPDATE gamedata.drops SET name = $2, section = $3, max_drops = $4, gold = $5, rate_gold = $6 WHERE name = $1`,
+				oldName, d.Name, d.Section, d.MaxDrops, d.Gold, d.RateGold)
 			if err != nil {
 				return err
 			}
@@ -276,6 +290,9 @@ func (s *Store) SaveDrop(ctx context.Context, oldName string, d *Drop, by string
 				VALUES ($1,$2,$3,$4,$5,$6)`, d.Name, ord, it.Kills, it.Item, it.Effect, it.Value); err != nil {
 				return err
 			}
+		}
+		if err := insertRateDrops(ctx, tx, d.Name, d.Rate); err != nil {
+			return err
 		}
 		return logChange(ctx, tx, by, "drop", d.Name, fmt.Sprintf("%d itens, máx. %d por morte, gold %d", len(d.Items), d.MaxDrops, d.Gold))
 	})

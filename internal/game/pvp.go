@@ -291,7 +291,9 @@ func (g *Game) pvpDeath(target, killer int) {
 	if (x >= 2447 && x <= 2545 && y >= 1851 && y <= 1924) || (x >= 1041 && x <= 1248 && y >= 1950 && y <= 2158) {
 		loss = 0
 	}
-	// TODO(phase E): Kefra area while Kefra lives, castle war, level blocks.
+	if (g.war.towerOn && x >= 2448 && x <= 2545 && y >= 1850 && y <= 1921) || (g.war.castleState != castleOff && x>>7 == 8 && y>>7 == 13 && ku != nil) {
+		loss = 0
+	}
 	if level >= 20 || ev >= evoArch {
 		dpl.Exp = max(dpl.Exp-loss, 0)
 		g.clientMessage(du, "Você perdeu %d de experiancia", loss)
@@ -303,8 +305,8 @@ func (g *Game) pvpDeath(target, killer int) {
 		g.clientMessage(du, "Level abaixo de 20 não perde experiancia.")
 	}
 
-	// CP (PK points) and frag counters. TODO(phase E): tower war.
-	noCP := g.noCPArea(x, y)
+	// CP (PK points) and frag counters.
+	noCP := g.noCPArea(x, y) || (g.war.towerOn && x >= 2448 && x <= 2545 && y >= 1850 && y <= 1924)
 	if war != -1 {
 		return
 	}

@@ -1,0 +1,54 @@
+{{define "content"}}
+<h1>Comandos GM</h1>
+{{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+<section class="card">
+  <form method="post" action="/gm" autocomplete="off">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label>Canal
+      <select name="channel">{{range .ChannelList}}<option value="{{.}}"{{if eq . $.Form.Channel}} selected{{end}}>Canal {{.}}</option>{{end}}</select></label>
+    <label>Personagem
+      <input name="char" value="{{.Form.Char}}" maxlength="15" placeholder="vazio nos comandos do canal"></label>
+    <label>Comando
+      <select name="command" required>
+        <option value="">Escolha</option>
+        {{range .Commands}}<option value="{{.Name}}"{{if eq .Name $.Form.Command}} selected{{end}}>{{.Name}} · {{.Help}}</option>{{end}}
+      </select></label>
+    <label>Argumentos
+      <input name="args" value="{{.Form.Args}}" maxlength="120"></label>
+    <button class="primary">Executar</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Últimos comandos</h2>
+  {{if .History}}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Quando</th><th>Quem</th><th class="num">Canal</th><th>Personagem</th><th>Comando</th><th>Resposta</th></tr></thead>
+    <tbody>
+    {{range .History}}
+      <tr>
+        <td>{{datetime .CreatedAt}}</td>
+        <td>{{.RequestedBy}}</td>
+        <td class="num">{{.Channel}}</td>
+        <td>{{.Char}}</td>
+        <td><code>{{.Command}}</code></td>
+        <td>{{if .Output}}{{.Output}}{{else if not .Done}}<span class="pill wait">Na fila</span>{{else if eq .Result "not_online"}}<span class="pill bad">Canal desligado</span>{{else}}<span class="muted">sem resposta</span>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}<p class="muted">Nenhum comando enviado.</p>{{end}}
+</section>
+<section class="card">
+  <h2>Lista de comandos</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Comando</th><th>Argumentos</th><th>O que faz</th><th>Alvo</th></tr></thead>
+    <tbody>
+    {{range .Commands}}<tr><td><code>{{.Name}}</code></td><td>{{.Args}}</td><td>{{.Help}}</td><td>{{if .NeedsChar}}Personagem{{else}}Canal{{end}}</td></tr>{{end}}
+    </tbody>
+  </table>
+  </div>
+</section>
+{{end}}

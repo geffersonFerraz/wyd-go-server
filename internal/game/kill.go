@@ -7,7 +7,6 @@ import "dbsrv/internal/wire"
 
 // expApply is GetExpApply: scale a mob's exp by the level difference and
 // the attacker's exp bonus.
-// TODO(phase E): Nightmare and Kefra bonuses.
 func (g *Game) expApply(exp int64, attacker, target int) int64 {
 	a, t := &g.mobs[attacker].info.Player, &g.mobs[target].info.Player
 	al, tl := int64(a.Status.Level), int64(t.Status.Level)
@@ -36,8 +35,15 @@ func (g *Game) expApply(exp int64, attacker, target int) int64 {
 	if exp <= 0 {
 		return 0
 	}
+	exp = g.nightmareExp(exp, attacker)
 	if b := g.mobs[attacker].combat.expBonus; b != 0 {
 		exp += exp * int64(b) / 100
+	}
+	if g.kefra.dead {
+		exp += exp / 100 * 50
+	}
+	if g.expRate != 0 {
+		exp += exp * int64(g.expRate) / 100
 	}
 	return exp
 }
@@ -90,6 +96,13 @@ func (g *Game) mobKilled(target, killer int) {
 	if g.arenaMobKilled(target, killer) {
 		return
 	}
+	if g.warLifeSaved(target) || g.specialMobKilled(target, killer) {
+		return
+	}
+	// Whoever dies on the altar during the castle war is moved off it.
+	if t := g.mobs[target].target; target < MaxPlayer && g.war.castleState > castleClosing && t.X == altarX && t.Y == altarY {
+		g.teleportar(target, 1057, 1742)
+	}
 	dead := &g.mobs[target]
 	// A summon's kill counts for its owner (and trains a baby mount).
 	if owner := g.summonOwner(killer); owner != 0 && target >= MaxPlayer {
@@ -108,6 +121,7 @@ func (g *Game) mobKilled(target, killer int) {
 		Killed: int16(target), Killer: int16(killer),
 	}
 	if target < MaxPlayer {
+		g.rvrKill(target, killer)
 		g.playerKilled(target, killer, &msg)
 		return
 	}
@@ -123,6 +137,9 @@ func (g *Game) mobKilled(target, killer int) {
 
 	g.shareExp(func(id int) int64 { return g.expApply(dead.info.Player.Exp, id, target) }, killer, dead.target)
 	g.missionMobKilled(killer, target)
+	g.bigCuboKill(u)
+	g.mobGoldDrop(u, dead)
+	g.rateDrop(u, dead)
 
 	// The client takes 0x338's Exp as ITS OWN exp when the killer is itself
 	// or a party member (TMFieldScene::OnPacketCNFMobKill -> SetMyHumanExp,
@@ -411,4 +428,34 @@ func (g *Game) shareExp(baseFor func(id int) int64, killer int, at wire.Position
 			g.sendEtc(u)
 		}
 	}
+}
+
+// specialMobKilled runs the deaths with a rule of their own. True when the
+// mob stays in the world.
+func (g *Game) specialMobKilled(target, killer int) bool {
+	if target < MaxPlayer {
+		return false
+	}
+	g.bossKilled(target, killer)
+	gen := g.mobs[target].npc.generateID
+	g.pistaMobKilled(gen, killer)
+	switch {
+	case gen == genTowerErion:
+		g.erionTowerKilled(target, killer)
+		return true
+	case gen == genRvRTowerBlue || gen == genRvRTowerRed:
+		g.rvrTowerKilled(target, killer, gen)
+		return true
+	case gen == genKingBlue || gen == genKingRed:
+		return g.kingKilled(target, killer, gen)
+	case gen == genTowerGuardB || gen == genTowerGuardR:
+		g.kingdomTowerKilled(gen)
+	case gen == genKefra:
+		g.kefraKilled(target, killer)
+	case gen == genZakum:
+		g.zakumKilled(killer)
+	case gen >= genColiseum && gen < genColiseum+4:
+		g.coliseumBossKilled(target)
+	}
+	return false
 }

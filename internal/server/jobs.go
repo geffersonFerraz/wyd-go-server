@@ -166,6 +166,10 @@ type deliveryPayload struct {
 	AfterLogout bool `json:"after_logout"`
 	// Text (notice): the message for every channel.
 	Text string `json:"text"`
+	// Channel, Char and Command (gm_command): a GM command from the panel.
+	Channel int    `json:"channel"`
+	Char    string `json:"char_name"`
+	Command string `json:"command"`
 }
 
 // secrets returns argon2id hashes for the password and numeric password in
@@ -241,6 +245,9 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 	}
 	if d.Kind == "notice" {
 		return s.deliverNotice(p.Text), true, nil
+	}
+	if d.Kind == "gm_command" {
+		return s.deliverGMCommand(d.ID, p.Channel, p.Char, p.Command), true, nil
 	}
 	user := d.Username
 	if user == "" || len(user) > 15 || strings.ContainsAny(user, " '\"\\/") {

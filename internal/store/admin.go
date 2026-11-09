@@ -97,8 +97,9 @@ func (s *Store) AccountDetail(ctx context.Context, username string) (AccountSumm
 // 4 = "edit" deliveries (package acctedit).
 // 5 = the "lock" edit (reload the in-game account lock).
 // 6 = "notice" deliveries (a notice to every channel).
+// 7 = "gm_command" deliveries (GM commands from the panel).
 // Bump it whenever dbsrv learns a payload the admin panel starts sending.
-const DeliveryProtocol = 6
+const DeliveryProtocol = 7
 
 // OnlineInfo says where an account is logged in.
 type OnlineInfo struct {

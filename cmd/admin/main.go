@@ -47,6 +47,7 @@ import (
 
 	"dbsrv/internal/admin"
 	"dbsrv/internal/auth"
+	"dbsrv/internal/game"
 	"dbsrv/internal/logfile"
 	"dbsrv/internal/store"
 )
@@ -144,6 +145,15 @@ func run(log *slog.Logger, o options) error {
 		return fmt.Errorf("migrate: %w", err)
 	}
 
+	var channels []int
+	if settings, err := game.LoadSettings(o.config); err == nil {
+		for _, c := range settings.Channels {
+			channels = append(channels, c.Number)
+		}
+	} else if o.config != "" {
+		log.Warn("channels not read from the settings", "err", err)
+	}
+
 	// City owners: the database is the only source; the first start copies
 	// the owners of guild_zone.txt for the cities not set yet.
 	if o.tmsrvDir != "" {
@@ -155,12 +165,21 @@ func run(log *slog.Logger, o options) error {
 		}
 	}
 
+	// Drops by chance: the first start copies the monsters' inventories.
+	if o.tmsrvDir != "" {
+		if n, err := admin.SeedRateDrops(ctx, st, o.tmsrvDir); err != nil {
+			log.Warn("drops by chance not imported", "err", err)
+		} else if n > 0 {
+			log.Info("drops by chance imported", "lines", n)
+		}
+	}
+
 	if o.markDir != "" {
 		if err := os.MkdirAll(o.markDir, 0o755); err != nil {
 			return fmt.Errorf("guildmark dir: %w", err)
 		}
 	}
-	panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: o.markDir, LockDir: lockDir(o.tmsrvDir)}, st, log)
+	panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: o.markDir, LockDir: lockDir(o.tmsrvDir), Channels: channels}, st, log)
 	if err != nil {
 		return err
 	}

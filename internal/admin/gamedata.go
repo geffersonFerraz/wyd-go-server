@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"dbsrv/internal/acctedit"
+	"dbsrv/internal/game"
 	"dbsrv/internal/store"
 	"dbsrv/internal/wire"
 )
@@ -57,6 +59,8 @@ func (s *Server) gamedataRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /gamedata/drop", s.auth(s.dropPage))
 	mux.HandleFunc("POST /gamedata/drop", s.auth(s.saveDrop))
 	mux.HandleFunc("POST /gamedata/drop/delete", s.auth(s.deleteDrop))
+	mux.HandleFunc("GET /gamedata/droprates", s.auth(s.dropRatesPage))
+	mux.HandleFunc("POST /gamedata/droprates", s.auth(s.saveDropRates))
 	mux.HandleFunc("GET /gamedata/teleports", s.auth(s.teleportsPage))
 	mux.HandleFunc("POST /gamedata/teleports", s.auth(s.saveTeleport))
 	mux.HandleFunc("POST /gamedata/teleports/delete", s.auth(s.deleteTeleport))
@@ -323,8 +327,11 @@ func (s *Server) dropPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderDrop(w http.ResponseWriter, r *http.Request, code int, oldName string, d *store.Drop, msg, errMsg string) {
-	ids := make([]int, 0, len(d.Items))
+	ids := make([]int, 0, len(d.Items)+len(d.Rate))
 	for _, it := range d.Items {
+		ids = append(ids, it.Item)
+	}
+	for _, it := range d.Rate {
 		ids = append(ids, it.Item)
 	}
 	names, err := s.st.ItemNames(r.Context(), ids)
@@ -339,13 +346,24 @@ func (s *Server) renderDrop(w http.ResponseWriter, r *http.Request, code int, ol
 	for range 5 {
 		rows = append(rows, dropRow{})
 	}
+	rateRows, used := make([]rateDropRow, 0, len(d.Rate)+5), map[int]bool{}
+	for _, it := range d.Rate {
+		used[it.Slot] = true
+		rateRows = append(rateRows, rateDropRow{RateDrop: it, ItemName: names[it.Item]})
+	}
+	for slot, added := 0, 0; slot < 64 && added < 5; slot++ {
+		if !used[slot] {
+			rateRows = append(rateRows, rateDropRow{RateDrop: store.RateDrop{Slot: slot}})
+			added++
+		}
+	}
 	changes, err := s.st.RecentChanges(r.Context(), "drop", d.Name, 10)
 	if err != nil {
 		s.fail(w, err)
 		return
 	}
 	s.page(w, r, code, "drop", map[string]any{"Title": "Drops · " + strings.TrimSpace(d.Name), "Drop": d,
-		"OldName": oldName, "Rows": rows, "Msg": msg, "Error": errMsg, "Changes": changes})
+		"OldName": oldName, "Rows": rows, "RateRows": rateRows, "Msg": msg, "Error": errMsg, "Changes": changes})
 }
 
 func (s *Server) saveDrop(w http.ResponseWriter, r *http.Request) {
@@ -354,6 +372,7 @@ func (s *Server) saveDrop(w http.ResponseWriter, r *http.Request) {
 	d := &store.Drop{Name: r.PostFormValue("name"), Section: strings.TrimSpace(r.PostFormValue("section"))}
 	d.MaxDrops = f.int("max_drops", "Máx. por morte", 0, 1000)
 	d.Gold = f.int("gold", "Gold", 0, wire.MaxLimit)
+	d.RateGold = int64(f.int("rate_gold", "Gold por chance", 0, wire.MaxLimit))
 	n, _ := strconv.Atoi(r.PostFormValue("rows"))
 	for i := 0; i < n && i < 500; i++ {
 		item := strings.TrimSpace(r.PostFormValue(fmt.Sprintf("item%d", i)))
@@ -367,6 +386,30 @@ func (s *Server) saveDrop(w http.ResponseWriter, r *http.Request) {
 			Value:  f.int(fmt.Sprintf("value%d", i), fmt.Sprintf("Valor (linha %d)", i+1), 0, acctedit.MaxEffect),
 		}
 		d.Items = append(d.Items, row)
+	}
+	nr, _ := strconv.Atoi(r.PostFormValue("rate_rows"))
+	slots := map[int]bool{}
+	for i := 0; i < nr && i < 100; i++ {
+		if v := strings.TrimSpace(r.PostFormValue(fmt.Sprintf("ritem%d", i))); v == "" || v == "0" {
+			continue
+		}
+		line := fmt.Sprintf("(chance, linha %d)", i+1)
+		row := store.RateDrop{
+			Slot:   f.int(fmt.Sprintf("rslot%d", i), "Slot "+line, 0, 63),
+			Item:   f.int(fmt.Sprintf("ritem%d", i), "Item "+line, 1, 6499),
+			Chance: f.int(fmt.Sprintf("rchance%d", i), "Chance "+line, 0, 32000),
+		}
+		for e := range row.Effects {
+			row.Effects[e] = store.ItemEffect{
+				Effect: f.int(fmt.Sprintf("ref%d_%d", i, e), "Efeito "+line, 0, 255),
+				Value:  f.int(fmt.Sprintf("rval%d_%d", i, e), "Valor "+line, 0, acctedit.MaxEffect),
+			}
+		}
+		if slots[row.Slot] {
+			f.errs = append(f.errs, fmt.Sprintf("O slot %d aparece duas vezes.", row.Slot))
+		}
+		slots[row.Slot] = true
+		d.Rate = append(d.Rate, row)
 	}
 	if strings.TrimSpace(d.Name) == "" {
 		f.errs = append(f.errs, "O nome é obrigatório.")
@@ -446,4 +489,89 @@ func (s *Server) deleteTeleport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/gamedata/teleports", http.StatusSeeOther)
+}
+
+type rateDropRow struct {
+	store.RateDrop
+	ItemName string
+}
+
+func (s *Server) dropRatesPage(w http.ResponseWriter, r *http.Request) {
+	msg := ""
+	if r.URL.Query().Has("saved") {
+		msg = "Salvo. Vale nos canais em até alguns segundos."
+	}
+	s.renderDropRates(w, r, http.StatusOK, msg, "")
+}
+
+func (s *Server) renderDropRates(w http.ResponseWriter, r *http.Request, code int, msg, errMsg string) {
+	slots, err := s.st.DropSlots(r.Context())
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	blocked, err := s.st.BlockedDropItems(r.Context())
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	names, err := s.st.ItemNames(r.Context(), blocked)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	text := make([]string, len(blocked))
+	type blockedRow struct {
+		ID   int
+		Name string
+	}
+	rows := make([]blockedRow, len(blocked))
+	for i, id := range blocked {
+		text[i] = strconv.Itoa(id)
+		rows[i] = blockedRow{id, names[id]}
+	}
+	s.page(w, r, code, "droprates", map[string]any{"Title": "Taxas de drop", "Slots": slots, "BlockedText": strings.Join(text, " "),
+		"Blocked": rows, "Msg": msg, "Error": errMsg})
+}
+
+func (s *Server) saveDropRates(w http.ResponseWriter, r *http.Request) {
+	f := &formReader{r: r}
+	var slots []store.DropSlot
+	for i := range 64 {
+		slots = append(slots, store.DropSlot{Slot: i,
+			Base: f.int(fmt.Sprintf("base%d", i), fmt.Sprintf("Base (slot %d)", i), 0, 2000000000),
+			Rate: f.int(fmt.Sprintf("rate%d", i), fmt.Sprintf("Taxa (slot %d)", i), 0, 10000)})
+	}
+	var blocked []int
+	for _, v := range strings.FieldsFunc(r.PostFormValue("blocked"), func(c rune) bool { return c == ',' || c == ' ' || c == '\n' || c == '\r' || c == '\t' }) {
+		id, err := strconv.Atoi(v)
+		if err != nil || id < 1 || id > 6499 {
+			f.errs = append(f.errs, "Item bloqueado inválido: "+v+".")
+			continue
+		}
+		blocked = append(blocked, id)
+	}
+	if e := f.err(); e != "" {
+		s.renderDropRates(w, r, http.StatusUnprocessableEntity, "", e)
+		return
+	}
+	if err := s.st.SaveDropRates(r.Context(), slots, blocked, sessionOf(r).user); err != nil {
+		s.fail(w, err)
+		return
+	}
+	http.Redirect(w, r, "/gamedata/droprates?saved=1", http.StatusSeeOther)
+}
+
+// SeedRateDrops copies the monsters' inventories to the chance list the
+// first time the panel runs after the migration.
+func SeedRateDrops(ctx context.Context, st *store.Store, tmsrvDir string) (int, error) {
+	done, err := st.RateDropsImported(ctx)
+	if err != nil || done {
+		return 0, err
+	}
+	drops, err := game.ReadRateDrops(tmsrvDir)
+	if err != nil {
+		return 0, err
+	}
+	return st.SeedRateDrops(ctx, drops, "npc (import)")
 }

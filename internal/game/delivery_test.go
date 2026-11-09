@@ -37,23 +37,3 @@ func TestItemDeliveryFullStorage(t *testing.T) {
 		t.Fatal("inventory changed with everything full")
 	}
 }
-
-// A level 1000+ character is not GM without GM access on the account (the
-// C++ "/@9638" raised characters to 1010).
-func TestAdminNeedsAccessLevel(t *testing.T) {
-	g := worldGame(t)
-	u := placePlayer(g, 2100, 2100, 0)
-	listen(u)
-	pl := &g.mobs[1].info.Player
-	pl.BStatus.Level, pl.Status.Level = 1009, 1009
-	u.accessLevel = 0
-	g.adminCommand(u, "+level 50")
-	if pl.BStatus.Level != 1009 {
-		t.Fatal("level 1009 character without access used a GM command")
-	}
-	u.accessLevel = 1
-	g.adminCommand(u, "+level 50")
-	if pl.BStatus.Level != 50 {
-		t.Fatalf("GM command with access: level %d", pl.BStatus.Level)
-	}
-}

@@ -42,7 +42,6 @@ func (g *Game) requestOpenShop(u *User, pkt protocol.Packet) {
 	if wire.Unmarshal(pkt.Raw, &p) != nil {
 		return
 	}
-	// TODO(phase E): the RvR shops (generators 384/385).
 	if wire.CString(p.FindName[:]) == honorShopName {
 		g.openHonorMarket(u)
 		return
@@ -160,7 +159,9 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 	if g.locked(u, lockBuy, "Bloqueio de compra ativo!") {
 		return
 	}
-	// TODO(phase E): the custom event/quest-teleport items of the C++ shop.
+	if g.shopSpecial(u, mobID, &item) {
+		return
+	}
 	city := g.shopCity(mobID)
 	price := int64(g.data.Item(item.Index).Price)
 	impost := int64(0)

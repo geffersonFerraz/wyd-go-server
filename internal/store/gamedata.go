@@ -9,11 +9,13 @@ import (
 
 // GameData is the gamedata schema: the static tables the TMSRV loads.
 type GameData struct {
-	EffectNames []EffectName
-	Items       []Item
-	Skills      []Skill
-	Drops       []Drop
-	Teleports   []Teleport
+	EffectNames  []EffectName
+	Items        []Item
+	Skills       []Skill
+	Drops        []Drop
+	DropSlots    []DropSlot
+	BlockedDrops []int
+	Teleports    []Teleport
 	// CityOwners are the cities the admin panel gave to a guild (cities
 	// without a row keep guild_zone.txt's owner).
 	CityOwners []CityOwner
@@ -65,7 +67,22 @@ type Drop struct {
 	Section  string
 	MaxDrops int
 	Gold     int
+	RateGold int64 // gold drawn by chance when the monster dies
 	Items    []DropItem
+	Rate     []RateDrop
+}
+
+// RateDrop is a drop by chance, in one slot of the monster's list.
+type RateDrop struct {
+	Slot    int
+	Item    int
+	Effects [3]ItemEffect
+	Chance  int // 1 in Chance; 0 = the slot's base and rate
+}
+
+// DropSlot is the chance settings of one inventory slot.
+type DropSlot struct {
+	Slot, Base, Rate int
 }
 
 type DropItem struct {
@@ -84,7 +101,7 @@ type Teleport struct {
 // ImportGameData replaces every gamedata table with gd in one transaction.
 func (s *Store) ImportGameData(ctx context.Context, gd *GameData, by string) error {
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `TRUNCATE gamedata.drop_items, gamedata.drops, gamedata.item_effects,
+		if _, err := tx.Exec(ctx, `TRUNCATE gamedata.rate_drops, gamedata.drop_items, gamedata.drops, gamedata.item_effects,
 			gamedata.items, gamedata.skills, gamedata.teleports, gamedata.effect_names`); err != nil {
 			return err
 		}
@@ -131,9 +148,9 @@ func (s *Store) ImportGameData(ctx context.Context, gd *GameData, by string) err
 		}); err != nil {
 			return err
 		}
-		if err := copyRows("drops", []string{"name", "section", "max_drops", "gold", "sort"}, len(gd.Drops), func(i int) []any {
+		if err := copyRows("drops", []string{"name", "section", "max_drops", "gold", "rate_gold", "sort"}, len(gd.Drops), func(i int) []any {
 			d := gd.Drops[i]
-			return []any{d.Name, d.Section, d.MaxDrops, d.Gold, i}
+			return []any{d.Name, d.Section, d.MaxDrops, d.Gold, d.RateGold, i}
 		}); err != nil {
 			return err
 		}
@@ -144,6 +161,18 @@ func (s *Store) ImportGameData(ctx context.Context, gd *GameData, by string) err
 			}
 		}
 		if err := copyRows("drop_items", []string{"drop_name", "ord", "kills", "item", "effect", "value"}, len(dropItems), func(i int) []any { return dropItems[i] }); err != nil {
+			return err
+		}
+		var rateRows [][]any
+		for _, d := range gd.Drops {
+			for _, r := range d.Rate {
+				rateRows = append(rateRows, rateDropRow(d.Name, r))
+			}
+		}
+		if err := copyRows("rate_drops", rateDropCols, len(rateRows), func(i int) []any { return rateRows[i] }); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO gamedata.rate_drop_import (imported_by) VALUES ($1) ON CONFLICT (id) DO NOTHING`, by); err != nil {
 			return err
 		}
 		if err := copyRows("teleports", []string{"id", "src_x", "src_y", "dst_x", "dst_y", "price"}, len(gd.Teleports), func(i int) []any {
@@ -212,10 +241,10 @@ func (s *Store) LoadGameData(ctx context.Context) (*GameData, error) {
 		}
 		gd.Skills = skills
 
-		rows, _ = tx.Query(ctx, `SELECT name, section, max_drops, gold FROM gamedata.drops ORDER BY sort, name`)
+		rows, _ = tx.Query(ctx, `SELECT name, section, max_drops, gold, rate_gold FROM gamedata.drops ORDER BY sort, name`)
 		drops, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (Drop, error) {
 			var d Drop
-			return d, r.Scan(&d.Name, &d.Section, &d.MaxDrops, &d.Gold)
+			return d, r.Scan(&d.Name, &d.Section, &d.MaxDrops, &d.Gold, &d.RateGold)
 		})
 		if err != nil {
 			return fmt.Errorf("drops: %w", err)
@@ -235,7 +264,30 @@ func (s *Store) LoadGameData(ctx context.Context) (*GameData, error) {
 		}); err != nil {
 			return fmt.Errorf("drop_items: %w", err)
 		}
+		rows, _ = tx.Query(ctx, `SELECT `+rateDropSelect+` FROM gamedata.rate_drops ORDER BY drop_name, slot`)
+		var rn string
+		var rd RateDrop
+		if _, err := pgx.ForEachRow(rows, append([]any{&rn}, rateDropScan(&rd)...), func() error {
+			if i, ok := dropAt[rn]; ok {
+				drops[i].Rate = append(drops[i].Rate, rd)
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("rate_drops: %w", err)
+		}
 		gd.Drops = drops
+
+		rows, _ = tx.Query(ctx, `SELECT slot, base, rate FROM gamedata.drop_slots ORDER BY slot`)
+		if gd.DropSlots, err = pgx.CollectRows(rows, func(r pgx.CollectableRow) (DropSlot, error) {
+			var ds DropSlot
+			return ds, r.Scan(&ds.Slot, &ds.Base, &ds.Rate)
+		}); err != nil {
+			return fmt.Errorf("drop_slots: %w", err)
+		}
+		rows, _ = tx.Query(ctx, `SELECT item FROM gamedata.blocked_drop_items ORDER BY item`)
+		if gd.BlockedDrops, err = pgx.CollectRows(rows, pgx.RowTo[int]); err != nil {
+			return fmt.Errorf("blocked_drop_items: %w", err)
+		}
 
 		rows, _ = tx.Query(ctx, `SELECT id, src_x, src_y, dst_x, dst_y, price FROM gamedata.teleports ORDER BY id`)
 		tps, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (Teleport, error) {
@@ -247,7 +299,7 @@ func (s *Store) LoadGameData(ctx context.Context) (*GameData, error) {
 		}
 		gd.Teleports = tps
 
-		rows, _ = tx.Query(ctx, `SELECT city, guild_id, changed_by, changed_at FROM gamedata.city_owners ORDER BY city`)
+		rows, _ = tx.Query(ctx, `SELECT channel, city, guild_id, changed_by, changed_at FROM gamedata.city_owners ORDER BY channel, city`)
 		owners, err := pgx.CollectRows(rows, scanCityOwner)
 		if err != nil {
 			return fmt.Errorf("city_owners: %w", err)

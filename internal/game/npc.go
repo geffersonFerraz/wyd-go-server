@@ -97,6 +97,12 @@ func (g *Game) minTimer() {
 		}
 	}
 	g.gateTimer()
+	g.weatherTimer()
+	g.zakumMinute()
+	if g.minCounter%5 == 0 {
+		g.saveChannelState()
+		g.reportOpenStores()
+	}
 }
 
 // npcFromTemplate resets mob id to a generator's leader/follower template.
@@ -121,6 +127,9 @@ func (g *Game) npcFromTemplate(id int, tmpl *wire.Mob) *Mob {
 // generateMob is GenerateMob(arg1, arg2, arg3).
 func (g *Game) generateMob(genID, atX, atY int) {
 	if genID <= 0 || genID >= len(g.data.Geners) {
+		return
+	}
+	if !g.kingdomCanSpawn(genID) {
 		return
 	}
 	src := genID
@@ -178,6 +187,8 @@ func (g *Game) generateMob(genID, atX, atY int) {
 	}
 	g.placeNPC(leader, x, y)
 	g.genCount[src] = max(g.genCount[src], 0) + 1
+	g.kingdomSpawned(genID, leader)
+	g.bossSpawned(genID, leader)
 	// TODO(phase C): Leader.bStatus.maxMP is an affect applied on spawn.
 
 	if !gen.HasFollower {

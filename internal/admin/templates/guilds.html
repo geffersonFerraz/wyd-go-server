@@ -23,10 +23,16 @@
     {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
     <section class="card">
       <h2>Cidades</h2>
-      <p class="muted small">Guilda dona de cada cidade, em todos os canais. Informe o id ou o nome exato da guilda; 0 ou vazio = sem dono.</p>
+      <p class="muted small">Cada canal tem os seus donos. Informe o id ou o nome exato da guilda; 0 ou vazio = sem dono.</p>
+      <form method="get" action="/guilds" class="city-form">
+        <label>Canal
+          <select name="channel" data-autosubmit>{{range .ChannelList}}<option value="{{.}}"{{if eq . $.Channel}} selected{{end}}>Canal {{.}}</option>{{end}}</select></label>
+        <button>Trocar</button>
+      </form>
       {{range .Cities}}
       <form method="post" action="/cities/{{.ID}}" autocomplete="off" class="city-form">
         <input type="hidden" name="csrf" value="{{$.CSRF}}">
+        <input type="hidden" name="channel" value="{{$.Channel}}">
         <label>{{.Name}}
           <input name="guild" value="{{if .Set}}{{.GuildID}}{{end}}" placeholder="{{if .Set}}sem dono{{else}}definido no guild_zone.txt{{end}}" list="guild-names">
           <small>{{if .Set}}{{if .GuildID}}{{.GuildName}} (#{{.GuildID}}){{else}}sem dono{{end}} · por {{.ChangedBy}} em {{.ChangedAt}}{{else}}ainda não definido no painel (vale o guild_zone.txt){{end}}</small></label>
@@ -36,9 +42,10 @@
       <datalist id="guild-names">{{range .Guilds}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</datalist>
       <form method="post" action="/cities/reset">
         <input type="hidden" name="csrf" value="{{$.CSRF}}">
-        <button class="link danger" data-confirm="Deixar todas as cidades sem dono?">Resetar todas as cidades</button>
+        <input type="hidden" name="channel" value="{{$.Channel}}">
+        <button class="link danger" data-confirm="Deixar todas as cidades deste canal sem dono?">Resetar todas as cidades</button>
       </form>
-      <p class="muted small">Os donos de cidade ficam só no banco e são geridos só por aqui (os comandos de GM +guildowner e +resetcities foram retirados).</p>
+      <p class="muted small">Os donos ficam no banco, um conjunto por canal. As guerras gravam o resultado aqui.</p>
     </section>
     <section class="card">
       {{with .Picked}}

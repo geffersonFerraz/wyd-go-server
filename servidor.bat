@@ -54,13 +54,14 @@ if /i "%CMD%"=="build"       goto :build_only
 if /i "%CMD%"=="start"       goto :start
 if /i "%CMD%"=="stop"        goto :stop
 if /i "%CMD%"=="restart"     ( call :stop_all & goto :start )
+if /i "%CMD%"=="atualizar"   ( call :stop_all & goto :start )
 if /i "%CMD%"=="db"          ( call :database & goto :eof )
 if /i "%CMD%"=="dbsrv"       goto :one
 if /i "%CMD%"=="tmsrv"       goto :one
 if /i "%CMD%"=="admin"       goto :one
 if /i "%CMD%"=="senha-admin" goto :admin_password
 echo Comando desconhecido: %CMD%
-echo Use: servidor [start^|build^|stop^|restart^|dbsrv^|tmsrv^|admin^|db^|senha-admin]
+echo Use: servidor [start^|build^|stop^|restart^|atualizar^|dbsrv^|tmsrv^|admin^|db^|senha-admin]
 exit /b 1
 
 rem --------------------------------------------------------------------------

@@ -25,6 +25,15 @@ type MobDrop struct {
 	Gold     int        `yaml:"gold"`
 	Items    []DropItem `yaml:"items"`
 	Section  string     `yaml:"-"` // "////X////" heading in Controle.txt
+	RateGold int64      `yaml:"-"` // gold drawn by chance
+	Rate     []RateItem `yaml:"-"` // drops by chance
+}
+
+// RateItem is a drop by chance, in one slot of the monster's list.
+type RateItem struct {
+	Slot   int
+	Item   wire.Item
+	Chance int // 1 in Chance; 0 = the slot's base and rate
 }
 
 // DropItem: every Kills kills of the monster give Item (with one effect).
@@ -344,4 +353,168 @@ func agroupItem(src, dst *wire.Item) bool {
 		}
 	}
 	return true
+}
+
+const efDropBonus = 202 // EF_DROPBONUS
+
+// mobDrops is the panel's entry of a monster (nil when it has none).
+func (g *Game) mobDrops(mob *wire.Mob) *MobDrop {
+	var name [16]byte
+	copy(name[:], mob.Name[:])
+	for i := range name {
+		if name[i] == '_' || name[i] == '@' {
+			name[i] = ' '
+		}
+	}
+	return g.data.Drops[wire.CString(name[:])]
+}
+
+// chanceDivisor is the "1 in N" of a drop by chance.
+func (g *Game) chanceDivisor(u *User, mobLevel int, r *RateItem) int {
+	slot := &g.data.DropSlots[r.Slot]
+	rate := r.Chance
+	if rate == 0 {
+		if slot.Base == 0 {
+			return 0 // the slot is off
+		}
+		rate = slot.Base
+		tax := slot.Rate
+		if g.dropAll != 0 { // +drop
+			tax = g.dropAll
+		}
+		if tax != 100 && tax != 0 {
+			rate = rate * (10000 / tax) / 100
+		}
+	}
+	for _, e := range r.Item.Effect {
+		if int(e.Index) == efDropBonus {
+			if v := int(e.Value); v > 0 && v < 100 {
+				rate -= rate * v / 100
+			}
+			break
+		}
+	}
+	m := &g.mobs[u.id]
+	switch m.info.Player.Equip[13].Index {
+	case 3901, 3904, 3905, 3907, 3908, 3914:
+		rate -= rate * 32 / 100
+	case 3915:
+		rate -= rate * 40 / 100
+	case 3902:
+		rate -= rate * 16 / 100
+	}
+	if b := int(m.combat.dropBonus); b > 0 && b < 100 {
+		rate -= rate * b / 100
+	}
+	rate = max(rate, 1)
+	if r.Chance == 0 {
+		rate = levelDropScale(r.Slot, mobLevel, rate)
+		if r.Slot >= 8 && r.Slot <= 10 {
+			rate = 4
+		}
+	}
+	return min(rate, 32000)
+}
+
+// levelDropScale makes low-level monsters and the last slots more generous.
+func levelDropScale(slot, mobLevel, rate int) int {
+	switch {
+	case slot >= 60:
+		for _, s := range []struct{ below, pct int }{{170, 90}, {200, 60}, {230, 50}, {255, 43}, {1 << 30, 38}} {
+			if mobLevel < s.below {
+				return rate * s.pct / 100
+			}
+		}
+	case slot>>3 <= 2:
+		for _, s := range []struct{ below, tenths int }{{10, 3}, {20, 4}, {30, 5}, {40, 6}, {50, 7}, {60, 8}} {
+			if mobLevel < s.below {
+				return rate * s.tenths / 10
+			}
+		}
+	}
+	return rate
+}
+
+// rateDrop is the inventory drop of MobKilled, read from the panel's chance
+// list. Slots 8, 9 and 10 are a group: a hit on one skips the rest, and
+// slot 11 comes if none hit (unless it has its own chance).
+func (g *Game) rateDrop(u *User, dead *Mob) {
+	drop := g.mobDrops(&dead.info.Player)
+	if drop == nil {
+		return
+	}
+	level := int(dead.info.Player.Status.Level)
+	skipUntil := -1
+	for i := range drop.Rate {
+		r := &drop.Rate[i]
+		if r.Slot <= skipUntil {
+			continue
+		}
+		it := r.Item
+		if g.data.BlockedDrops[int(it.Index)] {
+			continue
+		}
+		if ((it.Index >= 674 && it.Index <= 677) || it.Index == 770) && !g.kefra.dead {
+			continue
+		}
+		d := g.chanceDivisor(u, level, r)
+		if d <= 0 {
+			continue
+		}
+		roll := rnd() % d
+		if roll != 0 && (r.Slot != 11 || r.Chance != 0) {
+			continue
+		}
+		if g.data.Item(it.Index).Level > 140 && roll&1 == 1 {
+			continue
+		}
+		m := &g.mobs[u.id]
+		if m.info.FilterDrop.IsEnabled && !g.filterAllows(u, &it) {
+			continue
+		}
+		g.setItemBonusLevel(&it, level, 0, int(m.combat.dropBonus))
+		if firstEmptySlot(&m.info.Player) == -1 {
+			g.clientMessage(u, "Seu inventário está cheio")
+		} else {
+			g.putItem(u, &it)
+		}
+		if r.Slot >= 8 && r.Slot <= 10 {
+			skipUntil = 11
+		}
+	}
+}
+
+// mobGoldDrop is the gold of MobKilled, from the panel's chance gold.
+func (g *Game) mobGoldDrop(u *User, dead *Mob) {
+	pl := &g.mobs[u.id].info.Player
+	gold := int64(0)
+	if drop := g.mobDrops(&dead.info.Player); drop != nil {
+		gold = drop.RateGold
+	}
+	mobLevel := int(dead.info.Player.Status.Level)
+	if mobLevel >= 250 && gold == 0 {
+		gold = min(int64(500+(mobLevel-250)*5), 1500)
+	}
+	rate := 6
+	if ev := evolution(pl); ev == evoMortal || ev == evoArch {
+		switch level := int(pl.BStatus.Level); {
+		case level < 100:
+			rate = 2
+		case level < 200:
+			rate = 3
+		case level < 300:
+			rate = 5
+		}
+	}
+	t := g.mobs[u.id].target
+	if (t.X >= 3600 && t.X <= 3700 && t.Y >= 3600 && t.Y <= 3700) || (t.X >= 3732 && t.X <= 3816 && t.Y >= 3476 && t.Y <= 3562) {
+		rate = 3
+	}
+	if gold == 0 || rnd()%rate != 0 {
+		return
+	}
+	aux := max(gold>>1, 1)
+	gold = min(gold+aux+int64(rnd())%aux, 200000)
+	pl.Gold = min(pl.Gold+gold, g.cfg.Limits.MaxGold)
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 }

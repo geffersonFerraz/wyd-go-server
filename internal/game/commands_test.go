@@ -55,7 +55,7 @@ func TestNoCommandLeftUnported(t *testing.T) {
 	g := worldGame(t)
 	u := placePlayer(g, 2100, 2100, 0)
 	listen(u)
-	for _, cmd := range []string{"daily", "roleta", "summonguild", "spk", "gritar", "passe", "gm", "sgm",
+	for _, cmd := range []string{"daily", "roleta", "summonguild", "spk", "gritar", "passe", "gm",
 		"attpass", "attrank", "novato", "honra", "quest", "evoc", "sagua", "sarmia", "sgelo", "serion",
 		"sazran", "skefra", "spilar", "passgrupo", "atvgrupo", "atvevoc", "atvfll", "definirsenha",
 		"entrar", "transferirgrupo", "tab", "nig", "snd", "countwater", "lgetin", "mgetin", "group",
@@ -76,38 +76,56 @@ func TestNoCommandLeftUnported(t *testing.T) {
 	}
 }
 
-func TestAdminNeedsAccess(t *testing.T) {
+// /gm is a message to the staff: it never runs a command.
+func TestGMIsAMessage(t *testing.T) {
+	g := worldGame(t)
+	u := placePlayer(g, 2100, 2100, 100)
+	listen(u)
+	u.accessLevel = 1
+	pl := &g.mobs[1].info.Player
+	command(g, u, "gm", "+coin 5")
+	if pl.Gold != 100 {
+		t.Fatal("/gm ran a command")
+	}
+	if m := texts(u); len(m) != 1 || !strings.Contains(m[0], "enviada") {
+		t.Fatalf("answer: %v", m)
+	}
+	u.out = nil
+	command(g, u, "gm", "de novo")
+	if m := texts(u); len(m) != 1 || !strings.Contains(m[0], "Aguarde") {
+		t.Fatalf("no cooldown: %v", m)
+	}
+}
+
+func TestPanelCommands(t *testing.T) {
 	g := worldGame(t)
 	u := placePlayer(g, 2100, 2100, 100)
 	listen(u)
 	pl := &g.mobs[1].info.Player
-	for _, cmd := range []string{"gm", "sgm"} {
-		command(g, u, cmd, "+coin 5")
-		if pl.Gold != 100 {
-			t.Fatalf("/%s ran for a normal player", cmd)
-		}
+	if out := g.adminCommand(u, "+coin 5"); pl.Gold != 5 || len(out) != 1 {
+		t.Fatalf("+coin: gold %d, %v", pl.Gold, out)
 	}
-	u.accessLevel = 1
-	command(g, u, "sgm", "+coin 5")
-	if pl.Gold != 5 {
-		t.Fatalf("admin +coin: gold %d", pl.Gold)
-	}
-	command(g, u, "gm", "+exp 12345")
-	if pl.Exp != 12345 {
+	if g.adminCommand(u, "+exp 12345"); pl.Exp != 12345 {
 		t.Fatalf("+exp with an argument: %d", pl.Exp)
 	}
-	command(g, u, "gm", "+item 412 0 0 0 0 0 0")
-	if firstSlotOf(pl, 412) < 0 {
+	if g.adminCommand(u, "+item 412 0 0 0 0 0 0"); firstSlotOf(pl, 412) < 0 {
 		t.Fatal("+item gave nothing")
 	}
-	command(g, u, "gm", "+learn 33")
-	if pl.Learn[1]&2 == 0 {
+	if g.adminCommand(u, "+learn 33"); pl.Learn[1]&2 == 0 {
 		t.Fatal("+learn 33 did not set Learn[1] bit 1")
 	}
-	u.out = nil
-	command(g, u, "gm", "+weather 1")
-	if m := texts(u); len(m) == 0 || !strings.Contains(m[0], "suportado") {
-		t.Fatalf("unsupported command answer: %v", m)
+	if out := g.adminCommand(u, "+name Novo"); len(out) == 0 || !strings.Contains(out[0], "suportado") {
+		t.Fatalf("unsupported command answer: %v", out)
+	}
+	if out := g.adminCommand(g.users[0], "+coin 5"); len(out) != 1 || !strings.Contains(out[0], "personagem") {
+		t.Fatalf("no target: %v", out)
+	}
+	g.war.weekMode = weekCollect
+	if g.adminCommand(g.users[0], "+weekmode 2"); g.war.weekMode != weekWarning || g.war.forceWeek != weekTeleported {
+		t.Fatalf("+weekmode: %d %d", g.war.weekMode, g.war.forceWeek)
+	}
+	if g.adminCommand(g.users[0], "+drop 800"); g.dropAll != 800 {
+		t.Fatalf("+drop: %d", g.dropAll)
 	}
 }
 

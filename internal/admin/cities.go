@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -27,7 +28,25 @@ type cityRow struct {
 	ChangedAt string
 }
 
-func (s *Server) cityRows(r *http.Request, guilds []store.Guild) ([]cityRow, error) {
+// channels are the channels the panel offers.
+func (s *Server) channels() []int {
+	if len(s.cfg.Channels) == 0 {
+		return []int{1}
+	}
+	return s.cfg.Channels
+}
+
+// pickChannel reads ?channel= or the form's channel (default: the first).
+func (s *Server) pickChannel(r *http.Request) int {
+	list := s.channels()
+	v, _ := strconv.Atoi(r.FormValue("channel"))
+	if slices.Contains(list, v) {
+		return v
+	}
+	return list[0]
+}
+
+func (s *Server) cityRows(r *http.Request, guilds []store.Guild, channel int) ([]cityRow, error) {
 	owners, err := s.st.CityOwners(r.Context())
 	if err != nil {
 		return nil, err
@@ -41,7 +60,7 @@ func (s *Server) cityRows(r *http.Request, guilds []store.Guild) ([]cityRow, err
 		rows[i] = cityRow{ID: i, Name: cityNames[i]}
 	}
 	for _, o := range owners {
-		if o.City < 0 || o.City >= store.MaxCity {
+		if o.Channel != channel || o.City < 0 || o.City >= store.MaxCity {
 			continue
 		}
 		c := &rows[o.City]
@@ -75,17 +94,18 @@ func SeedCityOwners(ctx context.Context, st *store.Store, guildZone string) (int
 	return st.SeedCityOwners(ctx, owners, "guild_zone.txt")
 }
 
-// resetCities is POST /cities/reset: every city without owner.
+// resetCities is POST /cities/reset: every city of a channel without owner.
 func (s *Server) resetCities(w http.ResponseWriter, r *http.Request) {
 	by := sessionOf(r).user
+	channel := s.pickChannel(r)
 	for c := range store.MaxCity {
-		if err := s.st.SetCityOwner(r.Context(), c, 0, by); err != nil {
+		if err := s.st.SetCityOwner(r.Context(), channel, c, 0, by); err != nil {
 			s.fail(w, err)
 			return
 		}
 	}
-	s.log.Info("cities reset", "admin", by)
-	s.renderGuilds(w, r, http.StatusOK, "Todas as cidades ficaram sem dono. Vale em todos os canais em até alguns segundos.", "")
+	s.log.Info("cities reset", "admin", by, "channel", channel)
+	s.renderGuilds(w, r, http.StatusOK, "Todas as cidades do canal "+strconv.Itoa(channel)+" ficaram sem dono. Vale em até alguns segundos.", "")
 }
 
 // setCityOwner is POST /cities/{city} with guild (id or exact name; 0 or
@@ -123,11 +143,12 @@ func (s *Server) setCityOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	by := sessionOf(r).user
-	if err := s.st.SetCityOwner(r.Context(), city, guildID, by); err != nil {
+	channel := s.pickChannel(r)
+	if err := s.st.SetCityOwner(r.Context(), channel, city, guildID, by); err != nil {
 		s.fail(w, err)
 		return
 	}
-	s.log.Info("city owner set", "admin", by, "city", cityNames[city], "guild", guildID)
+	s.log.Info("city owner set", "admin", by, "channel", channel, "city", cityNames[city], "guild", guildID)
 	msg := cityNames[city] + " agora não tem dono."
 	if guildID != 0 {
 		for _, g := range guilds {
@@ -136,5 +157,5 @@ func (s *Server) setCityOwner(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	s.renderGuilds(w, r, http.StatusOK, msg+" Vale em todos os canais em até alguns segundos.", "")
+	s.renderGuilds(w, r, http.StatusOK, "Canal "+strconv.Itoa(channel)+": "+msg+" Vale em até alguns segundos.", "")
 }

@@ -57,7 +57,7 @@ func inDropRegion(cells []dropCell, m *Mob) bool {
 
 // dropListAdd appends a monster unless the window is full or already has
 // that name. merchants never appear.
-func dropListAdd(p *wire.DropList, limit int, mob *wire.Mob, x, y uint16, all bool) {
+func (g *Game) dropListAdd(p *wire.DropList, limit int, mob *wire.Mob, x, y uint16, all bool) {
 	if mob.Status.Merchant&0x0F != 0 || int(p.Amount) >= limit {
 		return
 	}
@@ -70,10 +70,13 @@ func dropListAdd(p *wire.DropList, limit int, mob *wire.Mob, x, y uint16, all bo
 	d := &p.Drop[p.Amount]
 	copy(d.Name[:], mob.Name[:])
 	d.X, d.Y = int16(x), int16(y)
-	d.Exp, d.Gold = int64(mob.Exp), mob.Gold
-	for i := range d.Carry {
-		if it := mob.Inventory[i]; all || it.Index > 40 {
-			d.Carry[i] = it
+	d.Exp = int64(mob.Exp)
+	if drop := g.mobDrops(mob); drop != nil { // the panel's chance list
+		d.Gold = drop.RateGold
+		for _, r := range drop.Rate {
+			if r.Slot < len(d.Carry) && (all || r.Item.Index > 40) {
+				d.Carry[r.Slot] = r.Item
+			}
 		}
 	}
 	p.Amount++
@@ -98,13 +101,13 @@ func (g *Game) requestDropList(u *User, pkt protocol.Packet) {
 		for id := MaxPlayer; id < MaxMob; id++ {
 			m := &g.mobs[id]
 			if dropListMobAlive(m) && !dropListHidden[wire.CString(m.info.Player.Name[:])] && inDropRegion(cells, m) {
-				dropListAdd(&p, maxDropListMobs, &m.info.Player, m.target.X, m.target.Y, false)
+				g.dropListAdd(&p, maxDropListMobs, &m.info.Player, m.target.X, m.target.Y, false)
 			}
 		}
 	}
 	if region == dropRegionDuelist {
 		for i := dropDuelistFirst; i < dropDuelistFirst+dropDuelistCount && i < len(g.data.Geners); i++ {
-			dropListAdd(&p, maxDropListMobs, &g.data.Geners[i].Leader, 0, 0, false)
+			g.dropListAdd(&p, maxDropListMobs, &g.data.Geners[i].Leader, 0, 0, false)
 		}
 	}
 	g.queue(u, &p)
@@ -127,7 +130,7 @@ func (g *Game) requestDropSearch(u *User, pkt protocol.Packet) {
 	for id := MaxPlayer; id < MaxMob && int(p.Amount) < maxDropSearchMobs; id++ {
 		m := &g.mobs[id]
 		if dropListMobAlive(m) && g.carriesItemNamed(&m.info.Player, text) {
-			dropListAdd(&p, maxDropSearchMobs, &m.info.Player, m.target.X, m.target.Y, true)
+			g.dropListAdd(&p, maxDropSearchMobs, &m.info.Player, m.target.X, m.target.Y, true)
 		}
 	}
 	g.queue(u, &p)

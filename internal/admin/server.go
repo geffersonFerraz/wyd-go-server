@@ -55,6 +55,8 @@ type Config struct {
 	// LockDir is TMSRV's Cache/LockAccount, where the in-game account locks
 	// live ("" hides the lock tools).
 	LockDir string
+	// Channels are the channel numbers of tmsrv.yaml (none = just channel 1).
+	Channels []int
 }
 
 type adminSession struct {
@@ -122,11 +124,11 @@ func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
 		}
 		return "especial"
 	}
-	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts", "notice"} {
+	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts", "notice", "gm", "messages", "stores", "droprates"} {
 		files := []string{"templates/layout.html", "templates/" + page + ".html"}
 		if page == "character" || page == "storage" {
 			files = append(files, "templates/editparts.html")
-		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" && page != "notice" {
+		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" && page != "notice" && page != "gm" && page != "messages" && page != "stores" {
 			files = append(files, "templates/gamedata_common.html")
 		}
 		t, err := template.New("layout.html").Funcs(funcs).ParseFS(assets, files...)
@@ -161,6 +163,7 @@ func (s *Server) Handler() http.Handler {
 	s.editRoutes(mux)
 	s.guildRoutes(mux)
 	s.alertRoutes(mux)
+	s.gmRoutes(mux)
 	s.accountRoutes(mux)
 	s.noticeRoutes(mux)
 	return securityHeaders(mux)
@@ -561,8 +564,14 @@ func (s *Server) page(w http.ResponseWriter, r *http.Request, code int, name str
 	data["Admin"] = sess.user
 	data["CSRF"] = sess.csrf
 	data["DBSRVWarning"] = s.dbsrvProblem(r.Context())
+	if online, age, err := s.st.ChannelStatus(r.Context()); err == nil && age >= 0 && age <= heartbeatMaxAge {
+		data["Channels"] = channelRows(online)
+	}
 	if n, err := s.st.UnseenAlerts(r.Context()); err == nil {
 		data["UnseenAlerts"] = n
+	}
+	if n, err := s.st.UnseenGMMessages(r.Context()); err == nil {
+		data["UnseenGM"] = n
 	}
 	s.renderStatus(w, code, name, data)
 }
@@ -661,6 +670,8 @@ func resultLabel(d store.DeliveryInfo) (string, string) {
 		return "Enviado ao jogo", "ok"
 	case d.Kind == "notice" && strings.HasPrefix(r, "sent_online: "):
 		return "Enviado a " + strings.TrimPrefix(r, "sent_online: ") + " canal(is)", "ok"
+	case r == "not_online" && d.Kind == "gm_command":
+		return "Canal desligado", "bad"
 	case r == "not_online" && d.Kind == "notice":
 		return "Nenhum canal aberto", "bad"
 	case r == "not_online":
@@ -679,4 +690,19 @@ func resultLabel(d store.DeliveryInfo) (string, string) {
 		return "Inválido: " + strings.TrimPrefix(strings.TrimPrefix(r, "invalid"), ": "), "bad"
 	}
 	return r, "bad"
+}
+
+// channelRow is one channel in the panel's status line.
+type channelRow struct {
+	Number, Online int
+	Up             bool
+}
+
+// channelRows lists the channels DBSRV reported; -1 means its TMSRV is off.
+func channelRows(online []int) []channelRow {
+	var rows []channelRow
+	for i, n := range online {
+		rows = append(rows, channelRow{Number: i + 1, Online: max(n, 0), Up: n >= 0})
+	}
+	return rows
 }

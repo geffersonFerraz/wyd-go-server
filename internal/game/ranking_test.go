@@ -162,6 +162,8 @@ func TestDropListRegionAndSearch(t *testing.T) {
 		m.info.Player.Inventory[3] = wire.Item{Index: item}
 		m.info.Player.Inventory[4] = wire.Item{Index: 10} // a face: hidden in the region list
 	}
+	g.data.Drops = map[string]*MobDrop{"Lobo": {Name: "Lobo", Rate: []RateItem{
+		{Slot: 3, Item: wire.Item{Index: 412}}, {Slot: 4, Item: wire.Item{Index: 10}}}}} // a face: hidden in the region list
 	add(1000, "Lobo", 16*128+5, 16*128+5, 412)
 	add(1001, "Lobo", 17*128, 16*128, 412)  // same name: listed once
 	add(1002, "Guard", 17*128, 16*128, 412) // hidden
