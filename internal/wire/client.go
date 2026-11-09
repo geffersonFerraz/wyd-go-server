@@ -127,59 +127,63 @@ type RepurchaseItem struct {
 	SellPrice int32
 }
 
-// AttackTarget is st_Target.
+// AttackTarget is st_Target (16 bytes).
 type AttackTarget struct {
 	Index  int32
-	Damage int32 // client: -2 physical, -1 skill; server: damage dealt
+	_      [4]byte
+	Damage int64 // client: -2 physical, -1 skill; server: damage dealt
 }
 
-// Attack mirrors p367 (168 bytes, 13 targets). p39D is the same header with
-// one target (72 bytes); 0x39E may carry two (76 bytes).
+// Attack mirrors p367 (288 bytes, 13 targets). p39D is the same header with
+// one target (96 bytes); 0x39E carries two (112 bytes).
 type Attack struct {
 	Header         Header
-	Hold           int32 // 12
-	ReqMP          int32
-	Unk            int32
-	CurrentExp     int64    // 24
-	Unknow         int16    // 32
-	AttackerPos    Position // 34
-	TargetPos      Position // 38
-	AttackerID     int16    // 42
-	AttackCount    int16    // 44
-	Motion         uint8    // 46
+	_              [4]byte
+	Hold           int64    // 16
+	ReqMP          int64    // 24
+	CurrentExp     int64    // 32
+	Unknow         int16    // 40
+	AttackerPos    Position // 42
+	TargetPos      Position // 46
+	AttackerID     int16    // 50
+	AttackCount    int16    // 52
+	Motion         uint8    // 54
 	SkillParm      uint8
-	DoubleCritical uint8 // 48
+	DoubleCritical uint8 // 56
 	FlagLocal      uint8
 	Rsv            int16
-	CurrentMP      int32 // 52
-	SkillID        int16 // 56
-	ReqMp          int16
-	Target         [13]AttackTarget // 60
 	_              [4]byte
+	CurrentMP      int64 // 64
+	SkillID        int16 // 72
+	ReqMp          int16
+	_              [4]byte
+	Target         [13]AttackTarget // 80
 }
 
-// Killed mirrors p338 (32 bytes): a mob died.
+// Killed mirrors p338 (40 bytes): a mob died.
 type Killed struct {
 	Header Header
-	Hold   int32
-	Killed int16
+	_      [4]byte
+	Hold   int64 // 16
+	Killed int16 // 24
 	Killer int16
 	Unknow int32
-	Exp    int64
+	Exp    int64 // 32
 }
 
-// SetHpMp mirrors p181 (28 bytes).
+// SetHpMp mirrors p181 (48 bytes).
 type SetHpMp struct {
 	Header                     Header
-	CurHP, CurMP, MaxHP, MaxMP int32
+	_                          [4]byte
+	CurHP, CurMP, MaxHP, MaxMP int64 // 16
 }
 
-// HpChange mirrors p18A (20 bytes).
+// HpChange mirrors p18A (32 bytes).
 type HpChange struct {
 	Header  Header
-	CurHP   int32
-	Incress int16
-	_       [2]byte
+	_       [4]byte
+	CurHP   int64 // 16
+	Incress int64 // 24
 }
 
 // PartyInvite mirrors p37F (44 bytes).
@@ -205,7 +209,8 @@ type PartyAccept struct {
 	_        [2]byte // sizeof(p3AB) = 32
 }
 
-// PartyMember mirrors p37D (40 bytes): a line of the party window.
+// PartyMember mirrors p37D (40 bytes): a line of the party window. HP is a
+// percentage.
 type PartyMember struct {
 	Header   Header
 	LeaderID uint16 // 0 = this line is the leader
@@ -283,29 +288,33 @@ type AffectList struct {
 	Affect [32]Affect
 }
 
-// Trade mirrors p383 (156 bytes).
+// Trade mirrors p383 (168 bytes).
 type Trade struct {
 	Header   Header
 	Item     [15]Item // 12
 	Slot     [15]int8 // 132: inventory slot of each item, -1 = none
 	Unknow   uint8
-	Gold     int32 // 148
-	Confirm  uint8 // 152 (bool)
+	_        [4]byte
+	Gold     int64 // 152
+	Confirm  uint8 // 160 (bool)
 	_        [1]byte
-	ClientID uint16 // 154: the other player
+	ClientID uint16 // 162: the other player
+	_        [4]byte
 }
 
-// Carry mirrors p185 (528 bytes).
+// Carry mirrors p185 (536 bytes).
 type Carry struct {
 	Header Header
 	Item   [64]Item
-	Gold   int32
+	_      [4]byte
+	Gold   int64 // 528
 }
 
-// CargoCoin mirrors p339 (16 bytes): storage gold.
+// CargoCoin mirrors p339 (24 bytes): storage gold.
 type CargoCoin struct {
 	Header Header
-	Gold   uint32
+	_      [4]byte
+	Gold   int64 // 16
 }
 
 // Message128 mirrors TMSRV's p101 (140 bytes): a system message.
@@ -373,7 +382,7 @@ type Equipment struct {
 	AnctCode [20]byte
 }
 
-// CreateMob mirrors p364 (248 bytes): a mob or player appears.
+// CreateMob mirrors p364 (280 bytes): a mob or player appears.
 // Players use Name[12] followed by kill counters; mobs (index >= 1000)
 // use the same 16 bytes as Name[16] (p364_Mob).
 type CreateMob struct {
@@ -392,11 +401,11 @@ type CreateMob struct {
 	_               [1]byte
 	Unknow          uint16   // 142
 	Status          Status   // 144
-	SpawnType       uint16   // 192
-	AnctCode        [20]byte // 194
-	Tab             [26]byte // 214
-	Unknow02        [4]byte  // 240
-	Life            int32    // 244
+	SpawnType       uint16   // 224
+	AnctCode        [20]byte // 226
+	Tab             [26]byte // 246
+	Unknow02        [4]byte  // 272
+	Life            int32    // 276
 }
 
 // AffectBrief is the 2-byte affect entry in p364 (time first).
@@ -405,35 +414,36 @@ type AffectBrief struct {
 	Index uint8
 }
 
-// UpdateScore mirrors MSG_UpdateScore (152 bytes), sent as 0x336.
+// UpdateScore mirrors MSG_UpdateScore (200 bytes), sent as 0x336.
 type UpdateScore struct {
 	Header       Header
-	Score        Status     // 12
-	Critical     int8       // 60
-	SaveMana     int8       // 61
-	Affect       [32]uint16 // 62: index<<8 | time
-	Guild        uint16     // 126
-	GuildLevel   uint16     // 128
-	Resist       [4]int8    // 130
-	_            [2]byte
-	ReqHP        int32  // 136
-	ReqMP        int32  // 140
-	Magician     uint16 // 144
-	Rsv          uint16 // 146
-	LearnedSkill int8   // 148
+	_            [4]byte
+	Score        Status     // 16
+	Critical     int8       // 96
+	SaveMana     int8       // 97
+	Affect       [32]uint16 // 98: index<<8 | time
+	Guild        uint16     // 162
+	GuildLevel   uint16     // 164
+	Resist       [4]int8    // 166
+	_            [6]byte
+	ReqHP        int64  // 176
+	ReqMP        int64  // 184
+	Magician     uint16 // 192
+	Rsv          uint16 // 194
+	LearnedSkill int8   // 196
 	_            [3]byte
 }
 
-// Etc mirrors p337 (48 bytes), sent as 0x337: gold, exp and points.
+// Etc mirrors p337 (56 bytes), sent as 0x337: gold, exp and points.
 type Etc struct {
 	Header       Header
-	Hold         int32     // 12
-	Exp          int64     // 16
-	LearnedSkill [2]uint32 // 24
-	ScoreBonus   int16     // 32
+	_            [4]byte
+	Hold         int64     // 16
+	Exp          int64     // 24
+	LearnedSkill [2]uint32 // 32
+	ScoreBonus   int16     // 40
 	SpecialBonus int16
 	SkillBonus   int16
 	_            [2]byte
-	Coin         int32 // 40
-	_            [4]byte
+	Coin         int64 // 48
 }

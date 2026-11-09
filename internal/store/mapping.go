@@ -206,7 +206,7 @@ func mergeAccount(id int64, row accountRow, chars []charRow, items []itemRow, lo
 	wire.PutGameString(a.PassBlock[:], row.PassBlock)
 	a.AccessLevel = uint32(row.AccessLevel)
 	a.Cash, a.Honra, a.Novato = uint32(row.Cash), uint32(row.Honra), uint32(row.Novato)
-	a.StorageCoin = uint32(row.StorageGold)
+	a.StorageCoin = row.StorageGold
 	a.BanType = uint32(row.BanType)
 	a.Ban = timeToDate(row.BanUntil, loc)
 	a.AlreadyReset = row.AlreadyReset
@@ -224,7 +224,7 @@ func mergeAccount(id int64, row accountRow, chars []charRow, items []itemRow, lo
 		p.ClassInfo = uint8(cr.ClassInfo)
 		p.BStatus.Level = int16(cr.Level)
 		p.Exp = cr.Exp
-		p.Gold = int32(cr.Gold)
+		p.Gold = cr.Gold
 		p.GuildIndex = uint16(cr.GuildIndex)
 		p.GuildMemberType = int8(cr.GuildMemberType)
 		c.Fame = uint32(cr.Fame)

@@ -158,10 +158,10 @@ func (g *Game) chatAll(color uint32, msg string) {
 	}
 }
 
-func (g *Game) payGold(u *User, amount int32) {
+func (g *Game) payGold(u *User, amount int64) {
 	pl := &g.mobs[u.id].info.Player
 	pl.Gold -= amount
-	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 }
 
 // compounderDeal is GetCompounderDeal: an Escritura de Composição (4529)
@@ -1334,11 +1334,11 @@ func (g *Game) requestTiny(u *User, pkt protocol.Packet) {
 
 type alchemyRecipe struct {
 	need   [7]struct{ id, sanc, amount int }
-	gold   int32
+	gold   int64
 	result uint16
 }
 
-func recipe(gold int32, result uint16, need ...[3]int) alchemyRecipe {
+func recipe(gold int64, result uint16, need ...[3]int) alchemyRecipe {
 	r := alchemyRecipe{gold: gold, result: result}
 	for i, n := range need {
 		r.need[i].id, r.need[i].sanc, r.need[i].amount = n[0], n[1], n[2]

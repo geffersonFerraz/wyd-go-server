@@ -43,15 +43,15 @@ func (g *Game) requestTeleport(u *User) {
 			// TODO(phase E): one account per computer inside the valley.
 		}
 		if t.Price != 0 {
-			if pl.Gold < t.Price {
+			if pl.Gold < int64(t.Price) {
 				g.clientMessage(u, "%s", g.lang(nnNotEnoughGoldTeleport))
 				return
 			}
 			if city := g.data.village(t.DestX, t.DestY); city != 5 {
 				g.data.Cities[city].Impost += int64(t.Price)
 			}
-			pl.Gold -= t.Price
-			g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+			pl.Gold -= int64(t.Price)
+			g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 		}
 		switch i {
 		case 14:

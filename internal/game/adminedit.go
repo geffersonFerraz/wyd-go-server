@@ -67,10 +67,10 @@ func (g *Game) adminEdit(u *User, pkt protocol.Packet) {
 	}
 	switch e.Op {
 	case acctedit.OpGold:
-		pl.Gold = int32(e.Value)
-		g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+		pl.Gold = int64(e.Value)
+		g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	case acctedit.OpCoin:
-		u.account.StorageCoin = uint32(e.Value)
+		u.account.StorageCoin = int64(e.Value)
 		g.sendCargoCoin(u)
 	case acctedit.OpLevel:
 		level := int16(e.Value - 1)

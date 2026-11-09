@@ -88,7 +88,7 @@ func (d *Data) loadNPCBase(dir string) {
 			continue
 		}
 		if b, err := os.ReadFile(filepath.Join(dir, "npc_base", name)); err == nil {
-			_ = wire.Unmarshal(b, &d.NPCBase[i]) // zero-extends short files
+			_ = wire.UnmarshalLegacyMob(b, &d.NPCBase[i]) // zero-extends short files
 		}
 	}
 }
@@ -159,7 +159,7 @@ func (d *Data) loadGeners(dir string) error {
 			return wire.Mob{}, false
 		}
 		var m wire.Mob
-		if wire.Unmarshal(b, &m) != nil {
+		if wire.UnmarshalLegacyMob(b, &m) != nil {
 			mobCache[name] = nil
 			return wire.Mob{}, false
 		}

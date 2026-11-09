@@ -102,7 +102,7 @@ func (g *Game) handleMobDrop(u *User, name string) {
 	pl := &m.info.Player
 	if drop.Gold > 0 {
 		// The C++ added without a cap; keep the 2 billion limit.
-		pl.Gold = int32(min(int64(pl.Gold)+int64(drop.Gold), maxGold))
+		pl.Gold = min(pl.Gold+int64(drop.Gold), g.cfg.Limits.MaxGold)
 		g.sendEtc(u)
 		g.sendScore(u.id)
 	}

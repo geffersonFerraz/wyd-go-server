@@ -83,7 +83,7 @@ func ParseAccountXML(raw []byte) (*Account, error) {
 		p.charInfo(fmt.Sprintf("mob[%d]", idx), m, &a.Mob[idx])
 	}
 
-	a.StorageCoin = uint32(p.num("storage.gold", x.StorageGold))
+	a.StorageCoin = int64(p.num("storage.gold", x.StorageGold))
 	p.items("storage", x.StorageItems, a.StorageItems[:])
 
 	a.Insignias = uint64(p.num("insignia", x.Insignia))
@@ -226,14 +226,14 @@ func (p *parser) status(field string, x *xStatus) wire.Status {
 	}
 	return wire.Status{
 		Level:    int16(p.num(field+".level", x.Level)),
-		Defense:  int32(p.num(field+".defense", x.Defense)),
-		Attack:   int32(p.num(field+".attack", x.Attack)),
+		Defense:  p.num(field+".defense", x.Defense),
+		Attack:   p.num(field+".attack", x.Attack),
 		Merchant: uint8(p.num(field+".merchant", x.Merchant)),
 		Move:     uint8(p.num(field+".move", x.Move)),
-		MaxHP:    int32(p.num(field+".maxHp", x.MaxHP)),
-		MaxMP:    int32(p.num(field+".maxMp", x.MaxMP)),
-		CurHP:    int32(p.num(field+".curHp", x.CurHP)),
-		CurMP:    int32(p.num(field+".curMp", x.CurMP)),
+		MaxHP:    p.num(field+".maxHp", x.MaxHP),
+		MaxMP:    p.num(field+".maxMp", x.MaxMP),
+		CurHP:    p.num(field+".curHp", x.CurHP),
+		CurMP:    p.num(field+".curMp", x.CurMP),
 		STR:      uint16(p.num(field+".str", x.STR)),
 		INT:      uint16(p.num(field+".int", x.INT)),
 		DEX:      uint16(p.num(field+".des", x.DEX)),
@@ -260,7 +260,7 @@ func (p *parser) charInfo(f string, x *xCharInfo, c *wire.CharInfo) {
 	m.AffectInfo = uint8(p.num(f+".affectInfo", pl.AffectInfo))
 	m.QuestInfo = uint16(p.num(f+".questInfo", pl.QuestInfo))
 	m.Exp = p.num(f+".experience", pl.Experience)
-	m.Gold = int32(p.num(f+".gold", pl.Gold))
+	m.Gold = int64(p.num(f+".gold", pl.Gold))
 	m.Last = p.pos(f+".lastPosition", pl.LastPosition)
 	m.BStatus = p.status(f+".baseStatus", pl.BaseStatus)
 	m.Status = p.status(f+".currentStatus", pl.CurrentStatus)

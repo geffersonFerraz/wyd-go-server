@@ -258,14 +258,14 @@ func (g *Game) areaDamage(z [4]int) {
 			continue
 		}
 		cur := m.info.Player.Status.CurHP
-		hp := max(int32(float32(cur)*0.25), cur-2000, 1)
+		hp := max(int64(float64(cur)*0.25), cur-2000, 1)
 		diff := hp - cur
 		m.info.Player.Status.CurHP = hp
 		u.potionHP += diff
 		g.setReqHp(u)
 		g.setReqMp(u)
 		g.multicast2(int(m.target.X), int(m.target.Y), &wire.HpChange{
-			Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: hp, Incress: int16(diff)}, 0)
+			Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: hp, Incress: diff}, 0)
 	}
 }
 

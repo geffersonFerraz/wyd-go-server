@@ -221,7 +221,7 @@ func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 			g.log.Warn("illusion without the skill", "slot", u.id, "class", pl.ClassInfo)
 			return
 		}
-		mana := int32(g.data.Skills[73].Mana)
+		mana := int64(g.data.Skills[73].Mana)
 		if pl.Status.CurMP < mana {
 			g.sendSetHpMp(u)
 			return
@@ -535,7 +535,7 @@ func (g *Game) saveCharacter(u *User, op uint16, quit bool) wire.SaveCharacter {
 		CharSlot: uint32(u.charSlot),
 		Mob:      m.info,
 		Storage:  a.StorageItems,
-		Coin:     int32(a.StorageCoin),
+		Coin:     int64(a.StorageCoin),
 		Cash:     int32(a.Cash), Honra: int32(a.Honra), Novato: int32(a.Novato),
 		PassBlock:  a.PassBlock,
 		BanType:    a.BanType,

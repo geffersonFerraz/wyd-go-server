@@ -70,7 +70,7 @@ func dropListAdd(p *wire.DropList, limit int, mob *wire.Mob, x, y uint16, all bo
 	d := &p.Drop[p.Amount]
 	copy(d.Name[:], mob.Name[:])
 	d.X, d.Y = int16(x), int16(y)
-	d.Exp, d.Gold = int32(mob.Exp), mob.Gold
+	d.Exp, d.Gold = int64(mob.Exp), mob.Gold
 	for i := range d.Carry {
 		if it := mob.Inventory[i]; all || it.Index > 40 {
 			d.Carry[i] = it

@@ -12,9 +12,9 @@ import (
 // Skills (damage = -1), PvP, drops and mob AI come in the next slices.
 
 const (
-	attackSize1 = 72  // sizeof p39D
-	attackSize2 = 80  // sizeof p39D + sizeof st_Target
-	attackSize  = 168 // sizeof p367
+	attackSize1 = 96  // sizeof p39D
+	attackSize2 = 112 // sizeof p39D + sizeof st_Target
+	attackSize  = 288 // sizeof p367
 
 	magicTimestamp = 0x0E0A1ACA
 	modeBattle     = 5
@@ -128,9 +128,9 @@ func (g *Game) manaShield(tid, dam int) (left int, shielded, absorbed bool) {
 		if int(st.CurMP)-part < 300 {
 			return dam, true, false
 		}
-		st.CurMP -= int32(part)
+		st.CurMP -= int64(part)
 		if u := g.player(tid); u != nil {
-			u.potionMP = max(u.potionMP-int32(part), 0)
+			u.potionMP = max(u.potionMP-int64(part), 0)
 			g.setReqMp(u)
 		}
 		return dam - part, true, true
@@ -307,7 +307,7 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 				if mob.info.Player.Status.Level >= 300 {
 					extra = extra * (100 - int(mob.info.Player.Learn[0])) / 100
 				}
-				p.Target[1] = wire.AttackTarget{Damage: int32(extra)}
+				p.Target[1] = wire.AttackTarget{Damage: int64(extra)}
 				crit |= 4
 				dam += extra
 			}
@@ -316,7 +316,7 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 			}
 			p.DoubleCritical = crit
 		}
-		t.Damage = int32(dam)
+		t.Damage = int64(dam)
 		if dam <= 0 {
 			continue // misses, heals and pure buffs carry no damage
 		}
@@ -334,11 +334,7 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 					break
 				}
 			}
-			if crit&1 != 0 && dam > 62000 {
-				dam = 62000
-			} else if dam > maxNormalDamage {
-				dam = maxNormalDamage
-			}
+			dam = min(dam, int(g.cfg.Limits.MaxDamage))
 		}
 		pvp := tid < MaxPlayer || mob.info.Player.CapeInfo == 4
 		if pvp { // players (and summons) take a quarter
@@ -389,7 +385,7 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 		if mob.info.Player.CapeInfo == 6 && pl.Status.Level < 399 {
 			dam = 0
 		}
-		t.Damage = int32(dam)
+		t.Damage = int64(dam)
 		if dam <= 0 {
 			continue
 		}
@@ -413,7 +409,7 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 			if dam, _, absorbed = g.manaShield(tid, dam); absorbed {
 				g.sendScore(tid)
 			}
-			t.Damage = int32(dam)
+			t.Damage = int64(dam)
 		}
 		taken := dam
 		if hp := mob.info.Player.Equip[13].Index; hp == 786 || hp == 1936 || hp == 1937 {
@@ -425,11 +421,11 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 			case 1937:
 				mult = 1000
 			}
-			taken = int(float32(dam) / (mult * sanc))
+			taken = int(float64(dam) / float64(mult*sanc))
 		} else if taken > int(mob.info.Player.Status.CurHP) {
 			taken = int(mob.info.Player.Status.CurHP)
 		}
-		mob.info.Player.Status.CurHP -= int32(taken)
+		mob.info.Player.Status.CurHP -= int64(taken)
 		if tid >= MaxPlayer {
 			g.linkMountHP(tid)
 		}
@@ -445,9 +441,9 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 			if tid >= MaxPlayer {
 				heal = min(heal/4, 300)
 			}
-			pl.Status.CurHP = min(pl.Status.CurHP+int32(heal), pl.Status.MaxHP)
+			pl.Status.CurHP = min(pl.Status.CurHP+int64(heal), pl.Status.MaxHP)
 			g.multicast2(int(me.target.X), int(me.target.Y), &wire.HpChange{
-				Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: pl.Status.CurHP, Incress: int16(heal)}, 0)
+				Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: pl.Status.CurHP, Incress: int64(heal)}, 0)
 		}
 		// TransKnight aura of life (affect 17): every 5th attack heals 20%.
 		if pl.ClassInfo == 0 && me.combat.attackCount%5 == 0 {
@@ -458,9 +454,9 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 						heal /= 4
 					}
 					heal = min(heal, 300)
-					pl.Status.CurHP = min(pl.Status.CurHP+int32(heal), pl.Status.MaxHP)
+					pl.Status.CurHP = min(pl.Status.CurHP+int64(heal), pl.Status.MaxHP)
 					g.multicast2(int(me.target.X), int(me.target.Y), &wire.HpChange{
-						Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: pl.Status.CurHP, Incress: int16(heal)}, 0)
+						Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: pl.Status.CurHP, Incress: int64(heal)}, 0)
 					break
 				}
 			}
@@ -472,9 +468,9 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 				reflect = 0
 			}
 			if reflect > 0 {
-				pl.Status.CurHP = max(pl.Status.CurHP-int32(reflect), 0)
+				pl.Status.CurHP = max(pl.Status.CurHP-int64(reflect), 0)
 				g.multicast2(int(me.target.X), int(me.target.Y), &wire.HpChange{
-					Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: pl.Status.CurHP, Incress: int16(-reflect)}, 0)
+					Header: wire.NewHeader(wire.OpSrvHpChange, uint16(u.id)), CurHP: pl.Status.CurHP, Incress: int64(-reflect)}, 0)
 				if pl.Status.CurHP <= 0 {
 					g.mobKilled(u.id, tid)
 				}
@@ -500,7 +496,7 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 	}
 	p.CurrentExp = pl.Exp
 	p.CurrentMP = pl.Status.CurMP
-	p.Hold = int32(me.info.Hold)
+	p.Hold = int64(me.info.Hold)
 	p.Header.ClientID = uint16(u.id)
 	raw, err := wire.Marshal(&p)
 	if err != nil {

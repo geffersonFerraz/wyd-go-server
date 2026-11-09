@@ -314,8 +314,8 @@ func (g *Game) npcEvent(u *User, npc int) {
 			g.sendItem(u, wire.SlotInv, s, &pl.Inventory[s])
 		}
 	}
-	pl.Gold = int32(min(max(int(pl.Gold)-ev.GoldRequired, 0), 2_000_000_000))
-	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+	pl.Gold = max(pl.Gold-int64(ev.GoldRequired), 0)
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 
 	if tier >= 0 {
 		for _, it := range ev.ItemEarned[tier] {
@@ -323,8 +323,8 @@ func (g *Game) npcEvent(u *User, npc int) {
 				continue
 			}
 			if it.Index == 3214 {
-				pl.Gold = int32(min(int(pl.Gold)+500_000, 2_000_000_000))
-				g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+				pl.Gold = min(pl.Gold+500_000, g.cfg.Limits.MaxGold)
+				g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 				g.clientMessage(u, "Chegou 500.000 de gold")
 				continue
 			}
@@ -387,7 +387,7 @@ func (g *Game) npcMountMaster(u *User, click uint32) {
 		g.clientMessage(u, "Sua montaria não esta morta")
 		return
 	}
-	price := g.data.Item(mount.Index).Price
+	price := int64(g.data.Item(mount.Index).Price)
 	if click == 0 {
 		g.clientMessage(u, g.lang(nnCurePrice), g.data.Item(mount.Index).Name, price)
 		return
@@ -660,7 +660,7 @@ func (g *Game) npcJeffi(u *User, npc int) {
 			g.sendSay(npc, "%s", g.lang(nnNeed10Particle))
 			return
 		}
-		cost := int32((ori/10 + lac/10) * 1_000_000)
+		cost := int64((ori/10 + lac/10) * 1_000_000)
 		if pl.Gold < cost {
 			g.sendSay(npc, "Você precisa de %dkk de ouro para compor todas as unidades disponíveis.", cost/1_000_000)
 			return
@@ -683,7 +683,7 @@ func (g *Game) npcJeffi(u *User, npc int) {
 		g.sendAffect(u)
 		return
 	}
-	cost, base, msg := int32(1_000_000), uint16(448), nnNeed1MGold
+	cost, base, msg := int64(1_000_000), uint16(448), nnNeed1MGold
 	if pl.Equip[13].Index == 692 {
 		cost, base, msg = 5_000_000, 693, nnNeed5MGold
 	}
@@ -1083,6 +1083,6 @@ func (g *Game) npcSephirot(u *User, npc int, click uint32) {
 		g.sendItem(u, wire.SlotInv, s, &pl.Inventory[s])
 	}
 	g.sendItem(u, wire.SlotInv, stones[0], &pl.Inventory[stones[0]])
-	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	g.sendSay(npc, "%s", g.lang(nnSephirotCompose))
 }

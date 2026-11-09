@@ -28,13 +28,10 @@ const (
 	EF_RESISTANCE       = 157
 
 	maxPoints         = 64000
-	maxStats          = 100000
-	maxHPMP           = 200000
 	maxResist         = 100
 	maxMagicIncrement = 1200
 	maxLevel          = 399
 	maxLevelCelestial = 199
-	maxNormalDamage   = 64000
 
 	capeBlue = 7
 )
@@ -907,24 +904,24 @@ func (g *Game) curScore(id int) {
 		maxHP += removed
 	}
 	if id < MaxPlayer {
-		attack = min(attack, maxStats)
-		defense = min(defense, maxStats)
+		attack = min(attack, int(g.cfg.Limits.MaxAttackDefense))
+		defense = min(defense, int(g.cfg.Limits.MaxAttackDefense))
 		str, intel, con, dex = min(str, maxPoints), min(intel, maxPoints), min(con, maxPoints), min(dex, maxPoints)
-		maxHP, maxMP = min(maxHP, maxHPMP), min(maxMP, maxHPMP)
+		maxHP, maxMP = min(maxHP, int(g.cfg.Limits.MaxHPMP)), min(maxMP, int(g.cfg.Limits.MaxHPMP))
 	}
 	magic = min(magic, maxMagicIncrement)
-	mob.Status.Attack = int32(attack)
-	mob.Status.Defense = int32(defense)
+	mob.Status.Attack = int64(attack)
+	mob.Status.Defense = int64(defense)
 	mob.Status.STR, mob.Status.INT = uint16(str), uint16(intel)
 	mob.Status.CON, mob.Status.DEX = uint16(con), uint16(dex)
 	c.magicIncrement = magic
 	m.info.MagicIncrement = uint32(magic)
 	mob.MagicIncrement = uint16(magic)
 	mob.SaveMana = uint8(saveMana)
-	mob.Status.CurHP = min(mob.Status.CurHP, int32(maxHP))
-	mob.Status.MaxHP = int32(maxHP)
-	mob.Status.CurMP = min(mob.Status.CurMP, int32(maxMP))
-	mob.Status.MaxMP = int32(maxMP)
+	mob.Status.CurHP = min(mob.Status.CurHP, int64(maxHP))
+	mob.Status.MaxHP = int64(maxHP)
+	mob.Status.CurMP = min(mob.Status.CurMP, int64(maxMP))
+	mob.Status.MaxMP = int64(maxMP)
 	mob.Critical = uint8(min(critical, 255))
 	c.attackSpeed = speed[1] + 100
 	c.potionBonus, c.lifeSteal, c.vampirism = potionBonus, lifeSteal, vampirism
@@ -962,11 +959,11 @@ func (g *Game) statusBaseScore(id int) {
 	if evolution(pl) >= evoCelestial {
 		level += 400
 	}
-	pl.BStatus.Attack = int32(5 + mult*level)
-	pl.BStatus.Defense = int32(4 + mult*level)
+	pl.BStatus.Attack = int64(5 + mult*level)
+	pl.BStatus.Defense = int64(4 + mult*level)
 	cls := pl.ClassInfo
-	pl.BStatus.MaxHP = int32(addHPMP[cls][0]*level + baseSIDCHM[cls][4])
-	pl.BStatus.MaxMP = int32(addHPMP[cls][1]*level + baseSIDCHM[cls][5])
+	pl.BStatus.MaxHP = int64(addHPMP[cls][0]*level + baseSIDCHM[cls][4])
+	pl.BStatus.MaxMP = int64(addHPMP[cls][1]*level + baseSIDCHM[cls][5])
 	g.scorePoint(id)
 	g.skillPoint(id)
 	g.masterPoint(id)

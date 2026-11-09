@@ -12,8 +12,8 @@ func TestAuctionPacketSizes(t *testing.T) {
 		v    any
 		size int
 	}{
-		{Listing{}, 52}, {AuctionPage{}, 2516}, {AuctionQuery{}, 24}, {AuctionSearch{}, 48},
-		{AuctionAdd{}, 56}, {AuctionBuy{}, 68}, {AuctionFunds{}, 24}, {StoreMob{}, 268},
+		{Listing{}, 56}, {AuctionPage{}, 2712}, {AuctionQuery{}, 24}, {AuctionSearch{}, 48},
+		{AuctionAdd{}, 64}, {AuctionBuy{}, 72}, {AuctionFunds{}, 32}, {StoreMob{}, 304},
 	} {
 		if got := binary.Size(c.v); got != c.size {
 			t.Errorf("%T: %d bytes, want %d", c.v, got, c.size)
@@ -43,7 +43,7 @@ func TestAuctionStore(t *testing.T) {
 		t.Fatalf("store not opened: %+v", seller.store.open)
 	}
 
-	add := func(slot int, it wire.Item, cat, price int32) {
+	add := func(slot int, it wire.Item, cat int32, price int64) {
 		g.requestAuctionAdd(seller, packet(&AuctionAdd{Header: wire.NewHeader(opCliAuctionAdd, 1),
 			ItemType: cat, SlotBank: int32(slot), Price: price, Item: it}))
 	}

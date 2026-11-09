@@ -267,7 +267,7 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 			g.sendItem(u, wire.SlotInv, key, &pl.Inventory[key])
 		} else {
 			pl.Gold -= 10000000
-			g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+			g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 		}
 
 	case id == 4649: // Troca de Corpo: new body from the sephirot (Celestial+)
@@ -432,7 +432,7 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 		}
 		if g.giveBox(u, p, src, []wire.Item{{Index: 4011}}, 0) {
 			pl.Gold -= 1000000000
-			g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+			g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 		}
 
 	case id == 4719: // Pó de Brinco: 120 + 100,000,000 gold -> Emblema da Proteção 4611
@@ -445,7 +445,7 @@ func (g *Game) useItemByID3(u *User, p *wire.UseItem, src *wire.Item) bool {
 			return true
 		}
 		pl.Gold -= 100000000
-		g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+		g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 		*src = wire.Item{Index: 4611}
 		resend()
 		g.clientMessage(u, "Chegou um item: [%s]", g.itemName(4611))

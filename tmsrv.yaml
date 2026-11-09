@@ -9,6 +9,14 @@
 # digitação não passe despercebido. Os comentários "C++:" dizem o valor que o
 # servidor original usava.
 
+# Tetos dos valores de 64 bits. O máximo aceito em cada chave é
+# 1000000000000000 (1 quatrilhão).
+limits:
+  max_gold: 1000000000000000            # C++: 2000000000
+  max_damage: 1000000000000000          # dano de um golpe em mob. C++: 64000 (62000 no crítico)
+  max_hp_mp: 1000000000000000           # HP e MP máximos do jogador. C++: 200000
+  max_attack_defense: 1000000000000000  # ataque e defesa do jogador. C++: 100000
+
 # Endereços de rede.
 network:
   # Onde está o DBSRV (IP do container dbsrv). C++: dataserver.txt.

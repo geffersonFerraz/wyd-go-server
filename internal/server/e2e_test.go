@@ -56,7 +56,7 @@ func newHarness(t *testing.T) *harness {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := wire.Unmarshal(raw, &base[i]); err != nil {
+		if err := wire.UnmarshalLegacyMob(raw, &base[i]); err != nil {
 			t.Fatal(err)
 		}
 	}

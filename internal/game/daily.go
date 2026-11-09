@@ -65,7 +65,8 @@ type MissionInfo struct {
 	Item             [5]missionItem
 	FreeReward       [6]wire.Item
 	BattlePassReward [6]wire.Item
-	Gold             int32
+	_                [4]byte
+	Gold             int64 // 328
 	Exp              uint64
 	BattlePassValid  wire.ItemDate
 	LastUpdate       wire.ItemDate
@@ -547,7 +548,7 @@ func (g *Game) sendMissionInfo(u *User) {
 		exp = g.expApply2(exp, u.id, u.id, false)
 	}
 	p.Exp = uint64(max(exp, 0))
-	p.Gold = int32(quest.Gold)
+	p.Gold = int64(quest.Gold)
 	p.FreeReward, p.BattlePassReward = quest.Free, quest.Pass
 	for i := range 5 {
 		wire.PutGameString(p.Mob[i].Name[:15], quest.MobName[i])

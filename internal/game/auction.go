@@ -48,10 +48,10 @@ const (
 	nnOnlyVillage = 172
 )
 
-// Listing mirrors LeilaoStoreAux (52 bytes).
+// Listing mirrors LeilaoStoreAux (56 bytes).
 type Listing struct {
 	Name     [24]byte // store name
-	Price    int32
+	Price    int64    // 24
 	OwnerID  int32
 	SlotBank int32 // storage slot of the item
 	Category int32 // 1 donate, 2 gold, 3 bars
@@ -59,13 +59,14 @@ type Listing struct {
 	Item     wire.Item
 }
 
-// AuctionPage mirrors MSG_LeilaoStore (2516 bytes), both the client's
+// AuctionPage mirrors MSG_LeilaoStore (2712 bytes), both the client's
 // "open my store" and the server's list pages.
 type AuctionPage struct {
 	Header      wire.Header
 	TotalPages  int32
 	CurrentPage int32
-	List        [maxListings]Listing
+	_           [4]byte
+	List        [maxListings]Listing // 24
 }
 
 // AuctionQuery mirrors MSG_GetLeilaoStores (24 bytes).
@@ -85,38 +86,40 @@ type AuctionSearch struct {
 	Name      [24]byte
 }
 
-// AuctionAdd mirrors pAddItemLeilaoStore (56 bytes).
+// AuctionAdd mirrors pAddItemLeilaoStore (64 bytes).
 type AuctionAdd struct {
 	Header   wire.Header
 	ItemType int32
 	SlotBank int32
-	Price    int32
+	_        [4]byte
+	Price    int64 // 24
 	Name     [24]byte
 	Item     wire.Item
 }
 
-// AuctionBuy mirrors pStartNegotiation (68 bytes).
+// AuctionBuy mirrors pStartNegotiation (72 bytes).
 type AuctionBuy struct {
 	Header   wire.Header
 	ItemType int32
 	SlotBank int32
 	ItemSlot int32
-	Price    int32
+	Price    int64 // 24
 	Tax      int32
 	Seller   int32
 	Name     [24]byte
 	Item     wire.Item
 }
 
-// AuctionFunds mirrors st_SaldoLeilao (24 bytes).
+// AuctionFunds mirrors st_SaldoLeilao (32 bytes).
 type AuctionFunds struct {
 	Header wire.Header
 	Donate int32
-	Gold   int32
+	Gold   int64 // 16
 	Bars   int32
+	_      [4]byte
 }
 
-// StoreMob mirrors p363 (268 bytes): a store NPC as seen by the client.
+// StoreMob mirrors p363 (304 bytes): a store NPC as seen by the client.
 type StoreMob struct {
 	Header      wire.Header
 	CurrentX    int16
@@ -136,7 +139,7 @@ type StoreMob struct {
 	AnctCode    [20]byte
 	Tab         [26]byte
 	StoreName   [27]byte
-	_           [1]byte
+	_           [5]byte
 }
 
 // autoTrade is CMob::AutoTrade for a player.
@@ -152,13 +155,13 @@ type autoTrade struct {
 func (d *Data) loadStoreBase(dir string) {
 	if b, err := os.ReadFile(filepath.Join(dir, "npc", "Vinha")); err == nil {
 		var m wire.Mob
-		if wire.Unmarshal(b, &m) == nil {
+		if wire.UnmarshalLegacyMob(b, &m) == nil {
 			d.Thorn = &m
 		}
 	}
 	if b, err := os.ReadFile(filepath.Join(dir, "npc", "Base")); err == nil {
 		var m wire.Mob
-		if wire.Unmarshal(b, &m) == nil {
+		if wire.UnmarshalLegacyMob(b, &m) == nil {
 			d.StoreBase = &m
 		}
 	}
@@ -477,7 +480,12 @@ func (g *Game) requestAuctionAdd(u *User, pkt protocol.Packet) {
 		return
 	}
 	slot, price, cat := int(p.SlotBank), p.Price, int(p.ItemType)
-	if price < 0 || price > 1_999_999_999 || slot < 0 || slot >= maxStorageSlot {
+	// Only gold is 64-bit: donate is paid from a uint32 balance.
+	maxPrice := int64(1_999_999_999)
+	if cat == auctionGold {
+		maxPrice = g.cfg.Limits.MaxGold
+	}
+	if price < 0 || price > maxPrice || slot < 0 || slot >= maxStorageSlot {
 		return
 	}
 	stored := &u.account.StorageItems[slot]
@@ -669,12 +677,12 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 		g.clientMessage(u, "%s", g.lang(nnOnlyVillage))
 		return
 	}
-	net, impost := price, int32(0)
+	net, impost := price, int64(0)
 	if cat == auctionGold && price >= 100000 {
-		impost = price / 100 * g.data.Cities[v].PercImpost
+		impost = price / 100 * int64(g.data.Cities[v].PercImpost)
 		net = price - impost
 	}
-	if cat == auctionGold && int64(s.account.StorageCoin)+int64(net) > maxGold {
+	if cat == auctionGold && s.account.StorageCoin+net > g.cfg.Limits.MaxGold {
 		g.clientMessage(u, "%s", g.lang(nnCantGetMoreThan2G))
 		return
 	}
@@ -699,7 +707,7 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 	case auctionGold:
 		me.Gold -= price
 		g.sendCarry(u)
-		s.account.StorageCoin += uint32(net)
+		s.account.StorageCoin += int64(net)
 		g.data.Cities[v].Impost += int64(impost)
 		g.sendCargoCoin(s)
 	case auctionBars:

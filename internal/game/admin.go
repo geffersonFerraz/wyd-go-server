@@ -118,7 +118,7 @@ func (g *Game) adminCommand(u *User, value string) {
 			if o.mode == 0 || o.info.Player.Status.CurHP <= 0 || g.charName(i) != name {
 				continue
 			}
-			o.info.Player.Status.CurHP = int32(hp)
+			o.info.Player.Status.CurHP = int64(hp)
 			g.refreshMob(i)
 			g.clientMessage(u, "HPmob setado")
 			return
@@ -403,7 +403,7 @@ func (g *Game) adminCommand(u *User, value string) {
 		if !ok {
 			return
 		}
-		pl.Gold = int32(x)
+		pl.Gold = int64(x)
 		g.sendEtc(u)
 		g.clientMessage(u, "Gold setado para: %d.", x)
 

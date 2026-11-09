@@ -34,7 +34,7 @@ func (g *Game) sendAddParty(target, whom int, leader bool) {
 	p := wire.PartyMember{Header: wire.NewHeader(wire.OpSrvPartyAdd, wire.ClientIDSystem),
 		PartyID: uint16(whom), Level: uint16(pl.BStatus.Level), MaxHP: 100, ID: 52428}
 	if pl.Status.MaxHP > 0 {
-		p.CurHP = uint16(float32(pl.Status.CurHP) / float32(pl.Status.MaxHP) * 100)
+		p.CurHP = uint16(float64(pl.Status.CurHP) / float64(pl.Status.MaxHP) * 100)
 	}
 	if !leader {
 		p.LeaderID = wire.ClientIDSystem

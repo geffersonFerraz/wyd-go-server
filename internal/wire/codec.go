@@ -1,7 +1,7 @@
-// Package wire holds byte-exact Go mirrors of the C++ structs that DBSRV and
-// TMSRV exchange. They were built with MSVC for Win32 (x86) with the default
-// /Zp8 packing, so every implicit padding byte is spelled out here as a blank
-// `_` field. encoding/binary skips blank fields on read and zeroes them on
+// Package wire holds byte-exact Go mirrors of the C++ structs that DBSRV,
+// TMSRV and the client exchange, as MSVC lays them out for x64 with the
+// default /Zp8 packing. Every implicit padding byte is spelled out here as a
+// blank `_` field. encoding/binary skips blank fields on read and zeroes them on
 // write, and binary.Size(T) must equal the C++ sizeof(T); sizes_test.go
 // enforces that.
 package wire

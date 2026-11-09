@@ -77,7 +77,7 @@ type User struct {
 	rouletteEvol   [maxRouletteBox]int16
 	skillUsed      [256]time.Time // last use per skill (cooldowns)
 
-	potionHP, potionMP int32 // Potion.CountHp/CountMp: pending HP/MP
+	potionHP, potionMP int64 // Potion.CountHp/CountMp: pending HP/MP
 	quaff              bool  // Potion.bQuaff: apply on the next tick
 	returnX, returnY   int   // return scroll point (nTargetX/Y)
 

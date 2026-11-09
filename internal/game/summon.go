@@ -140,9 +140,9 @@ func (g *Game) generateSummon(user, summonID int, item *wire.Item) bool {
 	}
 	if summonID < len(summonBonus) {
 		b := summonBonus[summonID]
-		pl.BStatus.Attack += int32(b[0]*sINT/100 + b[1]*sMast/100)
-		pl.BStatus.Defense += int32(b[2]*sINT/100 + b[3]*sMast/100)
-		pl.Status.MaxHP = pl.BStatus.MaxHP + int32(b[4]*sINT/100+b[5]*sMast/100)
+		pl.BStatus.Attack += int64(b[0]*sINT/100 + b[1]*sMast/100)
+		pl.BStatus.Defense += int64(b[2]*sINT/100 + b[3]*sMast/100)
+		pl.Status.MaxHP = pl.BStatus.MaxHP + int64(b[4]*sINT/100+b[5]*sMast/100)
 	} else {
 		pl.Status.MaxHP = pl.BStatus.MaxHP
 	}
@@ -163,7 +163,7 @@ func (g *Game) generateSummon(user, summonID int, item *wire.Item) bool {
 		lo := base/2 - 1000
 		con := lo + (base-lo)*sanc/100
 		pl.BStatus.CON, pl.Status.CON = uint16(int16(con)), uint16(int16(con))
-		pl.BStatus.Attack += int32((g.data.itemAbility(item, EF_MOUNTSANC) & 255) * 6)
+		pl.BStatus.Attack += int64((g.data.itemAbility(item, EF_MOUNTSANC) & 255) * 6)
 		pl.Status.Attack = pl.BStatus.Attack
 	}
 	if !owner.guildDisable {
@@ -195,7 +195,7 @@ func (g *Game) generateSummon(user, summonID int, item *wire.Item) bool {
 		if hp := mountHP(item); hp > int(pl.Status.MaxHP) {
 			setMountHP(item, int(pl.Status.MaxHP))
 		}
-		pl.Status.CurHP = int32(mountHP(item))
+		pl.Status.CurHP = int64(mountHP(item))
 		pl.BStatus.CurHP = pl.Status.CurHP
 	}
 

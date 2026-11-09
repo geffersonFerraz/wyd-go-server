@@ -28,6 +28,7 @@ import (
 // Every key must be present in the file: nothing silently falls back to a
 // value in the code (LoadSettings names the missing keys).
 type Settings struct {
+	Limits     LimitSettings      `yaml:"limits"`
 	Network    NetworkSettings    `yaml:"network"`
 	ServerList cluster.ServerList `yaml:"serverlist"`
 	Channels   []cluster.Channel  `yaml:"channels"`
@@ -142,6 +143,25 @@ type ChangeChannelSettings struct {
 	CooldownSeconds int `yaml:"cooldown_seconds"`
 }
 
+// LimitSettings are the caps of the 64-bit values. Each must be 1 to
+// wire.MaxLimit.
+type LimitSettings struct {
+	MaxGold          int64 `yaml:"max_gold"`           // inventory, storage, trade and auction gold
+	MaxDamage        int64 `yaml:"max_damage"`         // one hit of a player against a mob, skills included
+	MaxHPMP          int64 `yaml:"max_hp_mp"`          // a player's maximum HP and MP
+	MaxAttackDefense int64 `yaml:"max_attack_defense"` // a player's attack and defense
+}
+
+func (l LimitSettings) validate() error {
+	for name, v := range map[string]int64{"max_gold": l.MaxGold, "max_damage": l.MaxDamage,
+		"max_hp_mp": l.MaxHPMP, "max_attack_defense": l.MaxAttackDefense} {
+		if v < 1 || v > wire.MaxLimit {
+			return fmt.Errorf("limits.%s must be 1..%d, got %d", name, int64(wire.MaxLimit), v)
+		}
+	}
+	return nil
+}
+
 // LoginSettings limits logins.
 type LoginSettings struct {
 	// MaxAccountsPerComputer: accounts playing at once from one MAC address
@@ -192,6 +212,7 @@ func CppSettings() Settings {
 		ChangeChannel: ChangeChannelSettings{CooldownSeconds: 10},
 		NewbieZone:    35,
 		StatSapphire:  30,
+		Limits:        LimitSettings{MaxGold: 2_000_000_000, MaxDamage: 64_000, MaxHPMP: 200_000, MaxAttackDefense: 100_000},
 		Login:         LoginSettings{MaxAccountsPerComputer: 3},
 		Missions:      MissionSettings{OfferEverySeconds: 1152, TimeToCompleteSeconds: 1152},
 		Store:         StoreSettings{HonorEverySeconds: 600},
@@ -259,6 +280,9 @@ func missingKeys(t reflect.Type, tree map[string]any, prefix string) []string {
 }
 
 func (s *Settings) validate() error {
+	if err := s.Limits.validate(); err != nil {
+		return err
+	}
 	n := &s.Network
 	if n.DBSRVIP == "" {
 		return errors.New("network.dbsrv_ip is empty")

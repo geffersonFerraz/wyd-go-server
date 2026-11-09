@@ -469,7 +469,7 @@ func (g *Game) useQuestBox(u *User, p *wire.UseItem, src *wire.Item) {
 	used := min(have, (room+expValue[q]-1)/expValue[q])
 	exp := min(used*expValue[q], room)
 	pl.Exp += exp
-	pl.Gold = int32(min(int64(pl.Gold)+goldValue[q]*used, 2000000000))
+	pl.Gold = min(pl.Gold+goldValue[q]*used, g.cfg.Limits.MaxGold)
 	for range used {
 		amountMinus(src)
 	}
@@ -478,7 +478,7 @@ func (g *Game) useQuestBox(u *User, p *wire.UseItem, src *wire.Item) {
 	g.sendScore(u.id)
 	g.sendEtc(u)
 	g.sendEmotion(u.id, 14, 3)
-	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	g.clientMessage(u, ".+++ %d de Experiência +++", exp)
 	resend()
 	g.shareQuestBoxExp(u, q, exp)

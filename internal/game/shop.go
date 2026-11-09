@@ -13,8 +13,6 @@ const (
 	nnCantWithdrawThatMuch = 45
 	nnCantGetMoreThan2G    = 273
 	nnNotEnoughGoldBuyShop = 298
-
-	maxGold = 2_000_000_000
 )
 
 // isMerchant reports a shop NPC (bStatus.Merchant.Merchant 1, 3 or 19).
@@ -170,13 +168,13 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 		impost = price * perc / 100
 		price += impost
 	}
-	if price > maxGold || int64(pl.Gold) < price {
+	if price > g.cfg.Limits.MaxGold || pl.Gold < price {
 		g.clientMessage(u, "%s", g.lang(nnNotEnoughGoldBuyShop))
 		return
 	}
 	g.data.Cities[city].Impost += impost
-	pl.Gold -= int32(price)
-	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+	pl.Gold -= price
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	pl.Inventory[invSlot] = item
 	g.sendItem(u, wire.SlotInv, invSlot, &item)
 }
@@ -198,11 +196,11 @@ func (g *Game) buyBack(u *User, slot int) {
 	if soldByAmount(item.Index) {
 		price *= int64(itemAmount(item))
 	}
-	if price > maxGold {
+	if price > g.cfg.Limits.MaxGold {
 		g.clientMessage(u, "Não é possível recomprar este item.")
 		return
 	}
-	if int64(pl.Gold) < price {
+	if pl.Gold < price {
 		g.clientMessage(u, "%s", g.lang(nnNotEnoughGoldBuyShop))
 		return
 	}
@@ -211,8 +209,8 @@ func (g *Game) buyBack(u *User, slot int) {
 		g.clientMessage(u, "Não ha espaço no inventario")
 		return
 	}
-	pl.Gold -= int32(price)
-	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+	pl.Gold -= price
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	pl.Inventory[slotID] = *item
 	g.sendItem(u, wire.SlotInv, slotID, item)
 	*item = wire.Item{}
@@ -318,13 +316,13 @@ func (g *Game) sellItem(u *User, item *wire.Item) sellResult {
 		price -= impost
 	}
 	pl := &g.mobs[u.id].info.Player
-	if total := int64(pl.Gold) + int64(price); total > maxGold || total < 0 {
+	if total := pl.Gold + int64(price); total > g.cfg.Limits.MaxGold || total < 0 {
 		return sellGoldLimit
 	}
 	g.data.Cities[city].Impost += int64(impost)
-	pl.Gold += price
+	pl.Gold += int64(price)
 	*item = wire.Item{}
-	g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	return sellOK
 }
 
@@ -348,36 +346,7 @@ func (g *Game) sendRepurchase(u *User) {
 
 // requestGoldToInv is RequestTransferGoldToInv (0x387): storage -> bag.
 func (g *Game) requestGoldToInv(u *User, pkt protocol.Packet) {
-	var p wire.SignalValue
-	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay {
-		return
-	}
-	pl := &g.mobs[u.id].info.Player
-	if pl.Status.CurHP <= 0 {
-		return
-	}
-	g.removeTrade(u.id)
-	gold := uint32(p.Value)
-	if u.account.StorageCoin < gold || gold > maxGold {
-		g.clientMessage(u, "%s", g.lang(nnCantWithdrawThatMuch))
-		return
-	}
-	total := int64(pl.Gold) + int64(gold)
-	if total > maxGold || total < 0 {
-		g.clientMessage(u, "%s", g.lang(nnCantGetMoreThan2G))
-		return
-	}
-	pl.Gold = int32(total)
-	u.account.StorageCoin -= gold
-	p.Header.ClientID = wire.ClientIDSystem
-	g.queue(u, &p)
-	g.sendCargoCoin(u)
-	g.saveUser(u, 0)
-}
-
-// requestGoldToStorage is RequestTransferGoldToBank (0x388): bag -> storage.
-func (g *Game) requestGoldToStorage(u *User, pkt protocol.Packet) {
-	var p wire.SignalValue
+	var p wire.SignalValue64
 	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay {
 		return
 	}
@@ -387,17 +356,46 @@ func (g *Game) requestGoldToStorage(u *User, pkt protocol.Packet) {
 	}
 	g.removeTrade(u.id)
 	gold := p.Value
-	if pl.Gold < gold || gold < 0 || gold > maxGold {
+	if gold < 0 || u.account.StorageCoin < gold || gold > g.cfg.Limits.MaxGold {
+		g.clientMessage(u, "%s", g.lang(nnCantWithdrawThatMuch))
+		return
+	}
+	total := pl.Gold + gold
+	if total > g.cfg.Limits.MaxGold || total < 0 {
+		g.clientMessage(u, "%s", g.lang(nnCantGetMoreThan2G))
+		return
+	}
+	pl.Gold = total
+	u.account.StorageCoin -= gold
+	p.Header.ClientID = wire.ClientIDSystem
+	g.queue(u, &p)
+	g.sendCargoCoin(u)
+	g.saveUser(u, 0)
+}
+
+// requestGoldToStorage is RequestTransferGoldToBank (0x388): bag -> storage.
+func (g *Game) requestGoldToStorage(u *User, pkt protocol.Packet) {
+	var p wire.SignalValue64
+	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay {
+		return
+	}
+	pl := &g.mobs[u.id].info.Player
+	if pl.Status.CurHP <= 0 {
+		return
+	}
+	g.removeTrade(u.id)
+	gold := p.Value
+	if pl.Gold < gold || gold < 0 || gold > g.cfg.Limits.MaxGold {
 		g.clientMessage(u, "%s", g.lang(nnCantDepositThatMuch))
 		return
 	}
-	total := int64(u.account.StorageCoin) + int64(gold)
-	if total > maxGold {
+	total := u.account.StorageCoin + gold
+	if total > g.cfg.Limits.MaxGold {
 		g.clientMessage(u, "%s", g.lang(nnCantGetMoreThan2G))
 		return
 	}
 	pl.Gold -= gold
-	u.account.StorageCoin = uint32(total)
+	u.account.StorageCoin = total
 	// The C++ echoed the packet before setting the client id; keep that.
 	g.queue(u, &p)
 	g.sendCargoCoin(u)

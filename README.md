@@ -10,8 +10,8 @@ Reescrita em Go + PostgreSQL do servidor de With Your Destiny 7.87:
 | `cmd/gamedata-import` | Importa itens, skills, drops e teleportes para o Postgres | — |
 | `cmd/xml-import` | Importa as contas XML do DBsrv C++ (uma vez) | — |
 
-O protocolo com o cliente original é mantido byte a byte (structs MSVC x86),
-então o cliente do jogo funciona sem alterações. Exceções: canais fora da
+O protocolo com o cliente é mantido byte a byte (structs MSVC x64, ver docs/x64-limites.md),
+então o cliente x64 do `wyd-client` funciona sem adaptações. Exceções: canais fora da
 porta 8281 (o `serverlist.bin` leva `ip:porta`) e a troca de canal dentro do
 jogo precisam do cliente com o patch de canais (`wyd-client`).
 

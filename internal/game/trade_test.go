@@ -22,7 +22,7 @@ func tradeGame(t *testing.T) (*Game, *User, *User) {
 	return g, g.users[1], g.users[2]
 }
 
-func offerOf(to int, gold int32, confirm uint8, items map[int]wire.Item) wire.Trade {
+func offerOf(to int, gold int64, confirm uint8, items map[int]wire.Item) wire.Trade {
 	tr := emptyTrade()
 	tr.ClientID, tr.Gold, tr.Confirm = uint16(to), gold, confirm
 	n := 0

@@ -113,7 +113,7 @@ func (g *Game) mobKilled(target, killer int) {
 	}
 	u := g.player(killer)
 	if u == nil || u.status != userPlay || dead.info.Player.CapeInfo == 4 {
-		msg.Hold, msg.Exp = int32(k.info.Hold), k.info.Player.Exp
+		msg.Hold, msg.Exp = int64(k.info.Hold), k.info.Player.Exp
 		g.multicast2(int(dead.target.X), int(dead.target.Y), &msg, 0)
 		if target >= MaxPlayer {
 			g.deleteMob(target, 1)
@@ -130,7 +130,7 @@ func (g *Game) mobKilled(target, killer int) {
 	// killer's exp from before the reward, so party members saw the
 	// killer's exp as theirs: huge gains, then huge negative ones. Each
 	// party member now gets its own exp after the reward.
-	msg.Hold, msg.Exp = int32(k.info.Hold), k.info.Player.Exp
+	msg.Hold, msg.Exp = int64(k.info.Hold), k.info.Player.Exp
 	g.multicastKill(int(dead.target.X), int(dead.target.Y), msg, g.partyMembers(killer))
 	g.deleteMob(target, 1)
 }
@@ -151,7 +151,7 @@ func (g *Game) multicastKill(x, y int, msg wire.Killed, party []int) {
 			}
 			p := msg
 			if own[id] {
-				p.Exp, p.Hold = g.mobs[id].info.Player.Exp, int32(g.mobs[id].info.Hold)
+				p.Exp, p.Hold = g.mobs[id].info.Player.Exp, int64(g.mobs[id].info.Hold)
 			}
 			g.queue(g.users[id], &p)
 		}
@@ -304,7 +304,7 @@ func (g *Game) playerKilled(target, killer int, msg *wire.Killed) {
 	dead := &g.mobs[target]
 	k := &g.mobs[killer]
 	dead.info.Player.Status.CurHP = 0
-	msg.Hold, msg.Exp = int32(k.info.Hold), k.info.Player.Exp
+	msg.Hold, msg.Exp = int64(k.info.Hold), k.info.Player.Exp
 	g.familiarLosesRefine(target)
 	if killer < MaxPlayer {
 		g.pvpDeath(target, killer)

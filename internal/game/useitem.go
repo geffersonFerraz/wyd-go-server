@@ -39,7 +39,7 @@ func (g *Game) setReqMp(u *User) {
 }
 
 // applyPotion is ApplyHp/ApplyMp for one value: move cur toward pending.
-func applyPotion(cur *int32, pending *int32, maxV int32, step int32) bool {
+func applyPotion(cur, pending *int64, maxV, step int64) bool {
 	*pending = min(*pending, maxV)
 	if *pending <= *cur {
 		return false
@@ -60,7 +60,7 @@ func (g *Game) potionTimer() {
 			continue
 		}
 		u.quaff = false
-		step := int32(pl.Status.Level) + 100
+		step := int64(pl.Status.Level) + 100
 		if evolution(pl) >= evoCelestial {
 			step += 400
 		}
@@ -152,11 +152,11 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 		bonus := m.combat.potionBonus
 		if hp := g.data.itemAbility(src, EF_HP); hp != 0 {
 			hp += hp * bonus / 100
-			u.potionHP = min(u.potionHP+int32(hp), pl.Status.MaxHP)
+			u.potionHP = min(u.potionHP+int64(hp), pl.Status.MaxHP)
 		}
 		if mp := g.data.itemAbility(src, EF_MP); mp != 0 {
 			mp += mp * bonus / 100
-			u.potionMP = min(u.potionMP+int32(mp), pl.Status.MaxMP)
+			u.potionMP = min(u.potionMP+int64(mp), pl.Status.MaxMP)
 		}
 		u.quaff = true
 		g.sendSetHpMp(u)

@@ -57,31 +57,31 @@ type AccountLogin struct {
 	Keys     [12]byte // 108
 }
 
-// CharList mirrors st_CharList (968 bytes).
+// CharList mirrors st_CharList (1112 bytes).
 type CharList struct {
 	PositionX [4]int16
 	PositionY [4]int16
 	Name      [4][16]byte
 	Status    [4]Status   // 80
-	Equip     [4][20]Item // 272
-	GuildID   [4]uint16   // 912
-	Gold      [4]int32    // 920
-	Exp       [4]int64    // 936
+	Equip     [4][20]Item // 400
+	GuildID   [4]uint16   // 1040
+	Gold      [4]int64    // 1048
+	Exp       [4]int64    // 1080
 }
 
-// CNFAccountLogin mirrors p416 (2376 bytes), sent as 0x416.
+// CNFAccountLogin mirrors p416 (2520 bytes), sent as 0x416.
 type CNFAccountLogin struct {
 	Header      Header
 	Keys        [16]byte  // 12
 	Unkw        int32     // 28
 	CharList    CharList  // 32
-	Storage     [168]Item // 1000
-	GoldStorage uint32    // 2344
-	UserName    [16]byte  // 2348
-	Unknow      [12]byte  // 2364
+	Storage     [168]Item // 1144
+	GoldStorage int64     // 2488
+	UserName    [16]byte  // 2496
+	Unknow      [8]byte   // 2512
 }
 
-// CharListPacket mirrors p418 (984 bytes), sent as 0x418 / 0x419.
+// CharListPacket mirrors p418 (1128 bytes), sent as 0x418 / 0x419.
 type CharListPacket struct {
 	Header   Header
 	_        [4]byte
@@ -95,34 +95,35 @@ type CharacterLogin struct {
 	Zero      [16]byte
 }
 
-// CNFCharacterLogin mirrors p114 (1152 bytes), sent as 0x417.
+// CNFCharacterLogin mirrors p114 (1224 bytes), sent as 0x417.
 type CNFCharacterLogin struct {
 	Header      Header
 	WorldPos    Position // 12
 	Mob         Mob      // 16
-	CurrentKill uint16   // 864
+	CurrentKill uint16   // 928
 	TotalKill   uint16
-	SlotIndex   int16 // 868
+	SlotIndex   int16 // 932
 	ClientIndex int16
 	Weather     int16
-	SkillBar2   [16]byte // 874
+	SkillBar2   [16]byte // 938
 	_           [2]byte
-	Affect      [32]Affect // 892
-	Hold        int32      // 1148
+	Affect      [32]Affect // 956
+	_           [4]byte
+	Hold        int64 // 1216
 }
 
-// CNFCharacterLoginExtra mirrors p820 (2088 bytes), sent as 0x820.
+// CNFCharacterLoginExtra mirrors p820 (2192 bytes), sent as 0x820.
 type CNFCharacterLoginExtra struct {
 	Header    Header
 	_         [4]byte
 	Mob       CharInfo // 16
-	Cash      int32    // 2024
+	Cash      int32    // 2128
 	Honra     int32
 	Novato    int32
-	Pass      [16]byte // 2036
-	Blocked   int32    // 2052
-	PassBlock [16]byte // 2056
-	TypeBlock [10]byte // 2072
+	Pass      [16]byte // 2140
+	Blocked   int32    // 2156
+	PassBlock [16]byte // 2160
+	TypeBlock [10]byte // 2176
 	_         [6]byte
 }
 
@@ -175,39 +176,38 @@ type DeleteCharacter struct {
 	Pwd       [12]byte
 }
 
-// SaveCharacter mirrors STRUCT_SAVECHARACTER (4048 bytes; TMSRV's copy is
-// 4032, it has no TypeBlock), 0x806 / 0x807.
+// SaveCharacter mirrors STRUCT_SAVECHARACTER (4152 bytes; TMSRV's copy is
+// 4136, it has no TypeBlock), 0x806 / 0x807.
 type SaveCharacter struct {
 	Header     Header
 	CharSlot   uint32       // 12
 	Mob        CharInfo     // 16
-	Storage    [168]Item    // 2024
-	Coin       int32        // 3368
-	SkillBar   [20]byte     // 3372: [0:4] -> SkillBar1, [4:20] -> CharInfo.SkillBar
-	User       [16]byte     // 3392
-	Arg2       uint32       // 3408: nonzero = also export
-	Friends    [30][16]byte // 3412
-	Pass       [16]byte     // 3892
-	Blocked    int32        // 3908
+	Storage    [168]Item    // 2128
+	Coin       int64        // 3472
+	SkillBar   [20]byte     // 3480: [0:4] -> SkillBar1, [4:20] -> CharInfo.SkillBar
+	User       [16]byte     // 3500
+	Arg2       uint32       // 3516: nonzero = also export
+	Friends    [30][16]byte // 3520
+	Pass       [16]byte     // 4000
+	Blocked    int32        // 4016
 	Cash       int32
 	Honra      int32
-	Novato     int32 // 3920
-	_          [4]byte
-	Insignia   int64    // 3928
-	BanType    uint32   // 3936
-	Ban        ItemDate // 3940
-	Position   Position // 3948
-	Slot       int16    // 3952
+	Novato     int32    // 4028
+	Insignia   int64    // 4032
+	BanType    uint32   // 4040
+	Ban        ItemDate // 4044
+	Position   Position // 4052
+	Slot       int16    // 4056
 	_          [6]byte
-	Unique     int64 // 3960
-	Daily      Daily // 3968
-	Water      Water // 3980
+	Unique     int64 // 4064
+	Daily      Daily // 4072
+	Water      Water // 4084
 	Divina     ItemDate
-	Sephira    ItemDate // 3996
+	Sephira    ItemDate // 4100
 	_          [4]byte
-	SingleGift uint64   // 4008
-	PassBlock  [16]byte // 4016
-	TypeBlock  [10]byte // 4032
+	SingleGift uint64   // 4112
+	PassBlock  [16]byte // 4120
+	TypeBlock  [10]byte // 4136
 	_          [6]byte
 }
 
@@ -338,9 +338,10 @@ type RankUpdate struct {
 // HpMode is 0x292 (p292), corrects the client's HP and state.
 type HpMode struct {
 	Header Header
-	CurHP  int32
-	Status int16
-	_      [2]byte
+	_      [4]byte
+	CurHP  int64 // 16
+	Status int16 // 24
+	_      [6]byte
 }
 
 // RankRow is SRankTable, one line of the ranking window.
@@ -390,8 +391,9 @@ type CharProfile struct {
 type DropMob struct {
 	Name  [64]byte
 	X, Y  int16
-	Exp   int32
-	Gold  int32
+	_     [4]byte
+	Exp   int64 // 72
+	Gold  int64 // 80
 	Carry [64]Item
 }
 
@@ -583,6 +585,14 @@ type StoreSetAvaible struct {
 type SignalValue struct {
 	Header Header
 	Value  int32
+}
+
+// SignalValue64 mirrors MSG_STANDARDPARM64 (24 bytes): the signals that carry
+// gold (0x3AF, 0x387, 0x388).
+type SignalValue64 struct {
+	Header Header
+	_      [4]byte
+	Value  int64 // 16
 }
 
 // SealInfoReply mirrors MSG_SEALINFO (56 bytes).

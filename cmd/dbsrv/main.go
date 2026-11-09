@@ -126,10 +126,10 @@ func LoadBaseMobs(dir string) ([4]wire.Mob, error) {
 		if err != nil {
 			return base, fmt.Errorf("class template: %w", err)
 		}
-		if len(raw) != 848 {
+		if len(raw) != 848 { // the file keeps the 32-bit layout
 			return base, fmt.Errorf("class template %s: %d bytes, want 848 (sizeof STRUCT_MOB)", name, len(raw))
 		}
-		if err := wire.Unmarshal(raw, &base[i]); err != nil {
+		if err := wire.UnmarshalLegacyMob(raw, &base[i]); err != nil {
 			return base, err
 		}
 	}

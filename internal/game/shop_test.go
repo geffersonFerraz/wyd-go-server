@@ -26,7 +26,7 @@ func worldGame(t *testing.T) *Game {
 }
 
 // placePlayer puts a playing user (no connection) at (x, y).
-func placePlayer(g *Game, x, y int, gold int32) *User {
+func placePlayer(g *Game, x, y int, gold int64) *User {
 	u := g.users[1]
 	u.status = userPlay
 	m := &g.mobs[1]
@@ -121,12 +121,12 @@ func TestTeleport(t *testing.T) {
 		t.Skip("no paid teleport")
 	}
 	tp := g.data.Teleports[idx]
-	u := placePlayer(g, tp.SrcX, tp.SrcY, tp.Price-1)
+	u := placePlayer(g, tp.SrcX, tp.SrcY, int64(tp.Price)-1)
 	g.requestTeleport(u)
 	if pos := g.mobs[1].target; int(pos.X) != tp.SrcX && int(pos.X) > tp.SrcX+5 {
 		t.Fatal("teleported without enough gold")
 	}
-	g.mobs[1].info.Player.Gold = tp.Price + 10
+	g.mobs[1].info.Player.Gold = int64(tp.Price) + 10
 	g.requestTeleport(u)
 	pos := g.mobs[1].target
 	if distance(int(pos.X), int(pos.Y), tp.DestX, tp.DestY) > 6 {

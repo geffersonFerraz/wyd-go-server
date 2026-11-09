@@ -60,7 +60,7 @@ type UngroupItem struct {
 
 // eighthSkillGold is the price of a class's 8th skill by evolution
 // (Mortal, Arch, Celestial, Sub-Celestial).
-var eighthSkillGold = [4]int32{5_000_000, 10_000_000, 50_000_000, 50_000_000}
+var eighthSkillGold = [4]int64{5_000_000, 10_000_000, 50_000_000, 50_000_000}
 
 // x86shl is a 32-bit `1 << n` as the C++ compiled it: x86 masks the count
 // to 5 bits, so negative or >= 32 counts wrap instead of giving 0.
@@ -178,7 +178,7 @@ func (g *Game) learnSkill(u *User, book, npc int) bool {
 		g.clientMessage(u, "%s", g.lang(nnNeedMoreMastery))
 		return false
 	}
-	var gold int32
+	var gold int64
 	eighth := pos%8 == 7
 	if eighth {
 		for i := 1; i < 8; i++ {

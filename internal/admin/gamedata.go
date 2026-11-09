@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"dbsrv/internal/store"
+	"dbsrv/internal/wire"
 )
 
 // Game data screens (gamedata schema). Saves go straight to Postgres; the
@@ -351,7 +352,7 @@ func (s *Server) saveDrop(w http.ResponseWriter, r *http.Request) {
 	f := &formReader{r: r}
 	d := &store.Drop{Name: r.PostFormValue("name"), Section: strings.TrimSpace(r.PostFormValue("section"))}
 	d.MaxDrops = f.int("max_drops", "Máx. por morte", 0, 1000)
-	d.Gold = f.int("gold", "Gold", 0, 2000000000)
+	d.Gold = f.int("gold", "Gold", 0, wire.MaxLimit)
 	n, _ := strconv.Atoi(r.PostFormValue("rows"))
 	for i := 0; i < n && i < 500; i++ {
 		item := strings.TrimSpace(r.PostFormValue(fmt.Sprintf("item%d", i)))

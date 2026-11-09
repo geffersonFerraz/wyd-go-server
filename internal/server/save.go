@@ -61,7 +61,7 @@ func applySave(a *wire.Account, slot int, p *wire.SaveCharacter, quit bool) {
 	copy(c.SkillBar[:], p.SkillBar[4:20])
 
 	a.StorageItems = p.Storage
-	a.StorageCoin = uint32(p.Coin)
+	a.StorageCoin = int64(p.Coin)
 	a.Insignias = uint64(p.Insignia)
 	a.BanType = p.BanType
 	a.Ban = p.Ban

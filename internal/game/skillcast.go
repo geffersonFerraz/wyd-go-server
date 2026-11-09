@@ -68,7 +68,7 @@ func (g *Game) checkSkill(u *User, p *wire.Attack) (sc skillCast, ok bool) {
 	sc.delay = 100 + sc.mastery
 	sc.maxTarget = sd.Maxtarget
 	if skill == 85 { // golden shield costs gold
-		cost := int32(sc.mastery * 100)
+		cost := int64(sc.mastery * 100)
 		if pl.Gold < cost {
 			return sc, false
 		}
@@ -84,7 +84,7 @@ func (g *Game) checkSkill(u *User, p *wire.Attack) (sc skillCast, ok bool) {
 			g.sendSetHpMp(u)
 			return sc, false
 		}
-		pl.Status.CurMP -= int32(mana)
+		pl.Status.CurMP -= int64(mana)
 	}
 	if pl.ClassInfo == 3 {
 		g.removeAffect(u.id, 28) // DoRemoveHide
@@ -495,9 +495,9 @@ func (g *Game) applyHP(id, dam int) {
 		case 1937:
 			mult *= 1000
 		}
-		s.CurHP -= int32(dam / mult)
+		s.CurHP -= int64(dam / mult)
 	} else {
-		s.CurHP -= int32(dam)
+		s.CurHP -= int64(dam)
 	}
 	s.CurHP = min(s.CurHP, s.MaxHP)
 }
@@ -615,7 +615,7 @@ func (g *Game) processAffect(id int) {
 		defer g.playerAuras(g.users[id])
 	}
 	expired, unTransform, hpChanged := false, false, false
-	delta := int32(0)
+	delta := int64(0)
 	for i := range m.info.Affects {
 		a := &m.info.Affects[i]
 		if a.Index == 0 {
@@ -624,13 +624,13 @@ func (g *Game) processAffect(id int) {
 		maxHP, curHP := pl.Status.MaxHP, pl.Status.CurHP
 		switch a.Index {
 		case 17: // aura of life
-			hp := min(max(curHP+int32(a.Value)<<1+int32(a.Master)+50, 1), maxHP)
+			hp := min(max(curHP+int64(a.Value)<<1+int64(a.Master)+50, 1), maxHP)
 			delta = hp - curHP
 			pl.Status.CurHP = hp
 			hpChanged = true
 		case 20: // poison: players lose 10% (at most 1000)
 			if id < MaxPlayer {
-				hp := int32(float32(curHP) * 0.9)
+				hp := int64(float64(curHP) * 0.9)
 				hp = max(hp, curHP-1000)
 				hp = min(max(hp, 1), maxHP)
 				delta = hp - curHP
@@ -650,7 +650,7 @@ func (g *Game) processAffect(id int) {
 	}
 	if hpChanged {
 		g.multicast2(int(m.target.X), int(m.target.Y), &wire.HpChange{
-			Header: wire.NewHeader(wire.OpSrvHpChange, uint16(id)), CurHP: pl.Status.CurHP, Incress: int16(delta)}, 0)
+			Header: wire.NewHeader(wire.OpSrvHpChange, uint16(id)), CurHP: pl.Status.CurHP, Incress: int64(delta)}, 0)
 	}
 	if expired {
 		g.getCurrentScore(id)

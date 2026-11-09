@@ -30,7 +30,7 @@ const (
 )
 
 const (
-	MaxGold     = 2_000_000_000
+	MaxGold     = wire.MaxLimit
 	MaxLevel    = 400
 	MaxAccess   = 255
 	StorageSize = 128 // MAX_CARGO
@@ -178,7 +178,7 @@ func (e *Edit) Apply(a *wire.Account) string {
 		a.AccessLevel = uint32(e.Value)
 		return ResOK
 	case OpCoin:
-		a.StorageCoin = uint32(e.Value)
+		a.StorageCoin = e.Value
 		return ResOK
 	case OpLock:
 		return ResOK
@@ -193,7 +193,7 @@ func (e *Edit) Apply(a *wire.Account) string {
 	pl := &c.Player
 	switch e.Op {
 	case OpGold:
-		pl.Gold = int32(e.Value)
+		pl.Gold = e.Value
 	case OpLevel:
 		level := int16(e.Value - 1)
 		pl.BStatus.Level, pl.Status.Level = level, level

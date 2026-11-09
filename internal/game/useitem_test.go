@@ -43,7 +43,7 @@ func TestPotion(t *testing.T) {
 		t.Fatalf("stack after use: %+v", pl.Inventory[3])
 	}
 	g.potionTimer()
-	if want := min(int32(100+110), u.potionHP); pl.Status.CurHP != want {
+	if want := min(int64(100+110), u.potionHP); pl.Status.CurHP != want {
 		t.Fatalf("hp %d after one tick, want %d", pl.Status.CurHP, want)
 	}
 	if u.quaff {

@@ -109,7 +109,7 @@ func TestIllusionCostsMana(t *testing.T) {
 	m := &g.mobs[1]
 	m.info.Player.ClassInfo = 3
 	m.info.Player.Learn[0] = 2
-	mana := int32(g.data.Skills[73].Mana)
+	mana := int64(g.data.Skills[73].Mana)
 	m.info.Player.Status.MaxMP, m.info.Player.Status.CurMP = mana+10, mana+10
 	p := wire.Action{Header: wire.NewHeader(wire.OpCliMoveIllus, 1)}
 	p.Header.TimeStamp = g.now()

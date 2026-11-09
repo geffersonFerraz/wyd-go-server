@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-// testdata/npc/* are the class templates DBSRV fread()s straight into
-// STRUCT_MOB (ReadCharBase). Decoding them checks real MSVC-written bytes
-// against our layout.
+// testdata/npc/* are the class templates of the C++ server, in the 32-bit
+// layout of STRUCT_MOB. Decoding them checks real MSVC-written bytes against
+// legacyMob and its conversion to the 64-bit Mob.
 func TestDecodeNPCBaseFiles(t *testing.T) {
 	want := []struct {
 		file string
@@ -22,7 +22,7 @@ func TestDecodeNPCBaseFiles(t *testing.T) {
 			t.Fatal(err)
 		}
 		var m Mob
-		if err := Unmarshal(raw, &m); err != nil {
+		if err := UnmarshalLegacyMob(raw, &m); err != nil {
 			t.Fatal(err)
 		}
 		if got := CString(m.Name[:]); got != w.file {
@@ -51,7 +51,11 @@ func TestDecodeNPCBaseFiles(t *testing.T) {
 			}
 		}
 
-		back := MustMarshal(&m)
+		var l legacyMob
+		if err := Unmarshal(raw, &l); err != nil {
+			t.Fatal(err)
+		}
+		back := MustMarshal(&l)
 		// Bytes we model as padding are zeroed on write; templates have none
 		// set, so the round trip must be exact.
 		if !bytes.Equal(back, raw) {
@@ -73,9 +77,9 @@ func TestUnmarshalShortTMSRVSave(t *testing.T) {
 	in.Cash = 13300
 	full := MustMarshal(&in)
 
-	// TMSRV sends only 4032 bytes (no TypeBlock).
+	// TMSRV sends only 4136 bytes (no TypeBlock).
 	var out SaveCharacter
-	if err := Unmarshal(full[:4032], &out); err != nil {
+	if err := Unmarshal(full[:4136], &out); err != nil {
 		t.Fatal(err)
 	}
 	if CString(out.User[:]) != "ANDERSON" || out.Cash != 13300 || CString(out.PassBlock[:]) != "1234" {
@@ -94,5 +98,19 @@ func TestCStrings(t *testing.T) {
 	}
 	if s := NewMSVCString("ANGELS"); s.String() != "ANGELS" || s.Capacity != 15 {
 		t.Errorf("msvc string %+v", s)
+	}
+}
+
+func TestLegacyMobWidensValues(t *testing.T) {
+	var l legacyMob
+	l.Gold = 2_000_000_000
+	l.Status.CurHP, l.BStatus.Attack = 150_000, 90_000
+	l.Equip[3].Index = 777
+	var m Mob
+	if err := UnmarshalLegacyMob(MustMarshal(&l), &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Gold != 2_000_000_000 || m.Status.CurHP != 150_000 || m.BStatus.Attack != 90_000 || m.Equip[3].Index != 777 {
+		t.Errorf("%+v", m)
 	}
 }

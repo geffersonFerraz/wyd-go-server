@@ -53,7 +53,7 @@ func duel(t *testing.T, g *Game, x, y int) (*User, *wire.Mob, *wire.Mob) {
 	return u, a, vp
 }
 
-func hit(g *Game, u *User, target int, skill int16, dmg int32) {
+func hit(g *Game, u *User, target int, skill int16, dmg int64) {
 	u.lastAttack = u.lastAttack.AddDate(-1, 0, 0)
 	p := wire.Attack{Header: wire.NewHeader(wire.OpCliAttackOne, uint16(u.id)), SkillID: skill}
 	p.Header.Size = attackSize1

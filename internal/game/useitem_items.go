@@ -579,12 +579,12 @@ func (g *Game) useItemByID(u *User, p *wire.UseItem, src *wire.Item, vol int) bo
 
 	case id == 4010 || id == 4011 || (id >= 4026 && id <= 4029): // gold bars
 		add := map[uint16]int64{4010: 100000000, 4011: 1000000000, 4026: 1000000, 4027: 5000000, 4028: 10000000, 4029: 50000000}[id]
-		if int64(pl.Gold)+add > 2000000000 {
+		if pl.Gold+add > g.cfg.Limits.MaxGold {
 			refuse("%s", g.lang(nnCantGetMoreThan2G))
 			return true
 		}
-		pl.Gold += int32(add)
-		g.signalParm(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
+		pl.Gold += int64(add)
+		g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 		amountMinus(src)
 
 	default:

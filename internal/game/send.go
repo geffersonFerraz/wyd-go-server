@@ -28,6 +28,11 @@ func (g *Game) signalParm(u *User, clientID, op uint16, value int32) {
 	g.queue(u, &wire.SignalValue{Header: wire.NewHeader(op, clientID), Value: value})
 }
 
+// signalParm64 is signalParm for the signals that carry gold.
+func (g *Game) signalParm64(u *User, clientID, op uint16, value int64) {
+	g.queue(u, &wire.SignalValue64{Header: wire.NewHeader(op, clientID), Value: value})
+}
+
 // createMobPacket is GetCreateMob for a player (index < 1000).
 func (g *Game) createMobPacket(id int) wire.CreateMob {
 	m := &g.mobs[id]
@@ -221,7 +226,7 @@ func (g *Game) sendEtc(u *User) {
 	pl := &m.info.Player
 	g.queue(u, &wire.Etc{
 		Header:       wire.NewHeader(wire.OpSrvEtc, uint16(u.id)),
-		Hold:         int32(m.info.Hold),
+		Hold:         int64(m.info.Hold),
 		Exp:          pl.Exp,
 		LearnedSkill: pl.Learn,
 		ScoreBonus:   int16(pl.StatusPoint),

@@ -81,6 +81,7 @@ type Data struct {
 // plus the TMSRV data folder. serverip.txt and dataserver.txt are no
 // longer read (they stay for the C++ server).
 type Config struct {
+	Limits      LimitSettings // limits of tmsrv.yaml
 	NoCPAreas   []NoCPArea    // no_cp_areas of tmsrv.yaml
 	LevelItems  []LevelItem   // level_items of tmsrv.yaml
 	CashShop    []CashShopTab // cash_shop of tmsrv.yaml
@@ -118,6 +119,7 @@ func (c *Config) ApplySettings(s Settings, channel int) error {
 		return fmt.Errorf("channel %d is not in the settings (channels 1..%d)", channel, len(cl.Channels))
 	}
 	c.ListenIP, c.ListenPort = ch.IP, ch.Port
+	c.Limits = s.Limits
 	c.Channel, c.Cluster = channel, cl
 	c.ChangeChannelCooldown = time.Duration(s.ChangeChannel.CooldownSeconds) * time.Second
 	c.DBIP, c.DBPort = s.Network.DBSRVIP, s.Network.DBSRVPort
@@ -148,6 +150,9 @@ func LoadConfig(dir string) (Config, error) {
 // values (the server's Config always comes complete from tmsrv.yaml).
 func (c *Config) fillDefaults() {
 	d := CppSettings()
+	if c.Limits == (LimitSettings{}) {
+		c.Limits = d.Limits
+	}
 	if c.MobAI.IdleThinkSeconds == 0 || c.MobAI.BattleThinkSeconds == 0 {
 		c.MobAI = d.MobAI
 	}

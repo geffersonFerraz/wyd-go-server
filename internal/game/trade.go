@@ -251,14 +251,14 @@ func (g *Game) relayTrade(u, opp *User, msg wire.Trade) {
 // completeTrade swaps items and gold once both sides confirmed.
 func (g *Game) completeTrade(u, opp *User) {
 	me, them := &g.mobs[u.id].info.Player, &g.mobs[opp.id].info.Player
-	if u.trade.Gold < 0 || u.trade.Gold > maxGold || opp.trade.Gold < 0 || opp.trade.Gold > maxGold {
+	if u.trade.Gold < 0 || u.trade.Gold > g.cfg.Limits.MaxGold || opp.trade.Gold < 0 || opp.trade.Gold > g.cfg.Limits.MaxGold {
 		g.removeTrade(u.id)
 		g.removeTrade(opp.id)
 		return // the C++ cancelled here but carried on with the trade
 	}
 	myGold := int64(me.Gold) - int64(u.trade.Gold) + int64(opp.trade.Gold)
 	theirGold := int64(them.Gold) - int64(opp.trade.Gold) + int64(u.trade.Gold)
-	if myGold > maxGold || myGold < 0 || theirGold > maxGold || theirGold < 0 {
+	if myGold > g.cfg.Limits.MaxGold || myGold < 0 || theirGold > g.cfg.Limits.MaxGold || theirGold < 0 {
 		g.clientMessage(u, "%s", g.lang(nnCantGetMoreThan2G))
 		g.removeTrade(u.id)
 		g.removeTrade(opp.id)
@@ -293,7 +293,7 @@ func (g *Game) completeTrade(u, opp *User) {
 	g.log.Info("trade", "a", u.id, "a_account", wire.CString(u.account.Username[:]), "a_gold", u.trade.Gold,
 		"b", opp.id, "b_account", wire.CString(opp.account.Username[:]), "b_gold", opp.trade.Gold)
 	me.Inventory, them.Inventory = myInv, theirInv
-	me.Gold, them.Gold = int32(myGold), int32(theirGold)
+	me.Gold, them.Gold = myGold, theirGold
 	g.sendCarry(u)
 	g.sendCarry(opp)
 	g.removeTrade(u.id)

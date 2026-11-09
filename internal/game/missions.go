@@ -230,7 +230,7 @@ func (g *Game) requestCollectMission(u *User, _ protocol.Packet) {
 	give(&q.Free, &q.FreeAmount)
 	if pass {
 		give(&q.Pass, &q.PassAmount)
-		pl.Gold = int32(min(int64(pl.Gold)+int64(q.Gold), 2_000_000_000))
+		pl.Gold = min(pl.Gold+int64(q.Gold), g.cfg.Limits.MaxGold)
 	}
 	g.log.Info("mission collected", "slot", u.id, "quest", q.ID, "exp", exp, "pass", pass)
 	g.clientMessage(u, "Recompensa coletada com sucesso")

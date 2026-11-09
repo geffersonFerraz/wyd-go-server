@@ -72,7 +72,7 @@ func newChainN(t *testing.T, n int) *chain {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := wire.Unmarshal(raw, &base[i]); err != nil {
+		if err := wire.UnmarshalLegacyMob(raw, &base[i]); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -345,7 +345,7 @@ func TestPlayFlow(t *testing.T) {
 	}
 
 	// Trade: Bravo opens, Alpha answers, Bravo offers 100 gold, both confirm.
-	offer := func(to int16, gold int32, confirm uint8) *wire.Trade {
+	offer := func(to int16, gold int64, confirm uint8) *wire.Trade {
 		tr := &wire.Trade{Header: wire.NewHeader(wire.OpCliTrade, 0), ClientID: uint16(to), Gold: gold, Confirm: confirm}
 		for i := range tr.Slot {
 			tr.Slot[i] = -1
@@ -390,18 +390,18 @@ func TestPlayFlow(t *testing.T) {
 	})
 
 	// Gold to storage (0x388) and part of it back (0x387); saved right away.
-	b.send(&wire.SignalValue{Header: wire.NewHeader(wire.OpCliGoldToStorage, 0), Value: 300})
+	b.send(&wire.SignalValue64{Header: wire.NewHeader(wire.OpCliGoldToStorage, 0), Value: 300})
 	var cargo wire.CargoCoin
 	b.waitFor(wire.OpSrvCargoCoin, &cargo)
 	if cargo.Gold != 300 {
 		t.Errorf("storage gold %d, want 300", cargo.Gold)
 	}
-	b.send(&wire.SignalValue{Header: wire.NewHeader(wire.OpCliGoldToInv, 0), Value: 100})
+	b.send(&wire.SignalValue64{Header: wire.NewHeader(wire.OpCliGoldToInv, 0), Value: 100})
 	b.waitFor(wire.OpSrvCargoCoin, &cargo)
 	if cargo.Gold != 200 {
 		t.Errorf("storage gold %d, want 200", cargo.Gold)
 	}
-	b.send(&wire.SignalValue{Header: wire.NewHeader(wire.OpCliGoldToInv, 0), Value: 5000}) // more than stored
+	b.send(&wire.SignalValue64{Header: wire.NewHeader(wire.OpCliGoldToInv, 0), Value: 5000}) // more than stored
 	b.waitFor(wire.OpSrvMessage, nil)
 	waitUntil(t, func() bool {
 		rec, err := ch.st.LoadAccount(ctx, "PLAYERB")

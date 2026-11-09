@@ -844,12 +844,12 @@ func (g *Game) mobAttack(id int) {
 			case 1937:
 				mult *= 1000
 			}
-			t.info.Player.Status.CurHP -= int32(dam / mult)
+			t.info.Player.Status.CurHP -= int64(dam / mult)
 		} else {
 			if dam > int(t.info.Player.Status.CurHP) {
 				dam = int(t.info.Player.Status.CurHP)
 			}
-			t.info.Player.Status.CurHP -= int32(dam)
+			t.info.Player.Status.CurHP -= int64(dam)
 		}
 		if t.info.Player.Status.CurHP > t.info.Player.Status.MaxHP {
 			t.info.Player.Status.CurHP = t.info.Player.Status.MaxHP
@@ -861,7 +861,7 @@ func (g *Game) mobAttack(id int) {
 			g.processAdultMount(tgt, petDamage)
 		}
 	}
-	p.Target[0].Damage = int32(dam)
+	p.Target[0].Damage = int64(dam)
 	raw, err := wire.Marshal(&p)
 	if err != nil {
 		return
@@ -1019,7 +1019,7 @@ func (g *Game) getAttack(id, tgt int) wire.Attack {
 			m.combat.currentTarget = 0
 		}
 	}
-	p.Target[0].Damage = int32(dam)
+	p.Target[0].Damage = int64(dam)
 	return p
 }
 
@@ -1093,8 +1093,8 @@ func (g *Game) regenTimer() {
 		if attr&attrGuild != 0 {
 			base = 1000
 		}
-		s.CurHP = min(s.CurHP+int32((base+m.combat.regenHP)*5), s.MaxHP)
-		s.CurMP = min(s.CurMP+int32((base+m.combat.regenMP)*5), s.MaxMP)
+		s.CurHP = min(s.CurHP+int64((base+m.combat.regenHP)*5), s.MaxHP)
+		s.CurMP = min(s.CurMP+int64((base+m.combat.regenMP)*5), s.MaxMP)
 		g.sendSetHpMp(u)
 		g.processAffect(id)
 	}
