@@ -319,7 +319,7 @@ func (g *Game) teleportBuff(p *wire.Attack, sc *skillCast) {
 		if id <= 0 || id >= MaxPlayer || g.users[id].status != userPlay {
 			continue
 		}
-		if g.setAffect(id, 41, sc.delay, sc.mastery) {
+		if g.setAffect(id, sc.skill, sc.delay, sc.mastery) {
 			g.sendScore(id)
 		}
 	}

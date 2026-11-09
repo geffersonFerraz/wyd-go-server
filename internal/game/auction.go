@@ -741,6 +741,10 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 	s.store.removeListing(slot)
 
 	itemName := g.data.Item(item.Index).Name
+	sale := wire.StoreSale{Header: wire.NewHeader(wire.OpStoreSale, uint16(u.id)), Channel: int32(g.cfg.Channel), Category: int32(cat), Price: int64(price), Tax: int64(impost), Item: item}
+	copy(sale.Buyer[:15], me.Name[:15])
+	copy(sale.Seller[:15], sp.Name[:15])
+	g.sendDB(&sale)
 	g.log.Info("auction sale", "buyer", u.id, "seller", seller, "item", item.Index, "effects", item.Effect, "price", price, "category", cat, "tax", impost)
 	g.clientMessage(s, "O personagem [%s] comprou o item %s por %d", wire.CString(me.Name[:]), itemName, price)
 	g.clientMessage(u, "Comprou o item %s de %s por %d", itemName, wire.CString(sp.Name[:]), price)

@@ -49,6 +49,8 @@ type User struct {
 	numericFail   int
 	accessLevel   int32
 	lastGMMessage time.Time // /gm cooldown
+	lastStack     time.Time // delayMoveItem
+	crackCount    int       // CrackCount
 	hitEventCount int       // AttackEventCount of the hit event
 	isBanned      bool
 	mac           [8]byte
@@ -165,28 +167,29 @@ type Game struct {
 	secCounter    int
 	saveCursor    int
 
-	genCount              []int // MobCount per generator
-	duel                  duelLetter
-	arena                 arenaState
-	war                   warState
-	kefra                 kefraState
-	kingdom               kingdomState
-	rvr                   rvrState
-	coliseum              coliseumState
-	nightmare             [3]nightmareRoom
-	water                 [3][9]waterRoom
-	nightmareLastMin      int
-	weather, forceWeather int
-	zakum                 zakumState
-	bosses                []bossState
-	bigCuboCount          int
-	pista                 [pistaRooms]pistaRoom
-	dropAll               int      // +drop: one rate for every slot (0 = tmsrv.yaml)
-	adminOut              []string // answers of the GM command being run
-	expRate               int      // +bonusexp (sServer.BonusEXP)
-	macBans               map[[8]byte]bool
-	minCounter            int
-	npcCursor             int
+	genCount               []int // MobCount per generator
+	duel                   duelLetter
+	arena                  arenaState
+	war                    warState
+	kefra                  kefraState
+	kingdom                kingdomState
+	rvr                    rvrState
+	coliseum               coliseumState
+	nightmare              [3]nightmareRoom
+	water                  [3][9]waterRoom
+	nightmareLastMin       int
+	weather, forceWeather  int
+	zakum                  zakumState
+	bosses                 []bossState
+	bigCuboCount           int
+	uniCount, phoenixCount int // sServer.dropuni / dropfenix
+	pista                  [pistaRooms]pistaRoom
+	dropAll                int      // +drop: one rate for every slot (0 = tmsrv.yaml)
+	adminOut               []string // answers of the GM command being run
+	expRate                int      // +bonusexp (sServer.BonusEXP)
+	macBans                map[[8]byte]bool
+	minCounter             int
+	npcCursor              int
 
 	ground      [maxGroundItem]groundItem // g_pInitItem
 	itemGrid    map[int]int               // g_pItemGrid, cellKey -> ground id

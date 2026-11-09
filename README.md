@@ -7,7 +7,6 @@ Reescrita em Go + PostgreSQL do servidor de With Your Destiny 7.87:
 | `cmd/dbsrv` | Banco de dados do jogo (contas, personagens, guildas), porta 7514 | `DBsrv.exe` (C++, arquivos XML) |
 | `cmd/tmsrv` | Servidor do jogo: um processo/container por canal (`-channel N`), portas 8281, 8282... | `TMsrv.exe` (C++) |
 | `cmd/admin` | Painel web da equipe (contas, itens, cidades, alertas); serve ao cliente `servNN.htm` e `serverlist.bin` | ferramenta NP do C++ |
-| `cmd/gamedata-import` | Importa itens, skills, drops e teleportes para o Postgres | — |
 | `cmd/xml-import` | Importa as contas XML do DBsrv C++ (uma vez) | — |
 
 O protocolo com o cliente é mantido byte a byte (structs MSVC x64, ver docs/x64-limites.md),
@@ -28,13 +27,12 @@ Tudo o que o servidor lê fica dentro do repositório:
 | `data/tmsrv` | `HeightMap.dat`, `AttributeMap.dat`, `guild_zone.txt`, `Language.txt`, `NPCGener.txt`, `InitItem.csv`, `npc/`, `npc_base/` | TMSRV |
 | `data/tmsrv/Data` | `Missions.xml`, `DailyReward.txt`, `NPCEvento.txt` | TMSRV |
 | `data/tmsrv/Conf/Roleta.txt`, `data/tmsrv/Controlador EXP/` | roleta e bônus de experiência | TMSRV |
-| `data/tmsrv` | `ItemList.csv`, `ItemEffect.h`, `skilldata.csv`, `controle drop/Controle.txt`, `Teleport.txt` | `gamedata-import` (depois tudo fica no Postgres) |
 | `data/tmsrv/Cache` | bloqueio de conta e recompensa diária por conta (criado em execução, fora do Git) | TMSRV e painel |
 | `data/dbsrv` | `npc/` (modelos das classes) | DBSRV |
 
 Os arquivos de texto estão em Windows-1252, a codificação do cliente; o
 `.gitattributes` impede o Git de alterá-los. Os caminhos podem ser trocados
-pelas flags `-dir` (tmsrv, gamedata-import), `-tmsrv-dir` (admin),
+pelas flags `-dir` (tmsrv), `-tmsrv-dir` (admin),
 `-npc` (dbsrv).
 
 Só o `xml-import`, que migra uma vez as contas do DBsrv C++ (arquivos com
@@ -49,11 +47,8 @@ servidor stop
 servidor senha-admin
 ```
 
-Na primeira vez, importe os dados do jogo:
-
-```bat
-go run ./cmd/gamedata-import -dsn postgres://dbsrv:dbsrv@localhost:5432/dbsrv
-```
+Um servidor novo começa sem itens e skills. Importe um arquivo gerado em
+**Exportar** no painel de outro servidor (menu Exportar > Importar).
 
 ## Configuração
 

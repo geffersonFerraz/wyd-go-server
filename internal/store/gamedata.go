@@ -100,7 +100,11 @@ type Teleport struct {
 
 // ImportGameData replaces every gamedata table with gd in one transaction.
 func (s *Store) ImportGameData(ctx context.Context, gd *GameData, by string) error {
-	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error { return importGameTables(ctx, tx, gd, by) })
+}
+
+func importGameTables(ctx context.Context, tx pgx.Tx, gd *GameData, by string) error {
+	{
 		if _, err := tx.Exec(ctx, `TRUNCATE gamedata.rate_drops, gamedata.drop_items, gamedata.drops, gamedata.item_effects,
 			gamedata.items, gamedata.skills, gamedata.teleports, gamedata.effect_names`); err != nil {
 			return err
@@ -183,7 +187,7 @@ func (s *Store) ImportGameData(ctx context.Context, gd *GameData, by string) err
 		}
 		return logChange(ctx, tx, by, "import", "all", fmt.Sprintf("%d itens, %d skills, %d drops, %d teleportes",
 			len(gd.Items), len(gd.Skills), len(gd.Drops), len(gd.Teleports)))
-	})
+	}
 }
 
 // LoadGameData reads every gamedata table in one consistent snapshot.

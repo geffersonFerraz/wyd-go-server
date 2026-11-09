@@ -179,7 +179,8 @@ func run(log *slog.Logger, o options) error {
 			return fmt.Errorf("guildmark dir: %w", err)
 		}
 	}
-	panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: o.markDir, LockDir: lockDir(o.tmsrvDir), Channels: channels}, st, log)
+	panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: o.markDir, LockDir: lockDir(o.tmsrvDir), Channels: channels,
+		SettingsPath: o.config, DataDir: dataDirOf(o.tmsrvDir), StateDir: filepath.Dir(pwFile)}, st, log)
 	if err != nil {
 		return err
 	}
@@ -296,4 +297,12 @@ func generatedPasswordHash(log *slog.Logger, pwFile string) (string, error) {
 		return "", fmt.Errorf("%s is empty", pwFile)
 	}
 	return auth.Hash(pw)
+}
+
+// dataDirOf is the data folder that holds the TMSRV folder.
+func dataDirOf(tmsrv string) string {
+	if tmsrv == "" {
+		return ""
+	}
+	return filepath.Dir(tmsrv)
 }

@@ -109,3 +109,19 @@ func (s *Server) handleOpenStore(ctx context.Context, ch *channel, pkt protocol.
 		ch.log.Error("open store", "err", err)
 	}
 }
+
+// handleStoreSale keeps the record of an auction sale.
+func (s *Server) handleStoreSale(ctx context.Context, ch *channel, pkt protocol.Packet) {
+	var p wire.StoreSale
+	if !decode(ch, pkt, &p) {
+		return
+	}
+	sale := store.StoreSale{Channel: int(p.Channel), Buyer: wire.GameString(p.Buyer[:]), Seller: wire.GameString(p.Seller[:]),
+		Item: int(p.Item.Index), Price: p.Price, Tax: p.Tax, Category: int(p.Category)}
+	for i, e := range p.Item.Effect {
+		sale.Effects[i] = store.ItemEffect{Effect: int(e.Index), Value: int(e.Value)}
+	}
+	if err := s.st.AddStoreSale(ctx, sale); err != nil {
+		ch.log.Error("store sale NOT stored", "buyer", sale.Buyer, "seller", sale.Seller, "item", sale.Item, "err", err)
+	}
+}

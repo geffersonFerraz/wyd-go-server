@@ -185,11 +185,11 @@ func (g *Game) generateMob(genID, atX, atY int) {
 		*m = Mob{}
 		return
 	}
+	g.spawnAffect(leader, &gen.Leader)
 	g.placeNPC(leader, x, y)
 	g.genCount[src] = max(g.genCount[src], 0) + 1
 	g.kingdomSpawned(genID, leader)
 	g.bossSpawned(genID, leader)
-	// TODO(phase C): Leader.bStatus.maxMP is an affect applied on spawn.
 
 	if !gen.HasFollower {
 		return
@@ -229,6 +229,7 @@ func (g *Game) generateMob(genID, atX, atY int) {
 			g.mobs[leader].npc.followers[i] = 0
 			continue
 		}
+		g.spawnAffect(f, &gen.Follower)
 		g.placeNPC(f, fx, fy)
 		g.genCount[src] = max(g.genCount[src], 0) + 1
 	}
@@ -250,3 +251,11 @@ func (g *Game) placeNPC(id, x, y int) {
 
 // isNPC reports whether a mob id is in the NPC range.
 func isNPC(id int) bool { return id >= firstNPC && id < MaxMob }
+
+// spawnAffect: a template's bStatus.maxMP is the skill it is born under.
+func (g *Game) spawnAffect(id int, tmpl *wire.Mob) {
+	if skill := int(tmpl.BStatus.MaxMP); skill > 0 && skill < len(g.data.Skills) {
+		g.setAffect(id, skill, 30000, 200)
+		g.setTick(id, skill, 30000, 200)
+	}
+}

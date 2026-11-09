@@ -2,113 +2,18 @@ package game
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
 
 	"dbsrv/internal/store"
 	"dbsrv/internal/wire"
 )
 
-// Game data lives in Postgres (schema gamedata). ReadLegacyGameData parses
-// the C++ files once for cmd/gamedata-import; ApplyGameData puts what the
+// Game data lives in Postgres (schema gamedata); ApplyGameData puts what the
 // TMSRV loaded from the database into the in-memory tables.
-
-// ReadLegacyGameData reads ItemList.csv (+ ItemEffect.h), skilldata.csv,
-// "controle drop/Controle.txt" and Teleport.txt from the C++ TMSRV folder.
-// skipped lists drop blocks ignored because an earlier block had the same
-// name (the C++ used the first one).
-func ReadLegacyGameData(dir string) (gd *store.GameData, skipped []string, err error) {
-	gd = &store.GameData{}
-	names := loadEffectNames(filepath.Join(dir, "ItemEffect.h"))
-	for name, id := range names {
-		gd.EffectNames = append(gd.EffectNames, store.EffectName{ID: id, Name: name})
-	}
-	sort.Slice(gd.EffectNames, func(i, j int) bool { return gd.EffectNames[i].ID < gd.EffectNames[j].ID })
-	gd.EffectNames = dedupeEffectIDs(gd.EffectNames)
-
-	tmp := &Data{Items: make([]ItemData, MaxItemList)}
-	if err := tmp.loadItemList(filepath.Join(dir, "ItemList.csv"), names); err != nil {
-		return nil, nil, err
-	}
-	for id := 1; id < MaxItemList; id++ {
-		it := &tmp.Items[id]
-		if it.Name == "" {
-			continue
-		}
-		row := store.Item{
-			ID: id, Name: wire.DecodeGame(it.Name), Mesh1: int(it.Mesh1), Mesh2: int(it.Mesh2),
-			Level: int(it.Level), ReqStr: int(it.Str), ReqInt: int(it.Int), ReqDex: int(it.Dex), ReqCon: int(it.Con),
-			Price: int(it.Price), Unique: int(it.Unique), Pos: int(it.FullPos), Extreme: int(it.Extreme), Grade: int(it.Grade),
-		}
-		for e := range it.Effect {
-			row.Effects[e] = store.ItemEffect{Effect: int(it.Effect[e].Index), Value: int(it.Effect[e].Value)}
-		}
-		gd.Items = append(gd.Items, row)
-	}
-
-	raw, err := os.ReadFile(filepath.Join(dir, "skilldata.csv"))
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, s := range ParseSkillsCSV(raw) {
-		k := s.SkillData
-		gd.Skills = append(gd.Skills, store.Skill{
-			ID: s.ID, Name: s.Name, Points: k.Points, Target: k.Target, Mana: k.Mana, Delay: k.Delay, Range: k.Range,
-			InstanceType: k.InstanceType, InstanceValue: k.InstanceValue, TickType: k.TickType, TickValue: k.TickValue,
-			AffectType: k.AffectType, AffectValue: k.AffectValue, Time: k.Time, InstanceAttribute: k.InstanceAttribute,
-			TickAttribute: k.TickAttribute, Aggressive: k.Aggressive, MaxTarget: k.Maxtarget, PartyCheck: k.PartyCheck,
-			AffectResist: k.AffectResist, Passive: k.PassiveCheck, ForceDamage: k.ForceDamage, Act1: s.Act1, Act2: s.Act2,
-		})
-	}
-
-	raw, err = os.ReadFile(filepath.Join(dir, "controle drop", "Controle.txt"))
-	if err != nil {
-		return nil, nil, err
-	}
-	mobs, skipped := ParseDropsTxt(raw)
-	for _, m := range mobs {
-		d := store.Drop{Name: m.Name, Section: m.Section, MaxDrops: m.MaxDrops, Gold: m.Gold}
-		for _, it := range m.Items {
-			d.Items = append(d.Items, store.DropItem{Kills: it.Kills, Item: int(it.Index), Effect: int(it.Effect), Value: int(it.Value)})
-		}
-		gd.Drops = append(gd.Drops, d)
-	}
-
-	gd.Drops = mergeRateDrops(gd.Drops, dir)
-
-	if err := tmp.loadTeleports(filepath.Join(dir, "Teleport.txt")); err != nil && !os.IsNotExist(err) {
-		return nil, nil, err
-	}
-	for i, t := range tmp.Teleports {
-		gd.Teleports = append(gd.Teleports, store.Teleport{ID: i, SrcX: t.SrcX, SrcY: t.SrcY, DstX: t.DestX, DstY: t.DestY, Price: int(t.Price)})
-	}
-	return gd, skipped, nil
-}
-
-// dedupeEffectIDs keeps one name per id (ItemEffect.h has aliases; the
-// first name in id order wins, which is what effect_names stores).
-func dedupeEffectIDs(in []store.EffectName) []store.EffectName {
-	sort.SliceStable(in, func(i, j int) bool {
-		if in[i].ID != in[j].ID {
-			return in[i].ID < in[j].ID
-		}
-		return in[i].Name < in[j].Name
-	})
-	out := in[:0]
-	for i, e := range in {
-		if i > 0 && e.ID == in[i-1].ID {
-			continue
-		}
-		out = append(out, e)
-	}
-	return out
-}
 
 // ApplyGameData installs database rows as the in-memory game tables.
 func (d *Data) ApplyGameData(gd *store.GameData) error {
 	if len(gd.Items) == 0 {
-		return fmt.Errorf("gamedata.items is empty: run gamedata-import")
+		return fmt.Errorf("gamedata.items is empty: import a server export in the admin panel")
 	}
 	items := make([]ItemData, MaxItemList)
 	for _, r := range gd.Items {
@@ -244,24 +149,4 @@ func ReadRateDrops(dir string) ([]store.Drop, error) {
 		}
 	}
 	return out, nil
-}
-
-// mergeRateDrops adds the inventories to what Controle.txt gave.
-func mergeRateDrops(drops []store.Drop, dir string) []store.Drop {
-	rate, err := ReadRateDrops(dir)
-	if err != nil {
-		return drops
-	}
-	at := make(map[string]int, len(drops))
-	for i, d := range drops {
-		at[d.Name] = i
-	}
-	for _, r := range rate {
-		if i, ok := at[r.Name]; ok {
-			drops[i].Rate, drops[i].RateGold = r.Rate, r.RateGold
-		} else {
-			drops = append(drops, r)
-		}
-	}
-	return drops
 }

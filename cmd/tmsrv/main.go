@@ -8,7 +8,7 @@
 // channel in the file, -channel may be left out.
 //
 // Items, skills, drops and teleports come from Postgres (schema gamedata,
-// filled once by cmd/gamedata-import; -dsn or DATABASE_URL). From -dir it
+// filled by the admin panel; -dsn or DATABASE_URL). From -dir it
 // still reads serverip.txt, dataserver.txt, guild_zone.txt, Language.txt,
 // NPCGener.txt (+ npc/) and the height/attribute maps. Its own options come
 // from -config (tmsrv.yaml: channels, newbie zone, mob AI); the C++

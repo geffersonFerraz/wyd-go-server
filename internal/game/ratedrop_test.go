@@ -91,3 +91,31 @@ func TestReadRateDropsFromFiles(t *testing.T) {
 		}
 	}
 }
+
+// The area attack is one 0x367 for every target.
+func TestAreaAttackIsOnePacket(t *testing.T) {
+	g := warGame(t, 2)
+	x, y := 2100, 2100
+	for i, id := range []int{1, 2} {
+		g.clearGrid(id)
+		g.mobs[id].target = wire.Position{X: uint16(x + i), Y: uint16(y)}
+		g.setCell(x+i, y, uint16(id))
+		g.users[id].out = nil
+		g.mobs[id].info.Player.Status.CurHP, g.mobs[id].info.Player.Status.MaxHP = 1000, 1000
+	}
+	boss := firstNPC + 7
+	m := &g.mobs[boss]
+	m.mode = modeBattle
+	m.target = wire.Position{X: uint16(x - 2), Y: uint16(y)}
+	m.info.Player.Status.DEX = 20
+	m.info.Player.Status.Attack = 50
+	seen := 0
+	for range 30 {
+		g.users[1].out, g.users[2].out = nil, nil
+		g.areaAttack(boss)
+		seen += len(sent(g.users[1], wire.OpCliAttack))
+	}
+	if seen == 0 {
+		t.Fatal("no 0x367 reached the player")
+	}
+}

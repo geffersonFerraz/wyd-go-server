@@ -762,3 +762,15 @@ type OpenStore struct {
 	Owner   [16]byte
 	Name    [24]byte
 }
+
+// StoreSale (Go only, 0xC1D): one sale in the auction stores.
+type StoreSale struct {
+	Header   Header
+	Channel  int32
+	Category int32 // 1 donate, 2 gold, 3 bars
+	Price    int64
+	Tax      int64
+	Buyer    [16]byte
+	Seller   [16]byte
+	Item     Item
+}

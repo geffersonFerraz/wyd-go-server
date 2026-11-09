@@ -146,15 +146,10 @@ func packetRaw(raw []byte) protocol.Packet {
 	return protocol.Packet{Header: protocol.Header{Size: h.Size, PacketID: h.PacketID, ClientID: h.ClientID, TimeStamp: h.TimeStamp}, Raw: raw}
 }
 
-// applyLegacyGameData loads items, skills, drops and teleports the way
-// gamedata-import reads them, without a database.
+// applyLegacyGameData loads the test copy of the game configuration.
 func applyLegacyGameData(t *testing.T, d *Data) {
 	t.Helper()
-	gd, _, err := ReadLegacyGameData(realDataDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := d.ApplyGameData(gd); err != nil {
+	if err := d.ApplyGameData(GameDataFixture(t)); err != nil {
 		t.Fatal(err)
 	}
 }

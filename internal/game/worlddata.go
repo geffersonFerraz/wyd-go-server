@@ -113,28 +113,6 @@ func (d *Data) village(x, y int) int {
 
 const maxTeleport = 128 // MAX_TELEPORT
 
-func (d *Data) loadTeleports(path string) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	sc := bufio.NewScanner(bytes.NewReader(raw))
-	for sc.Scan() && len(d.Teleports) < maxTeleport {
-		line := sc.Text()
-		if line == "" || line[0] == '#' {
-			continue
-		}
-		f := strings.Split(line, ",")
-		if len(f) < 5 {
-			continue
-		}
-		d.Teleports = append(d.Teleports, Teleport{
-			SrcX: atoi(f[0]), SrcY: atoi(f[1]), DestX: atoi(f[2]), DestY: atoi(f[3]), Price: int32(atoi(f[4])),
-		})
-	}
-	return sc.Err()
-}
-
 const maxNPCGenerator = 8192 // MAX_NPCGENERATOR
 
 // loadGeners mirrors CNPCGener::ReadNPCGener: "#" starts a generator,

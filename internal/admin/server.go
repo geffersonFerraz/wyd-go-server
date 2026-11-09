@@ -57,6 +57,9 @@ type Config struct {
 	LockDir string
 	// Channels are the channel numbers of tmsrv.yaml (none = just channel 1).
 	Channels []int
+	// SettingsPath (tmsrv.yaml), DataDir (the data folder) and StateDir
+	// (the panel's own files) are used by the server export and import.
+	SettingsPath, DataDir, StateDir string
 }
 
 type adminSession struct {
@@ -80,6 +83,7 @@ type Server struct {
 	mu       sync.Mutex
 	sessions map[string]*adminSession
 	failures map[string]*failure
+	pending  *pendingImport
 }
 
 func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
@@ -124,11 +128,11 @@ func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
 		}
 		return "especial"
 	}
-	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts", "notice", "gm", "messages", "stores", "droprates"} {
+	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts", "notice", "gm", "messages", "stores", "droprates", "server"} {
 		files := []string{"templates/layout.html", "templates/" + page + ".html"}
 		if page == "character" || page == "storage" {
 			files = append(files, "templates/editparts.html")
-		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" && page != "notice" && page != "gm" && page != "messages" && page != "stores" {
+		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" && page != "notice" && page != "gm" && page != "messages" && page != "stores" && page != "server" {
 			files = append(files, "templates/gamedata_common.html")
 		}
 		t, err := template.New("layout.html").Funcs(funcs).ParseFS(assets, files...)
@@ -164,6 +168,7 @@ func (s *Server) Handler() http.Handler {
 	s.guildRoutes(mux)
 	s.alertRoutes(mux)
 	s.gmRoutes(mux)
+	s.serverRoutes(mux)
 	s.accountRoutes(mux)
 	s.noticeRoutes(mux)
 	return securityHeaders(mux)

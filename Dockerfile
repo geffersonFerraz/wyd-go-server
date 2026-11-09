@@ -1,4 +1,4 @@
-# Build de um dos programas de cmd/ (dbsrv, tmsrv, gamedata-import...).
+# Build de um dos programas de cmd/ (dbsrv, tmsrv, admin...).
 #   docker build --build-arg CMD=tmsrv -t wyd-tmsrv .
 FROM golang:1.26-alpine AS build
 ARG CMD

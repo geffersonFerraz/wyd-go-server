@@ -1436,12 +1436,30 @@ func (g *Game) areaAttack(id int) {
 			targets = append(targets, t)
 		}
 	}
-	saved := m.combat.currentTarget
-	for _, t := range targets {
-		m.combat.currentTarget = t
-		g.mobAttack(id)
+	if len(targets) == 0 {
+		return
 	}
-	m.combat.currentTarget = saved
+	multi := g.getAttack(id, targets[0])
+	multi.Header.PacketID, multi.Header.Size = wire.OpCliAttack, attackSize
+	for i, t := range targets {
+		one := multi
+		if i != 0 {
+			one = g.getAttack(id, t)
+		}
+		multi.Target[i].Index = int32(t)
+		multi.Target[i].Damage = int64(g.mobStrike(id, t, int(one.Target[0].Damage)))
+	}
+	raw, err := wire.Marshal(&multi)
+	if err != nil {
+		return
+	}
+	g.multicastRaw(cx, cy, raw[:attackSize])
+	for _, t := range targets {
+		if s := &g.mobs[t].info.Player.Status; s.CurHP <= 0 {
+			s.CurHP = 0
+			g.mobKilled(t, id)
+		}
+	}
 }
 
 // Timers of ProcessSecTimer ------------------------------------------------
@@ -1465,6 +1483,9 @@ var (
 // serverAreaTimer: quests reset every 10 minutes, the valley every 30, and
 // nobody stays in the valley without its fairy.
 func (g *Game) serverAreaTimer() {
+	if g.secCounter%120 == 0 {
+		g.fairyMinuteTimer()
+	}
 	if g.secCounter%1200 == 0 {
 		for _, a := range questAreas {
 			g.clearArea(a)
@@ -1519,4 +1540,109 @@ func (g *Game) bigCuboKill(u *User) {
 			g.clientMessage(o, "Parabéns participantes, todos foram recompensados com BAU I")
 		}
 	})
+}
+
+// Special monsters of MobKilled --------------------------------------------
+
+const (
+	genBossFrost    = 4807
+	genAlmaUni      = 4067
+	genAlmaUniEnd   = 4086
+	genAlmaFenix    = 3658
+	genAlmaFenixEnd = 3743
+	almaKills       = 500
+)
+
+// gateTowerKilled: a gate tower (face 219) opens the gate it stands on.
+func (g *Game) gateTowerKilled(target int) {
+	m := &g.mobs[target]
+	gen := m.npc.generateID
+	if m.info.Player.Equip[0].Index != 219 || gen == genTowerGuardB || gen == genTowerGuardR {
+		return
+	}
+	id := g.itemAt(int(m.target.X), int(m.target.Y))
+	if id <= 0 || id >= maxGroundItem || g.ground[id].item.Index == 0 {
+		return
+	}
+	if _, ok := g.updateGroundItem(id, gateOpen); ok {
+		g.broadcastGate(id, 0)
+		g.ground[id].closeArmed = false
+	}
+}
+
+func (g *Game) giveBonusItem(u *User, id uint16, level, sanc int) {
+	it := wire.Item{Index: id}
+	g.setItemBonusLevel(&it, level, sanc, 0)
+	g.putItem(u, &it)
+}
+
+// monsterPrize is what some monsters hand directly to whoever killed them.
+func (g *Game) monsterPrize(gen, killer int) {
+	if owner := g.summonOwner(killer); owner != 0 {
+		killer = owner
+	}
+	if killer <= 0 || killer >= MaxPlayer || g.users[killer].status != userPlay {
+		return
+	}
+	u := g.users[killer]
+	name := g.charName(killer)
+	switch {
+	case gen == 0 || gen == 1 || gen == 2:
+		switch rnd() % 14 {
+		case 0:
+			g.giveBonusItem(u, 420, 0, 0)
+		case 1:
+			g.giveBonusItem(u, 421, 0, 0)
+		}
+	case gen == 5 || gen == 6 || gen == 7:
+		if rnd()%14 == 0 {
+			g.giveBonusItem(u, uint16(rnd()%7+421), 0, 0)
+		}
+	case gen == genZakum:
+		if id := [7]uint16{1106, 1256, 1418, 1568}[rnd()%7]; id != 0 {
+			g.giveBonusItem(u, id, 75, 1)
+		}
+	case gen == genBossFrost:
+		it := wire.Item{}
+		it.Effect[0] = wire.ItemEffect{Index: efAmount, Value: 1}
+		switch r := rnd() % 100; {
+		case r < 35:
+			it.Index = 4029
+		case r < 55:
+			it.Index, it.Effect[0].Value = 3314, 3
+		case r < 75:
+			it.Index, it.Effect[0].Value = 4140, 2
+		case r < 85:
+			it = wire.Item{Index: 3467}
+		default:
+			it.Index, it.Effect[0].Value = 4140, 2
+		}
+		g.putItem(u, &it)
+		u.account.Honra += 20
+		g.sendEtc(u)
+		msg := fmt.Sprintf("O jogador %s derrotou o Boss %s", name, wire.DecodeGame(wire.CString(g.data.Geners[gen].Leader.Name[:])))
+		g.notice(msg)
+		g.chatAll(arenaAnnounce, msg)
+	case gen >= genAlmaUni && gen <= genAlmaUniEnd:
+		g.almaKill(u, &g.uniCount, 1740, fmt.Sprintf("O jogador %s dropou Alma do Uni", name))
+	case gen >= genAlmaFenix && gen <= genAlmaFenixEnd:
+		g.almaKill(u, &g.phoenixCount, 1741, fmt.Sprintf("O jogador %s dropou Alma da Fênix", name))
+	}
+}
+
+func (g *Game) almaKill(u *User, count *int, item uint16, msg string) {
+	*count++
+	if *count < almaKills {
+		return
+	}
+	*count = 0
+	it := wire.Item{Index: item}
+	g.putItem(u, &it)
+	g.notice(msg)
+	g.chatAll(arenaAnnounce, msg)
+}
+
+// isBossMob: the mob is one of the timed bosses.
+func (g *Game) isBossMob(id int) bool {
+	return slices.ContainsFunc(g.bosses, func(b bossState) bool { return b.current != 0 && b.mob == id })
 }

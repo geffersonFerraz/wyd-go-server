@@ -107,3 +107,35 @@ func TestDropRatesPage(t *testing.T) {
 		t.Fatalf("page %d", code)
 	}
 }
+
+func TestMacBanRemovedInPanel(t *testing.T) {
+	h := newPanel(t)
+	csrf := h.login()
+	mac := [8]byte{1, 2, 3, 4, 5, 6, 0, 0}
+	if err := h.st.SetMacBan(h.ctx, mac, true); err != nil {
+		t.Fatal(err)
+	}
+	if code, body, _ := h.get("/gm"); code != http.StatusOK || !strings.Contains(body, "0102030405060000") {
+		t.Fatalf("page: %d", code)
+	}
+	if code, _, _ := h.post("/macbans/zz/remove", url.Values{"csrf": {csrf}}); code != http.StatusNotFound {
+		t.Fatalf("bad mac: %d", code)
+	}
+	if code, _, _ := h.post("/macbans/0102030405060000/remove", url.Values{"csrf": {csrf}}); code != http.StatusSeeOther {
+		t.Fatalf("remove: %d", code)
+	}
+	if list, _ := h.st.MacBans(h.ctx); len(list) != 0 {
+		t.Fatalf("still banned: %v", list)
+	}
+}
+
+func TestStoresPage(t *testing.T) {
+	h := newPanel(t)
+	h.login()
+	if err := h.st.AddStoreSale(h.ctx, store.StoreSale{Channel: 1, Buyer: "Comprador", Seller: "Vendedor", Item: 412, Price: 9, Category: 3}); err != nil {
+		t.Fatal(err)
+	}
+	if code, body, _ := h.get("/stores"); code != http.StatusOK || !strings.Contains(body, "Comprador") || !strings.Contains(body, "Barras") {
+		t.Fatalf("page: %d", code)
+	}
+}

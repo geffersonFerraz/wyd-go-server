@@ -804,8 +804,25 @@ func (g *Game) mobAttack(id int) {
 		}
 		g.sendAffect(g.player(tgt))
 	}
+	dam := g.mobStrike(id, tgt, int(p.Target[0].Damage))
 	t := &g.mobs[tgt]
-	dam := int(p.Target[0].Damage)
+	p.Target[0].Damage = int64(dam)
+	raw, err := wire.Marshal(&p)
+	if err != nil {
+		return
+	}
+	g.multicastRaw(int(t.target.X), int(t.target.Y), raw[:attackSize1])
+	if t.info.Player.Status.CurHP <= 0 {
+		t.info.Player.Status.CurHP = 0
+		g.mobKilled(tgt, id)
+	}
+}
+
+// mobStrike applies one blow of a mob: parry, mana shield, pet, HP. It
+// returns the damage to show.
+func (g *Game) mobStrike(id, tgt, dam int) int {
+	m := &g.mobs[id]
+	t := &g.mobs[tgt]
 	if tgt < MaxPlayer && dam > 0 {
 		if m.npc.generateID != genKefra && rnd()%1000 < g.parryRate(id, tgt, -2) {
 			dam = -3
@@ -868,16 +885,7 @@ func (g *Game) mobAttack(id int) {
 			g.processAdultMount(tgt, petDamage)
 		}
 	}
-	p.Target[0].Damage = int64(dam)
-	raw, err := wire.Marshal(&p)
-	if err != nil {
-		return
-	}
-	g.multicastRaw(int(t.target.X), int(t.target.Y), raw[:attackSize1])
-	if t.info.Player.Status.CurHP <= 0 {
-		t.info.Player.Status.CurHP = 0
-		g.mobKilled(tgt, id)
-	}
+	return dam
 }
 
 // getAttack is GetAttack for a mob attacker: skill/motion from its

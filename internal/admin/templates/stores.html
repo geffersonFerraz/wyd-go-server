@@ -1,5 +1,5 @@
 {{define "content"}}
-<h1>Lojas abertas</h1>
+<h1>Lojas</h1>
 <section class="card">
   <p class="muted small">Cada canal atualiza esta lista uma vez por minuto.</p>
   {{if .Stores}}
@@ -12,5 +12,22 @@
   </table>
   </div>
   {{else}}<p class="muted">Nenhuma loja aberta.</p>{{end}}
+</section>
+<section class="card">
+  <h2>Vendas</h2>
+  <form method="get" action="/stores" class="search">
+    <input name="q" value="{{.Q}}" placeholder="Nome exato do comprador ou vendedor" aria-label="Buscar vendas">
+    <button>Buscar</button>
+  </form>
+  {{if .Sales}}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Quando</th><th class="num">Canal</th><th>Comprador</th><th>Vendedor</th><th>Item</th><th class="num">Preço</th><th class="num">Imposto</th><th>Moeda</th></tr></thead>
+    <tbody>{{range .Sales}}<tr><td>{{datetime .SoldAt}}</td><td class="num">{{.Channel}}</td><td>{{.Buyer}}</td><td>{{.Seller}}</td>
+      <td><a href="/gamedata/items/{{.Item}}">{{if .ItemName}}{{.ItemName}}{{else}}#{{.Item}}{{end}}</a></td><td class="num">{{.Price}}</td><td class="num">{{.Tax}}</td>
+      <td>{{if eq .Category 1}}Donate{{else if eq .Category 2}}Gold{{else if eq .Category 3}}Barras{{else}}{{.Category}}{{end}}</td></tr>{{end}}</tbody>
+  </table>
+  </div>
+  {{else}}<p class="muted">Nenhuma venda registrada.</p>{{end}}
 </section>
 {{end}}

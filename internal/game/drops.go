@@ -1,10 +1,6 @@
 package game
 
 import (
-	"bufio"
-	"bytes"
-	"strings"
-
 	"dbsrv/internal/wire"
 )
 
@@ -42,54 +38,6 @@ type DropItem struct {
 	Index  uint16 `yaml:"item"`
 	Effect uint8  `yaml:"effect,omitempty"`
 	Value  uint16 `yaml:"value,omitempty"`
-}
-
-// ParseDropsTxt reads the C++ Controle.txt (loadMobDropData). It returns
-// the blocks in order and the names of blocks dropped because an earlier
-// block had the same name (the C++ getMobDropData used the first one).
-// Names are converted from Windows-1252 to UTF-8.
-func ParseDropsTxt(raw []byte) (mobs []*MobDrop, skipped []string) {
-	seen := map[string]bool{}
-	section := ""
-	sc := bufio.NewScanner(bytes.NewReader(raw))
-	var cur *MobDrop
-	for sc.Scan() {
-		line := strings.TrimRight(sc.Text(), "\r")
-		if line == "" {
-			continue
-		}
-		if cur == nil {
-			if name, ok := strings.CutPrefix(line, "MobName:"); ok {
-				cur = &MobDrop{Name: wire.DecodeGame(name), Section: section}
-			} else if strings.HasPrefix(line, "/") {
-				section = wire.DecodeGame(strings.TrimSpace(strings.Trim(line, "/ ")))
-			}
-			continue
-		}
-		switch {
-		case line == "END":
-			if seen[cur.Name] {
-				skipped = append(skipped, cur.Name)
-			} else {
-				seen[cur.Name] = true
-				mobs = append(mobs, cur)
-			}
-			cur = nil
-		case strings.HasPrefix(line, "MaxDrops:"):
-			cur.MaxDrops = atoi(line[len("MaxDrops:"):])
-		case strings.HasPrefix(line, "GoldDrop:"):
-			cur.Gold = atoi(line[len("GoldDrop:"):])
-		default:
-			// istringstream >> : missing fields are 0.
-			f := strings.Fields(line)
-			var v [4]int
-			for i := 0; i < 4 && i < len(f); i++ {
-				v[i] = atoi(f[i])
-			}
-			cur.Items = append(cur.Items, DropItem{Kills: v[0], Index: uint16(v[1]), Effect: uint8(v[2]), Value: uint16(v[3])})
-		}
-	}
-	return mobs, skipped
 }
 
 // mobName is the mob's name as the C++ std::string saw it (up to NUL).

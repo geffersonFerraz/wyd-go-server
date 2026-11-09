@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"strings"
 
 	"dbsrv/internal/protocol"
@@ -121,6 +123,7 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	g.sendScore(u.id)
 	g.sendEtc(u)
 	g.warLogin(u)
+	g.loginExtras(u)
 	g.mountProcess(u.id)
 	g.block199(u)
 	g.fixStoredBoots(u)
@@ -228,7 +231,7 @@ func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 	case wire.OpCliMoveIllus:
 		pl := &m.info.Player
 		if (pl.ClassInfo != 3 || pl.Learn[0]&2 == 0) && pl.BStatus.Level < 400 {
-			g.log.Warn("illusion without the skill", "slot", u.id, "class", pl.ClassInfo)
+			g.addCrack(u, 10, "illusion without the skill")
 			return
 		}
 		mana := int64(g.data.Skills[73].Mana)
@@ -271,6 +274,7 @@ func (g *Game) requestAction(u *User, pkt protocol.Packet) {
 			g.queue(u, &sm)
 			g.flush(u)
 		}
+		g.addCrack(u, 1, "moved outside the view")
 		return
 	}
 	if dx <= 0 || dx >= gridSize || dy <= 0 || dy >= gridSize {
@@ -420,12 +424,12 @@ func (g *Game) slotItem(u *User, typ, slot int) *wire.Item {
 	return nil
 }
 
-// requestMoveItem is CUser::RequestMoveItem (core rules; stacking, runes,
-// bag expiry, mount costumes and auction locks come in later phases).
+// requestMoveItem is CUser::RequestMoveItem.
 func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 	m := &g.mobs[u.id]
 	if u.status != userPlay || m.info.Player.Status.CurHP == 0 {
 		g.sendHpMode(u)
+		g.addCrack(u, 1, "move item while dead or not playing")
 		return
 	}
 	g.cancelTrade(u)
@@ -439,12 +443,12 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 		return
 	}
 	if (dst == wire.SlotEquip && ds == 15) || (src == wire.SlotEquip && ss == 15) {
-		g.log.Warn("tried to move the cape", "slot", u.id)
+		g.addCrack(u, 2, "tried to move the cape")
 		return
 	}
 	srcItem, dstItem := g.slotItem(u, src, ss), g.slotItem(u, dst, ds)
 	if srcItem == nil || dstItem == nil {
-		g.log.Warn("invalid item move", "slot", u.id, "src_type", src, "src_slot", ss, "dst_type", dst, "dst_slot", ds)
+		g.addCrack(u, 2, "invalid item move")
 		return
 	}
 	pl := &m.info.Player
@@ -454,6 +458,30 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 	}
 	if src == wire.SlotEquip && ss == 14 && pl.Equip[18].Index != 0 {
 		g.clientMessage(u, "Retire seu traje de montaria antes de movimentar a montaria!")
+		return
+	}
+	if src == wire.SlotEquip && ss == 18 && dst == wire.SlotInv && dstItem.Index != 0 && (dstItem.Index < costumeFirst || dstItem.Index > costumeLast) {
+		return // the slot of the mount costume takes only costumes
+	}
+	if srcItem.Index != 0 && srcItem.Index == dstItem.Index && time.Since(u.lastStack) >= moveStackDelay {
+		u.lastStack = time.Now()
+		if agroupItem(srcItem, dstItem) {
+			g.sendItem(u, src, ss, srcItem)
+			g.sendItem(u, dst, ds, dstItem)
+			return
+		}
+	} else if srcItem.Index != 0 && srcItem.Index == dstItem.Index {
+		return
+	}
+	if srcItem.Index >= runeFirst && srcItem.Index <= runeLast && dstItem.Index == itemEmptyRune {
+		g.energizeRune(u, src, ss, dst, ds, srcItem, dstItem)
+		return
+	}
+	if srcItem.Index >= costumeFirst && srcItem.Index <= costumeLast && dst == wire.SlotEquip && ds == 18 && pl.Equip[14].Index != 0 {
+		pl.Equip[14].Effect[2].Value = srcItem.Index - costumeFirst + 11
+		g.sendItem(u, wire.SlotEquip, 14, &pl.Equip[14])
+	}
+	if g.crownMoveRefused(u, src, dst, srcItem, dstItem) {
 		return
 	}
 	if dstItem.Index == 877 || srcItem.Index == 877 {
@@ -479,11 +507,15 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 	if newSrc.Index != 0 && dst == wire.SlotEquip {
 		ok = ok && g.data.canEquip(&newSrc, pl, ds)
 	}
+	if ok && (src == wire.SlotStorage || dst == wire.SlotStorage) && !g.storageAllowedHere(m.target) {
+		ok = false
+	}
 	if !ok {
 		*srcItem, *dstItem = newSrc, newDst
 		return
 	}
 	*srcItem, *dstItem = newDst, newSrc
+	g.giveTime(u, src, ss, dst, ds, time.Now())
 	if srcItem.Index <= 40 {
 		*srcItem = wire.Item{}
 	}

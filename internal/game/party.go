@@ -181,6 +181,10 @@ func (g *Game) requestExitParty(u *User, pkt protocol.Packet) {
 	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay {
 		return
 	}
+	if u.arenaTeam != 0 {
+		g.clientMessage(u, "Não é possível sair do grupo durante a Arena")
+		return
+	}
 	target := int(p.MobID)
 	if target < 0 || target >= MaxPlayer {
 		return

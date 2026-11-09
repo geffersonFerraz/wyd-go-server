@@ -1,0 +1,43 @@
+{{define "content"}}
+<h1>Exportar servidor</h1>
+{{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+{{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+{{with .Pending}}
+<section class="card">
+  <h2>Confirmar importação</h2>
+  <p>Arquivo exportado por {{.By}} em {{datetime .At}}. Nada mudou ainda.</p>
+  {{range .Warnings}}<p class="alert bad">{{.}}</p>{{end}}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th class="num">Agora</th><th class="num">No arquivo</th></tr></thead>
+    <tbody>{{range .Counts}}<tr><td>{{.Name}}</td><td class="num">{{.Current}}</td><td class="num">{{.New}}</td></tr>{{end}}</tbody>
+  </table>
+  </div>
+  <p>tmsrv.yaml: {{if .Settings}}<strong>muda</strong>{{else}}igual{{end}}. Arquivos que mudam: <strong>{{.ChangedTotal}}</strong>.</p>
+  {{if .Changed}}<details><summary>Ver arquivos</summary><ul>{{range .Changed}}<li><code>{{.}}</code></li>{{end}}</ul></details>{{end}}
+  <form method="post" action="/server/import/apply">
+    <input type="hidden" name="csrf" value="{{$.CSRF}}">
+    <input type="hidden" name="token" value="{{.Token}}">
+    <button class="primary" data-confirm="Substituir a configuração do servidor por este arquivo?">Importar</button>
+  </form>
+  <form method="post" action="/server/import/cancel">
+    <input type="hidden" name="csrf" value="{{$.CSRF}}">
+    <button class="link">Cancelar</button>
+  </form>
+</section>
+{{end}}
+<section class="card">
+  <h2>Exportar</h2>
+  <p class="muted">Gera um arquivo JSON com itens, skills, drops, taxas, teleportes, donos de cidade, computadores banidos, o <code>tmsrv.yaml</code> e os arquivos de configuração da pasta <code>data</code> (monstros, NPCGener, missões e outros). Não inclui contas, personagens, guildas, estado das guerras nem os mapas.</p>
+  {{if .Enabled}}<p><a class="button primary" href="/server/export">Baixar exportação</a></p>{{else}}<p class="alert bad">Indisponível: o painel não conhece a pasta de dados.</p>{{end}}
+</section>
+<section class="card">
+  <h2>Importar</h2>
+  <p class="muted">Substitui toda a configuração pelo conteúdo do arquivo. O arquivo é conferido antes e você vê o resumo para confirmar. A configuração atual é guardada no servidor antes da troca.</p>
+  <form method="post" action="/server/import" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label>Arquivo <input type="file" name="file" accept=".json,application/json" required></label>
+    <button class="primary">Conferir arquivo</button>
+  </form>
+</section>
+{{end}}

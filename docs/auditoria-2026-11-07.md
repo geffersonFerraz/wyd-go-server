@@ -604,9 +604,73 @@ de sala da Água sem jogador).
 
 **Limitações conhecidas:**
 
-- O ataque em área do Kefra sai como um golpe por alvo, não como um único
-  pacote 0x367 com vários alvos. O dano é o mesmo; a animação no cliente pode
-  mudar.
 - A loja da RvR abre como loja comum do NPC: a lista de itens própria nunca foi
   preenchida no C++.
 - Falta conferir no cliente real os pacotes das guerras e da Pista.
+
+## 8. Exportar servidor e limpeza da pasta data (09/11)
+
+**Exportar/Importar** (menu Exportar): um JSON com itens, skills, drops, taxas,
+teleportes, donos de cidade, computadores banidos, o `tmsrv.yaml` (como texto,
+para manter os comentários) e os arquivos de configuração de `data` (monstros,
+NPCGener, missões e outros, em base64). Ficam de fora contas, personagens,
+guildas, estado das guerras e os mapas. O import confere o arquivo inteiro no
+banco, mostra o resumo, pede confirmação e guarda a configuração anterior em
+`.admin-state/`. Depois de importar, reinicie DBSRV e canais se o `tmsrv.yaml`
+ou os arquivos mudaram.
+
+**Removidos de `data/tmsrv`** (já no banco e sem leitura em execução):
+`ItemList.csv`, `ItemEffect.h`, `skilldata.csv`, `Teleport.txt` e
+`controle drop/Controle.txt`. O `cmd/gamedata-import`, que só lia esses arquivos,
+também saiu. Servidor novo: importe uma exportação pelo painel. Os testes usam
+`internal/game/testdata/gamedata.json.gz`.
+
+Continuam em `data`, porque são lidos em execução: mapas, `NPCGener.txt`,
+`npc/`, `npc_base/`, `InitItem.csv`, `guild_zone.txt`, `Language.txt`, `Data/`,
+`Conf/`, `Controlador EXP/`, `dbsrv/npc/` e `client/ItemList.bin`.
+
+**Também feito:** ataque em área em um único pacote 0x367; registro de vendas
+da lojinha (menu Lojas); retirar banimento de computador (Comandos GM); skill de
+nascimento dos monstros (`bStatus.maxMP`).
+
+A varredura final comparou pacotes, voláteis, itens, comandos e tipos de NPC
+do C++ com o Go por número e nome. Só restaram os casos já listados como sem
+efeito nas seções 3.1 e 7. Ela mostra que o caso existe no Go, não que o
+comportamento seja idêntico.
+
+## 9. Segunda varredura (09/11)
+
+A comparação por números da seção 8 era fraca. Esta comparou cada função do C++
+que é chamada, cada mensagem mostrada ao jogador e, lado a lado, mover item,
+entrar no mundo e movimento. Corrigido, com testes:
+
+- **Mover item:** empilhar itens iguais (não existia), energizar runa, traje da
+  montaria, coroa e dragão só para a guilda dona de Noatun, e baú só em cidade
+  (ou nos dois campos permitidos).
+- **Validade:** esferas, trajes e fadas ganham validade ao equipar; a fada
+  perde um minuto por minuto e some ao expirar.
+- **Monstros:** portão aberto ao matar a torre do portão, prêmios dos geradores
+  0 a 2, 3, 5 a 7, Boss Frost (+20 de honra) e Alma do Unicórnio e da Fênix a
+  cada 500 mortes.
+- **Entrada no mundo:** avisos da loja, dados do cliente, recompensa diária,
+  anúncio de conexão, remoção do item 877 e reinício da contagem da Água.
+- **Pacotes inválidos:** `addCrack` (30 pontos devolvem à seleção de
+  personagem), nos casos impossíveis. Os erros de tempo do movimento não contam,
+  para não derrubar jogador por diferença de relógio.
+- Bloqueio de conta na loja donate e saída do grupo durante a Arena.
+
+**Fora do escopo por não terem efeito no C++:** salvar/carregar filtro de drop,
+presente na loja donate (a variável do destinatário nunca muda), `DropArea`,
+`BossEvent`, `PremiumTime` e chefe das Lanhouse (nada liga esses estados).
+
+**Combate e atributos (terceira passada):** `RequestAttack` foi comparado linha
+a linha. Faltavam, e agora existem, com testes: Ressurreição (skill 31) em aliado
+morto, buff em área da skill 44, efeitos passivos pela arma (skills 36 e 40),
+joia de velocidade no tempo de recarga, culpa e defesa ao atacar evocação de
+jogador, culpa ao atacar chefe por tempo, e punição de dano forjado.
+`GetCurrentScore` e os pontos de atributo, skill e maestria foram lidos lado a
+lado no início. No restante, e em pegar/soltar item, troca, grupo, guilda, venda,
+`ProcessTimer` e `CMob`, a comparação foi por constantes de cada arquivo contra o
+módulo Go correspondente; os valores que sobraram são calendário, limites antigos
+de 32 bits ou o Pesadelo N desligado. Isso aponta regra ausente, mas não prova
+comportamento idêntico: falta validar no cliente real.

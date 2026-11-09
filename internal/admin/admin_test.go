@@ -90,6 +90,17 @@ func (h *panelHarness) post(path string, form url.Values) (int, string, http.Hea
 	return resp.StatusCode, string(b), resp.Header
 }
 
+func (h *panelHarness) postRaw(path, contentType string, body io.Reader) (int, string, http.Header) {
+	h.t.Helper()
+	resp, err := h.c.Post(h.ts.URL+path, contentType, body)
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, string(b), resp.Header
+}
+
 var csrfRe = regexp.MustCompile(`name="csrf" value="([^"]+)"`)
 
 func (h *panelHarness) login() string {

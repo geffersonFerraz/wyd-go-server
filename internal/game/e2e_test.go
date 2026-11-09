@@ -44,7 +44,7 @@ func newChainN(t *testing.T, n int) *chain {
 	if dsn == "" {
 		t.Skip("DBSRV_TEST_DSN not set")
 	}
-	if _, err := os.Stat(filepath.Join(tmsrvDir, "ItemList.csv")); err != nil {
+	if _, err := os.Stat(filepath.Join(tmsrvDir, "NPCGener.txt")); err != nil {
 		t.Skipf("TMSRV data not available: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -96,10 +96,7 @@ func newChainN(t *testing.T, n int) *chain {
 	go func() { _ = db.Serve(ctx, dbLn) }()
 
 	// Game data goes through Postgres like in production.
-	gd, _, err := game.ReadLegacyGameData(tmsrvDir)
-	if err != nil {
-		t.Fatal(err)
-	}
+	gd := game.GameDataFixture(t)
 	if err := st.ImportGameData(ctx, gd, "test"); err != nil {
 		t.Fatal(err)
 	}

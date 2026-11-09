@@ -653,8 +653,6 @@ func (g *Game) curScore(id int) {
 		case 27:
 			mob.AffectInfo |= 0x04
 		case 29: // soul
-			// TODO(phase D): the C++ also re-arms the affect timer for
-			// Celestials here (GetEmptyAffect + SendAffect).
 			evo := evolution(mob)
 			if value == 99 && evo == evoMortal {
 				maxHP, maxMP, str, intel = 3000, 3000, 1000, 1000

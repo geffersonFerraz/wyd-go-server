@@ -77,6 +77,7 @@ const (
 	OpPanelCommand           = 0xC1A // Go only: DBSRV -> TMSRV, a GM command from the panel
 	OpPanelCommandResult     = 0xC1B // Go only: TMSRV -> DBSRV, what the command answered
 	OpOpenStore              = 0xC1C // Go only: TMSRV -> DBSRV, an open store, once a minute
+	OpStoreSale              = 0xC1D // Go only: TMSRV -> DBSRV, a sale in the auction stores
 	OpPutInSealSuccess       = 3135  // 0xC3F
 	OpCNFCharacterLoginExtra = 0x820
 	OpNumericPasswordWrong   = 0xFDF

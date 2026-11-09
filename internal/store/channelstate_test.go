@@ -84,3 +84,20 @@ func TestSeedRateDropsOnce(t *testing.T) {
 		t.Fatalf("slots %d blocked %d err %v", len(gd.DropSlots), len(gd.BlockedDrops), err)
 	}
 }
+
+func TestStoreSales(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	v := StoreSale{Channel: 2, Buyer: "Heroi", Seller: "Vilão", Item: 412, Price: 1 << 40, Tax: 5, Category: 2}
+	v.Effects[0] = ItemEffect{Effect: 43, Value: 7}
+	if err := s.AddStoreSale(ctx, v); err != nil {
+		t.Fatal(err)
+	}
+	list, err := s.StoreSales(ctx, "vilão", 5)
+	if err != nil || len(list) != 1 || list[0].Price != 1<<40 || list[0].Effects[0].Value != 7 {
+		t.Fatalf("sales %+v err %v", list, err)
+	}
+	if list, _ := s.StoreSales(ctx, "outro", 5); len(list) != 0 {
+		t.Fatalf("filter: %+v", list)
+	}
+}

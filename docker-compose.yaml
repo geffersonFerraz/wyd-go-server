@@ -63,7 +63,7 @@ services:
     networks:
       wyd: { ipv4_address: 172.30.87.10 }
     ports:
-      # Só local: gamedata-import, testes e ferramentas rodando no host.
+      # Só local: testes e ferramentas rodando no host.
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -191,7 +191,7 @@ services:
       - ./guildmarks:/app/guildmarks
       - ./logs:/app/logs
       - ./.admin-state:/app/.admin-state
-      - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+      - ./tmsrv.yaml:/app/tmsrv.yaml
     depends_on:
       postgres: { condition: service_healthy }
 

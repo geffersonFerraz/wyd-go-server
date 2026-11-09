@@ -266,6 +266,12 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 			g.sendRemoveMob(u, tid, 0)
 			continue
 		}
+		if skill == 31 && t.Damage == -1 {
+			if g.resurrectAlly(u, &p, i, tid, &sc) {
+				return
+			}
+			continue
+		}
 		if mob.info.Player.Status.CurHP <= 0 {
 			t.Index, t.Damage = 0, 0
 			continue
@@ -282,6 +288,7 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 		orig := dam // -2 physical, -1 skill
 		if dam != -2 && dam != -1 && dam != 0 {
 			t.Damage = 0
+			g.addCrack(u, 10, "attack with a forged damage")
 			continue
 		}
 		leader, mobLeader, guild, mobGuild := g.sides(u.id, tid)
@@ -379,7 +386,11 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 		if c1, c2 := pl.CapeInfo, mob.info.Player.CapeInfo; tid >= MaxPlayer && ((c1 == 7 && c2 == 7) || (c1 == 8 && c2 == 8)) {
 			dam = 0
 		}
-		if tid < MaxPlayer {
+		summoner := tid
+		if s := mob.npc.summoner; tid >= MaxPlayer && mob.info.Player.CapeInfo == 4 && s > 0 && s < MaxPlayer && g.users[s].status == userPlay {
+			summoner = s
+		}
+		if summoner < MaxPlayer {
 			if dam > 0 {
 				g.markGuilty(u.id)
 			}
@@ -395,6 +406,10 @@ func (g *Game) doAttack(u *User, p wire.Attack, auto bool) {
 					dam = -4
 				}
 			}
+		}
+		g.weaponProcs(u, tid, skill, i)
+		if dam > 0 && g.isBossMob(tid) {
+			g.markGuiltyAnywhere(u.id)
 		}
 		if pvp || mob.info.Player.Info&0x3F != 0 { // no fighting in villages / outside PvP areas
 			ta := g.data.attribute(int(mt.X), int(mt.Y))

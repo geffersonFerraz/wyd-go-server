@@ -574,7 +574,7 @@ Client packets the C++ handles and Go does not yet (PacketControl.cpp):
 
 Items (`ItemList.csv` + `ItemEffect.h` names), skills (`skilldata.csv`),
 drops (`controle drop/Controle.txt`) and teleports (`Teleport.txt`) live in
-the `gamedata` schema (migration 0006). `cmd/gamedata-import -dir ... -dsn ...`
+the `gamedata` schema (migration 0006). `cmd/gamedata-import -dir ... -dsn ...` (removido em 09/11: hoje a carga é pelo Exportar/Importar do painel)
 reads the C++ files once and replaces the tables in one transaction (then
 reads them back and checks the server can use them). The TMSRV loads them at
 startup with a read-only snapshot (`-dsn` / `DATABASE_URL`); after that the

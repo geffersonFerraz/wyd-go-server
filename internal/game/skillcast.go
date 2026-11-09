@@ -1,6 +1,7 @@
 package game
 
 import (
+	"slices"
 	"time"
 
 	"dbsrv/internal/wire"
@@ -57,6 +58,12 @@ func (g *Game) checkSkill(u *User, p *wire.Attack) (sc skillCast, ok bool) {
 		delay := time.Duration(sd.Delay) * time.Second
 		if pl.AffectInfo&affSkillDelay != 0 {
 			delay -= time.Second
+		}
+		for _, a := range g.mobs[u.id].info.Affects {
+			if a.Index == 8 && a.Value&1 != 0 { // jewel of speed
+				delay -= time.Second
+				break
+			}
 		}
 		now := time.Now()
 		if now.Sub(u.skillUsed[skill]) < delay-500*time.Millisecond {
@@ -428,7 +435,7 @@ func (g *Game) skillOnTarget(u *User, p *wire.Attack, i, tid int, sc *skillCast,
 		dam += sc.startHP * 125 / 100
 		pl.Status.CurHP = pl.Status.CurHP << 1 / 3
 		u.potionHP = pl.Status.CurHP
-	case 41:
+	case 41, 44:
 		g.teleportBuff(p, sc)
 	case 98:
 		if !g.thornWall(u, p) {
@@ -695,4 +702,111 @@ func (g *Game) resurrectSkill(u *User, raw []byte) {
 	}
 	g.sendSetHpMp(u)
 	g.sendScore(u.id)
+}
+
+// resurrectAlly is the Ressurreição (skill 31) on another player: only the
+// group or the guild, and it works 8 times in 10. True ends the attack.
+func (g *Game) resurrectAlly(u *User, p *wire.Attack, i, tid int, sc *skillCast) bool {
+	me, mob := &g.mobs[u.id], &g.mobs[tid]
+	sd := &g.data.Skills[31]
+	rng := sd.Range + 3
+	if me.info.Player.Learn[0]&0x20000000 != 0 {
+		rng++
+	}
+	if distance(int(me.target.X), int(me.target.Y), int(mob.target.X), int(mob.target.Y)) > rng &&
+		distance(int(me.target.X), int(me.target.Y), int(mob.last.X), int(mob.last.Y)) > rng {
+		return true
+	}
+	send := func() {
+		p.CurrentExp, p.CurrentMP, p.Hold = me.info.Player.Exp, me.info.Player.Status.CurMP, int64(me.info.Hold)
+		if raw, err := wire.Marshal(p); err == nil {
+			g.multicastRaw(int(me.target.X), int(me.target.Y), raw[:p.Header.Size])
+		}
+	}
+	refresh := func() {
+		pk := g.createMobPacket(tid)
+		g.multicast2(int(mob.target.X), int(mob.target.Y), &pk, 0)
+	}
+	if mob.info.Player.Status.CurHP != 0 {
+		g.clientMessage(u, "Este personagem está vivo!")
+		p.Target[i].Damage = 1
+		refresh()
+		send()
+		return true
+	}
+	guild := int(me.info.Player.GuildIndex)
+	if guild == 0 {
+		guild = -1
+	}
+	if !slices.Contains(g.partyMembers(u.id), tid) && guild != int(mob.info.Player.GuildIndex) {
+		g.clientMessage(u, "%s", g.lang(langPartyOnly))
+		g.sendScore(tid)
+		p.Target[i].Damage = 1
+		refresh()
+		return true
+	}
+	if rnd()%100 <= 80 {
+		s := &mob.info.Player.Status
+		s.CurHP = s.MaxHP * 90 / 100
+		if tid < MaxPlayer {
+			g.users[tid].potionHP = s.CurHP
+		}
+	}
+	send()
+	g.getCurrentScore(tid)
+	g.sendScore(tid)
+	refresh()
+	return true
+}
+
+const langPartyOnly = 154
+
+// weaponProcs: two passive skills that strike through the weapon.
+func (g *Game) weaponProcs(u *User, tid, skill, i int) {
+	me := &g.mobs[u.id].info.Player
+	mob := &g.mobs[tid]
+	if mob.info.AffectInfo&2 != 0 {
+		return
+	}
+	wtype := g.data.itemAbility(&me.Equip[6], EF_WTYPE)
+	if me.AffectInfo&0x04 != 0 && (skill != 79 || i == 0) && wtype == 101 && rnd()%4 == 0 {
+		mastery := int(me.Status.Mastery[1])
+		if g.procAffect(tid, 36, mastery/4+30, mastery) {
+			g.sendScore(tid)
+		}
+	}
+	if me.AffectInfo&0x10 != 0 && wtype == 41 && rnd()%2 == 0 {
+		mastery := int(me.Status.Mastery[2])
+		if g.procAffect(tid, 40, mastery+100, mastery) {
+			g.sendScore(tid)
+		}
+	}
+}
+
+// procAffect is func_40195B: a skill's effect with a duration of its own.
+func (g *Game) procAffect(id, skill, delay, master int) bool {
+	m := &g.mobs[id]
+	if skill >= len(g.data.Skills) || (id >= MaxPlayer && m.info.Player.Info&0x3F == 1) {
+		return false
+	}
+	sd := &g.data.Skills[skill]
+	index := sd.AffectType
+	if sd.TickType > 0 {
+		index = sd.TickType
+	}
+	if index <= 0 {
+		return false
+	}
+	slot := g.emptyAffect(id, index)
+	if slot < 0 {
+		return false
+	}
+	a := &m.info.Affects[slot]
+	a.Index, a.Value, a.Master = uint8(index), uint16(sd.TickValue), uint8(min(master, 255))
+	a.Time = uint32(delay * sd.Time / 100)
+	if delay >= 10000 {
+		a.Time = 39
+	}
+	g.getCurrentScore(id)
+	return true
 }

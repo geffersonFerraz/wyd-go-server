@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/hex"
 	"net/http"
 	"slices"
 	"strconv"
@@ -70,6 +71,7 @@ func (s *Server) gmRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /gm", s.auth(s.gmPage))
 	mux.HandleFunc("POST /gm", s.auth(s.sendGMCommand))
 	mux.HandleFunc("GET /stores", s.auth(s.storesPage))
+	mux.HandleFunc("POST /macbans/{mac}/remove", s.auth(s.removeMacBan))
 	mux.HandleFunc("GET /messages", s.auth(s.messagesPage))
 	mux.HandleFunc("POST /messages/{id}/seen", s.auth(s.markMessageSeen))
 }
@@ -89,8 +91,13 @@ func (s *Server) renderGM(w http.ResponseWriter, r *http.Request, code int, msg 
 		s.fail(w, err)
 		return
 	}
+	bans, err := s.st.MacBanRows(r.Context())
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
 	s.page(w, r, code, "gm", map[string]any{"Title": "Comandos GM", "Commands": gmCommands, "History": list,
-		"ChannelList": s.channels(), "Form": f, "Error": msg})
+		"ChannelList": s.channels(), "Form": f, "Error": msg, "Bans": bans})
 }
 
 // gmProblem checks a command before it is queued ("" when it is fine).
@@ -174,5 +181,26 @@ func (s *Server) storesPage(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, err)
 		return
 	}
-	s.page(w, r, http.StatusOK, "stores", map[string]any{"Title": "Lojas abertas", "Stores": list})
+	q := r.URL.Query().Get("q")
+	sales, err := s.st.StoreSales(r.Context(), q, 200)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	s.page(w, r, http.StatusOK, "stores", map[string]any{"Title": "Lojas", "Stores": list, "Sales": sales, "Q": q})
+}
+
+// removeMacBan is POST /macbans/{mac}/remove; the channels see it within 30s.
+func (s *Server) removeMacBan(w http.ResponseWriter, r *http.Request) {
+	raw, err := hex.DecodeString(r.PathValue("mac"))
+	if err != nil || len(raw) != 8 {
+		http.NotFound(w, r)
+		return
+	}
+	if err := s.st.SetMacBan(r.Context(), [8]byte(raw), false); err != nil {
+		s.fail(w, err)
+		return
+	}
+	s.log.Info("mac ban removed", "admin", sessionOf(r).user, "mac", r.PathValue("mac"))
+	http.Redirect(w, r, "/gm", http.StatusSeeOther)
 }

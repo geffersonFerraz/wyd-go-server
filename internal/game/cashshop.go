@@ -54,6 +54,9 @@ func (g *Game) cashShopTab(id int) *CashShopTab {
 
 // requestCashShop is RequestPremiunStore (0xAF3): shows a tab.
 func (g *Game) requestCashShop(u *User, pkt protocol.Packet) {
+	if g.locked(u, lockPremium, "Bloqueio de loja donate ativo!") {
+		return
+	}
 	var req wire.CashShopRequest
 	if wire.Unmarshal(pkt.Raw, &req) != nil {
 		return
@@ -97,6 +100,9 @@ func giftBit(it *wire.Item) (uint64, bool) {
 // in the C++: the quantity (it could be negative or 0), the empty slots,
 // and that a gift is taken once.
 func (g *Game) requestCashShopBuy(u *User, pkt protocol.Packet) {
+	if g.locked(u, lockPremium, "Bloqueio de loja donate ativo!") {
+		return
+	}
 	var p wire.CashShopBuy
 	if wire.Unmarshal(pkt.Raw, &p) != nil {
 		return

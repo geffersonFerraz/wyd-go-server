@@ -340,7 +340,6 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 
 	// Everything else (quests, boxes, events...) is not ported yet: give
 	// the item back so nothing is lost.
-	// TODO(phase D): the rest of RequestUseItem.
 	g.log.Info("use item not ported", "slot", u.id, "item", src.Index, "volatile", vol)
 	g.clientMessage(u, "Este item ainda não pode ser usado neste servidor.")
 	resend()

@@ -88,7 +88,6 @@ func (g *Game) levelBlocked(id int) bool {
 }
 
 // mobKilled is MobKilled(target, killer) for an NPC killed by a player.
-// TODO(phase C): party share, drops, player deaths, special mobs.
 func (g *Game) mobKilled(target, killer int) {
 	if target <= 0 || target >= MaxMob || killer <= 0 || killer >= MaxMob || g.mobs[target].mode == 0 {
 		return
@@ -439,6 +438,8 @@ func (g *Game) specialMobKilled(target, killer int) bool {
 	g.bossKilled(target, killer)
 	gen := g.mobs[target].npc.generateID
 	g.pistaMobKilled(gen, killer)
+	g.gateTowerKilled(target)
+	g.monsterPrize(gen, killer)
 	switch {
 	case gen == genTowerErion:
 		g.erionTowerKilled(target, killer)

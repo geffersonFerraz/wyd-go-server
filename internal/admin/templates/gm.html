@@ -41,6 +41,18 @@
   {{else}}<p class="muted">Nenhum comando enviado.</p>{{end}}
 </section>
 <section class="card">
+  <h2>Computadores banidos</h2>
+  {{if .Bans}}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Computador</th><th>Desde</th><th></th></tr></thead>
+    <tbody>{{range .Bans}}<tr><td><code>{{.MAC}}</code></td><td>{{datetime .CreatedAt}}</td>
+      <td><form method="post" action="/macbans/{{.MAC}}/remove"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="link" data-confirm="Retirar o banimento deste computador?">Retirar</button></form></td></tr>{{end}}</tbody>
+  </table>
+  </div>
+  {{else}}<p class="muted">Nenhum computador banido.</p>{{end}}
+</section>
+<section class="card">
   <h2>Lista de comandos</h2>
   <div class="table-wrap">
   <table>

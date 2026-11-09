@@ -68,6 +68,8 @@ func (s *Server) handle(ch *channel, pkt protocol.Packet) {
 		s.handleCityOwner(ctx, ch, pkt)
 	case wire.OpMacBan:
 		s.handleMacBan(ctx, ch, pkt)
+	case wire.OpStoreSale:
+		s.handleStoreSale(ctx, ch, pkt)
 	case wire.OpOpenStore:
 		s.handleOpenStore(ctx, ch, pkt)
 	case wire.OpGMMessage:
