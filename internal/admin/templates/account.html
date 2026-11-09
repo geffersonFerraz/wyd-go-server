@@ -58,7 +58,7 @@
         <label>Item (ID) <input name="item_id" type="number" min="1" max="6499" value="{{.ItemForm.Get "item_id"}}" required>
           <small><a href="/gamedata/items" target="_blank" rel="noopener">Procurar o ID na lista de itens</a></small></label>
         <div class="fields">
-          <label>Quantidade <input name="amount" type="number" min="1" max="120" value="{{.ItemForm.Get "amount"}}">
+          <label>Quantidade <input name="amount" type="number" min="1" max="9999" value="{{.ItemForm.Get "amount"}}">
             <small>Pilha; só para itens acumuláveis</small></label>
           <label>Refino <input name="sanc" type="number" min="0" max="15" value="{{.ItemForm.Get "sanc"}}"></label>
           <label>Cópias <input name="copies" type="number" min="1" max="50" value="{{.ItemForm.Get "copies"}}">

@@ -87,3 +87,63 @@ func TestDropFilter(t *testing.T) {
 		t.Fatalf("filter: got %v, want only 1104", got)
 	}
 }
+
+func dropStack(id uint16, n int) wire.Item {
+	return wire.Item{Index: id, Effect: [3]wire.ItemEffect{{Index: EF_AMOUNT, Value: uint16(n)}}}
+}
+
+func TestDropStacksWithoutFairy(t *testing.T) {
+	g, a, _ := tradeGame(t)
+	pl := &g.mobs[1].info.Player
+	pl.Inventory = [64]wire.Item{}
+	const potion = 412 // stackable, outside 4117..4121
+
+	first := wire.Item{Index: potion}
+	g.giveDrop(a, &first, false)
+	second := wire.Item{Index: potion}
+	g.giveDrop(a, &second, false)
+	if got := itemAmount(&pl.Inventory[0]); pl.Inventory[0].Index != potion || got != 2 || pl.Inventory[1].Index != 0 {
+		t.Fatalf("not stacked: %+v / %+v", pl.Inventory[0], pl.Inventory[1])
+	}
+}
+
+func TestDropOverflowsFullStacks(t *testing.T) {
+	g, a, _ := tradeGame(t)
+	pl := &g.mobs[1].info.Player
+	pl.Inventory = [64]wire.Item{}
+	const potion = 412
+	pl.Inventory[0] = dropStack(potion, maxStackAmount)
+	pl.Inventory[1] = dropStack(potion, maxStackAmount-1)
+
+	drop := dropStack(potion, 3)
+	g.giveDrop(a, &drop, false)
+	if itemAmount(&pl.Inventory[0]) != maxStackAmount || itemAmount(&pl.Inventory[1]) != maxStackAmount || itemAmount(&pl.Inventory[2]) != 2 {
+		t.Fatalf("overflow: %d %d %d", itemAmount(&pl.Inventory[0]), itemAmount(&pl.Inventory[1]), itemAmount(&pl.Inventory[2]))
+	}
+}
+
+func TestDropNotStackableTakesNewSlot(t *testing.T) {
+	g, a, _ := tradeGame(t)
+	pl := &g.mobs[1].info.Player
+	pl.Inventory = [64]wire.Item{}
+	const sword = 1103
+	first, second := wire.Item{Index: sword}, wire.Item{Index: sword}
+	g.giveDrop(a, &first, true)
+	g.giveDrop(a, &second, true)
+	if pl.Inventory[0].Index != sword || pl.Inventory[1].Index != sword {
+		t.Fatalf("got %+v / %+v", pl.Inventory[0], pl.Inventory[1])
+	}
+}
+
+func TestDropKeptWhenStackHasNoEffectSlot(t *testing.T) {
+	g, a, _ := tradeGame(t)
+	pl := &g.mobs[1].info.Player
+	pl.Inventory = [64]wire.Item{}
+	const potion = 412
+	pl.Inventory[0] = wire.Item{Index: potion, Effect: [3]wire.ItemEffect{{Index: 1, Value: 1}, {Index: 2, Value: 1}, {Index: 3, Value: 1}}}
+	drop := wire.Item{Index: potion}
+	g.giveDrop(a, &drop, false)
+	if pl.Inventory[1].Index != potion {
+		t.Fatalf("drop lost: %+v", pl.Inventory[1])
+	}
+}

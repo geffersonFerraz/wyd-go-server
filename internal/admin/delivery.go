@@ -20,7 +20,7 @@ import (
 const (
 	efSanc        = 43
 	efAmount      = 61
-	maxStack      = 120 // the client's stack limit
+	maxStack      = 9999 // same as the game's full stack
 	maxItemCopies = 50
 )
 

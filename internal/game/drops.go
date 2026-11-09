@@ -126,29 +126,25 @@ func (g *Game) filterAllows(u *User, it *wire.Item) bool {
 	return false
 }
 
-// giveDrop puts a dropped item in the inventory, stacking where the C++
-// did: with the gold fairy (3915) any stackable item, otherwise only
-// 4117..4121. Items 1..40 (faces) are never given without the fairy.
+// giveDrop puts a dropped item in the inventory, merging a stackable item
+// into the stacks the player already has; what does not fit takes a free
+// slot. Items 1..40 (faces) are never given without the gold fairy (3915).
+//
+// Changed from the C++, which only stacked 4117..4121 without the fairy.
 func (g *Game) giveDrop(u *User, it *wire.Item, goldFairy bool) {
-	pl := &g.mobs[u.id].info.Player
-	if !goldFairy && it.Index <= 40 {
+	if it.Index == 0 || (!goldFairy && it.Index <= 40) {
 		return
 	}
-	if it.Index == 0 {
-		return
-	}
-	slot := firstSlotOf(pl, it.Index)
-	if slot == -1 {
-		g.putItem(u, it)
-		return
-	}
-	if !goldFairy && (it.Index < 4117 || it.Index > 4121) {
-		g.putItem(u, it)
-		return
-	}
-	if g.agroupItemFada(u, it) {
-		g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
-		return
+	if maxAmount[it.Index] > 0 {
+		pl := &g.mobs[u.id].info.Player
+		for i := range invSlots {
+			if pl.Inventory[i].Index == it.Index && agroupItem(it, &pl.Inventory[i]) {
+				g.sendItem(u, wire.SlotInv, i, &pl.Inventory[i])
+				if it.Index == 0 {
+					return
+				}
+			}
+		}
 	}
 	g.putItem(u, it)
 }
@@ -197,9 +193,12 @@ func init() {
 		4029, 4010, 4011, 1774, 4020, 777, 3173, 3182, 3252, 3253, 5110, 5111, 5112, 5113, 5114, 5115,
 		5116, 5117, 5118, 5119, 5120, 5121, 5122, 5123, 5124, 5125, 5126, 5127, 600, 5128, 5129, 5130,
 		5131, 5132, 5133, 489} {
-		maxAmount[id] = 255
+		maxAmount[id] = maxStackAmount
 	}
 }
+
+// maxStackAmount is the size of a full stack (255 in the C++).
+const maxStackAmount = 9999
 
 // maxAmount is GetMaxAmountItem: stack size (0 = not stackable).
 var maxAmount = map[uint16]int{}
@@ -258,7 +257,6 @@ func agroupItem(src, dst *wire.Item) bool {
 	}
 	as, ad = max(as, 1), max(ad, 1)
 	if as+ad <= maxN {
-		*src = wire.Item{}
 		out := wire.Item{Index: dst.Index}
 		for i := range 3 {
 			if e := dst.Effect[i].Index; e != EF_AMOUNT && e != EF_UNIQUE {
@@ -273,9 +271,10 @@ func agroupItem(src, dst *wire.Item) bool {
 			}
 		}
 		if i == 3 {
-			return false
+			return false // no effect slot for the amount: src stays whole
 		}
 		*dst = out
+		*src = wire.Item{}
 		return true
 	}
 	as -= maxN - ad
