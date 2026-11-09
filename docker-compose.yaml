@@ -168,7 +168,8 @@ services:
   # ADMIN_PASSWORD_HASH no .env, ou a gerada em .admin-state/.admin-password.
   # A porta pública (PUBLIC_PORT, padrão 80, sem login) serve ao cliente do
   # jogo o servNN.htm (online por canal, URL do serverlist.bin), o
-  # serverlist.bin (gerado do tmsrv.yaml), o itemlist.bin (guardado no banco)
+  # serverlist.bin (gerado do tmsrv.yaml), o itemlist.bin (guardado no banco),
+  # a página do launcher (/launcher/)
   # e as marcas de guilda.
   admin:
     build: { context: ., args: { CMD: admin } }

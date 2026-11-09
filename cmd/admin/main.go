@@ -204,6 +204,7 @@ func run(log *slog.Logger, o options) error {
 			mux.Handle("GET "+admin.ServerListPath, admin.ServerListHandler(o.config, log))
 		}
 		mux.Handle("GET "+admin.ItemListPath, admin.ItemListHandler(st, log))
+		mux.Handle("GET "+admin.LauncherPath, admin.LauncherHandler())
 		if o.markDir != "" {
 			mux.Handle(admin.GuildMarkPath, admin.GuildMarkHandler(o.markDir))
 		}
@@ -220,7 +221,7 @@ func run(log *slog.Logger, o options) error {
 		}()
 		go func() {
 			log.Info("public files", "status", "http://"+o.publicListen+"/serv00.htm", "serverlist", "http://"+o.publicListen+admin.ServerListPath,
-				"itemlist", "http://"+o.publicListen+admin.ItemListPath,
+				"itemlist", "http://"+o.publicListen+admin.ItemListPath, "launcher", "http://"+o.publicListen+admin.LauncherPath,
 				"guild_marks", "http://"+o.publicListen+admin.GuildMarkPath, "dir", o.markDir)
 			if err := public.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				log.Error("public server", "err", err)

@@ -6,7 +6,7 @@ Reescrita em Go + PostgreSQL do servidor de With Your Destiny 7.87:
 |---|---|---|
 | `cmd/dbsrv` | Banco de dados do jogo (contas, personagens, guildas), porta 7514 | `DBsrv.exe` (C++, arquivos XML) |
 | `cmd/tmsrv` | Servidor do jogo: um processo/container por canal (`-channel N`), portas 8281, 8282... | `TMsrv.exe` (C++) |
-| `cmd/admin` | Painel web da equipe (contas, itens, cidades, alertas); serve ao cliente `servNN.htm` e `serverlist.bin` | ferramenta NP do C++ |
+| `cmd/admin` | Painel web da equipe (contas, itens, cidades, alertas); serve ao cliente `servNN.htm`, `serverlist.bin`, `itemlist.bin` e a página do launcher (`/launcher/`) | ferramenta NP do C++ |
 | `cmd/xml-import` | Importa as contas XML do DBsrv C++ (uma vez) | — |
 
 O protocolo com o cliente é mantido byte a byte (structs MSVC x64, ver docs/x64-limites.md),
