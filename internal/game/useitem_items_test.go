@@ -61,7 +61,7 @@ func TestBagJewelBoxGoldBar(t *testing.T) {
 	g, u, pl := useItemGame(t)
 	pl.Inventory[0] = wire.Item{Index: 3467}
 	useSlot(g, u, 0)
-	if pl.Inventory[60].Index != 3467 || !bagActive(&pl.Inventory[60]) {
+	if pl.Inventory[60].Index != 0 || pl.Inventory[0].Index != 3467 {
 		t.Fatalf("bag: %+v", pl.Inventory[60])
 	}
 	pl.Inventory[1] = stack(4528, 2)

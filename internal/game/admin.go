@@ -275,7 +275,7 @@ func (g *Game) runAdminCommand(u *User, value string) {
 		g.sendItem(u, wire.SlotEquip, x, &pl.Equip[x])
 
 	case "+limparinv":
-		for i := range 60 {
+		for i := range invSlots {
 			pl.Inventory[i] = wire.Item{}
 			g.sendItem(u, wire.SlotInv, i, &pl.Inventory[i])
 		}

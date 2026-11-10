@@ -78,7 +78,7 @@ func (g *Game) npcQuest(u *User, npc int, click uint32) {
 			return
 		}
 		slot := -1
-		for s := range 60 {
+		for s := range invSlots {
 			if int(pl.Inventory[s].Index) == 4038+q {
 				slot = s
 				break
@@ -359,7 +359,7 @@ func (g *Game) npcTrainer(u *User, npc, k int) {
 		key = 524
 	}
 	keySlot := -1
-	for s := range 60 {
+	for s := range invSlots {
 		if pl.Inventory[s].Index == key {
 			keySlot = s
 			break
@@ -561,7 +561,7 @@ func (g *Game) npcOracle(u *User, npc int) {
 		}
 		return
 	}
-	if slot+1 >= 60 || pl.Inventory[slot+1].Index != 1741 {
+	if slot+1 >= invSlots || pl.Inventory[slot+1].Index != 1741 {
 		g.sendSay(npc, "Deixe as duas almas juntas para a composição.")
 		return
 	}

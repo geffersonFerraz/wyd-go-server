@@ -60,13 +60,13 @@ func (g *Game) combine(u *User, searched, earned uint16) {
 		return
 	}
 	taken := 0
-	for i := 0; i < 60 && taken < 10; i++ {
+	for i := 0; i < invSlots && taken < 10; i++ {
 		for pl.Inventory[i].Index == searched && taken < 10 {
 			amountMinus(&pl.Inventory[i])
 			taken++
 		}
 	}
-	for i := range 60 {
+	for i := range invSlots {
 		it := &pl.Inventory[i]
 		if it.Index != earned {
 			continue

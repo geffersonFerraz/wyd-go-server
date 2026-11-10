@@ -86,7 +86,7 @@ func (g *Game) readCompor(u *User, pkt protocol.Packet, n int, empty func(c *wir
 		if s == -1 && empty != nil && empty(&c.Compor, i) {
 			continue
 		}
-		if s < 0 || s >= 60 {
+		if s < 0 || s >= invSlots {
 			return bad("slot", i)
 		}
 		if c.Items[i] != pl.Inventory[s] {
@@ -116,7 +116,7 @@ func (g *Game) take(c *compor, idx ...int) {
 	pl := &g.mobs[c.u.id].info.Player
 	for _, i := range idx {
 		s := c.slot(i)
-		if s < 0 || s >= 60 {
+		if s < 0 || s >= invSlots {
 			continue
 		}
 		pl.Inventory[s] = wire.Item{}
@@ -188,7 +188,7 @@ func inventoryAmount(pl *wire.Mob, id uint16) int {
 // removeAmount is RemoveAmount: take amount units of id from the inventory.
 func (g *Game) removeAmount(u *User, id uint16, amount int) {
 	pl := &g.mobs[u.id].info.Player
-	for i := 0; i < 60 && amount > 0; i++ {
+	for i := 0; i < invSlots && amount > 0; i++ {
 		if pl.Inventory[i].Index != id {
 			continue
 		}
@@ -1462,7 +1462,7 @@ func (g *Game) requestCompoNova(u *User, pkt protocol.Packet) {
 // destroys the item and the stone.
 func (g *Game) requestExtraction(u *User, pkt protocol.Packet) {
 	var p wire.Extraction
-	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay || p.SlotID >= 60 {
+	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay || p.SlotID >= invSlots {
 		return
 	}
 	pl := &g.mobs[u.id].info.Player

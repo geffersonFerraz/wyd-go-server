@@ -101,8 +101,12 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	u.quaff, u.returnX, u.returnY = false, 0, 0
 
 	g.guildKingdomCape(pl)
-	openBags(pl) // the inventory always has its 60 slots (sent in p.Mob)
+	clearBagSlots(pl)
 	unplaced := settleCarry(&pl.Inventory)
+	cargoBefore := u.account.StorageItems
+	if !u.store.open { // a listing points at its cargo slot
+		settleStorage(&u.account.StorageItems)
+	}
 	u.guildInvite = guildInvite{}
 
 	p.Header = wire.NewHeader(wire.OpSrvEnterWorld, wire.ClientIDCharList)
@@ -128,6 +132,11 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	g.mountProcess(u.id)
 	g.block199(u)
 	g.fixStoredBoots(u)
+	for i := range cargoBefore {
+		if cargoBefore[i] != u.account.StorageItems[i] {
+			g.sendItem(u, wire.SlotStorage, i, &u.account.StorageItems[i])
+		}
+	}
 	g.parkUnplacedItems(u, unplaced)
 	g.loadLock(u)
 	g.sendLockStatus(u)
@@ -415,7 +424,7 @@ func (g *Game) slotItem(u *User, typ, slot int) *wire.Item {
 			return &pl.Equip[slot]
 		}
 	case wire.SlotInv:
-		if slot >= 0 && slot < 60 {
+		if slot >= 0 && slot < invSlots {
 			return &pl.Inventory[slot]
 		}
 	case wire.SlotStorage:
@@ -512,7 +521,7 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 	if ok && (src == wire.SlotStorage || dst == wire.SlotStorage) && !g.storageAllowedHere(m.target) {
 		ok = false
 	}
-	fits := !ok || carryMoveFits(pl, src, ss, dst, ds, &newSrc, &newDst)
+	fits := !ok || carryMoveFits(pl, u.account.StorageItems[:], src, ss, dst, ds, &newSrc, &newDst)
 	if !ok || !fits {
 		*srcItem, *dstItem = newSrc, newDst
 		if !fits {

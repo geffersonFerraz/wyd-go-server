@@ -333,7 +333,7 @@ func (g *Game) requestUseItem(u *User, pkt protocol.Packet) {
 		return
 	}
 
-	if src.Index == itemRouletteBox && p.SrcType == wire.SlotInv && p.SrcSlot >= 0 && p.SrcSlot < 60 {
+	if src.Index == itemRouletteBox && p.SrcType == wire.SlotInv && p.SrcSlot >= 0 && p.SrcSlot < invSlots {
 		g.openRoulette(u, int(p.SrcSlot))
 		return
 	}

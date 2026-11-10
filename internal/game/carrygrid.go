@@ -15,8 +15,8 @@ import (
 var itemGridSizes []byte
 
 const (
-	carryColumns = 9
-	carryRows    = 7
+	carryColumns   = 9
+	storageVisible = 126 // cargo slots the client shows: 9x14
 )
 
 var itemGridXY = [8][2]int{{1, 1}, {1, 2}, {1, 3}, {1, 4}, {2, 1}, {2, 2}, {2, 3}, {2, 4}}
@@ -33,34 +33,66 @@ func itemFootprint(id uint16) (int, int) {
 	return itemGridXY[size][0], itemGridXY[size][1]
 }
 
-// carryOccupancy marks the inventory cells covered by the items in inv.
-func carryOccupancy(inv *[64]wire.Item) (occupied [carryRows][carryColumns]bool) {
-	for slot := range invSlots {
-		if inv[slot].Index == 0 {
+// gridOccupancy marks the cells covered by the items of a 9-column grid.
+func gridOccupancy(items []wire.Item) (occupied [storageVisible]bool) {
+	rows := len(items) / carryColumns
+	for slot := range items {
+		if items[slot].Index == 0 {
 			continue
 		}
-		w, h := itemFootprint(inv[slot].Index)
+		w, h := itemFootprint(items[slot].Index)
 		x, y := slot%carryColumns, slot/carryColumns
-		for cy := y; cy < y+h && cy < carryRows; cy++ {
+		for cy := y; cy < y+h && cy < rows; cy++ {
 			for cx := x; cx < x+w && cx < carryColumns; cx++ {
-				occupied[cy][cx] = true
+				occupied[cy*carryColumns+cx] = true
 			}
 		}
 	}
 	return occupied
 }
 
-// settleCarry removes the overlaps of a saved inventory: items keep their slot
-// in order while they fit, the others move to a free place (largest first).
-// What finds no place is returned.
-func settleCarry(inv *[64]wire.Item) (left []wire.Item) {
-	var placed [64]wire.Item
-	copy(placed[invSlots:], inv[invSlots:])
+// gridFits reports whether item id can be placed with its top-left cell at
+// slot of a 9-column grid, without covering another item.
+func gridFits(items []wire.Item, slot int, id uint16) bool {
+	if slot < 0 || slot >= len(items) {
+		return false
+	}
+	w, h := itemFootprint(id)
+	x, y := slot%carryColumns, slot/carryColumns
+	if x+w > carryColumns || y+h > len(items)/carryColumns {
+		return false
+	}
+	occupied := gridOccupancy(items)
+	for cy := y; cy < y+h; cy++ {
+		for cx := x; cx < x+w; cx++ {
+			if occupied[cy*carryColumns+cx] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// firstGridSlot is the first slot where item id fits, or -1.
+func firstGridSlot(items []wire.Item, id uint16) int {
+	for slot := range items {
+		if items[slot].Index == 0 && gridFits(items, slot, id) {
+			return slot
+		}
+	}
+	return -1
+}
+
+// settleGrid removes the overlaps of a saved grid: items keep their slot, in
+// order, while they fit; the others move to a free place, largest first. What
+// finds no place is returned.
+func settleGrid(items []wire.Item) (left []wire.Item) {
+	placed := make([]wire.Item, len(items))
 	var pending []wire.Item
-	for slot := range invSlots {
-		switch it := inv[slot]; {
+	for slot, it := range items {
+		switch {
 		case it.Index == 0:
-		case carryFits(&placed, slot, it.Index):
+		case gridFits(placed, slot, it.Index):
 			placed[slot] = it
 		default:
 			pending = append(pending, it)
@@ -72,46 +104,74 @@ func settleCarry(inv *[64]wire.Item) (left []wire.Item) {
 	}
 	sort.SliceStable(pending, func(a, b int) bool { return area(pending[a]) > area(pending[b]) })
 	for _, it := range pending {
-		if slot := firstCarrySlot(&placed, it.Index); slot >= 0 {
+		if slot := firstGridSlot(placed, it.Index); slot >= 0 {
 			placed[slot] = it
 		} else {
 			left = append(left, it)
 		}
 	}
-	*inv = placed
+	copy(items, placed)
 	return left
 }
 
-// carryFits reports whether item id can be placed with its top-left cell at
-// slot, without covering another item.
-func carryFits(inv *[64]wire.Item, slot int, id uint16) bool {
-	if slot < 0 || slot >= invSlots {
-		return false
-	}
-	w, h := itemFootprint(id)
-	x, y := slot%carryColumns, slot/carryColumns
-	if x+w > carryColumns || y+h > carryRows {
-		return false
-	}
-	occupied := carryOccupancy(inv)
-	for cy := y; cy < y+h; cy++ {
-		for cx := x; cx < x+w; cx++ {
-			if cy*carryColumns+cx >= invSlots || occupied[cy][cx] {
-				return false
-			}
+// settleCarry removes the overlaps of a saved inventory.
+func settleCarry(inv *[64]wire.Item) []wire.Item { return settleGrid(inv[:invSlots]) }
+
+// settleStorage removes the overlaps of a saved cargo and brings back the items
+// of the slots the client does not show. Unlike the inventory, nothing leaves
+// the cargo: what geometrically does not fit stays on any free slot.
+func settleStorage(st *[168]wire.Item) {
+	visible, hidden := st[:storageVisible], st[storageVisible:160]
+	var extras []wire.Item
+	for i := range hidden {
+		if hidden[i].Index != 0 {
+			extras = append(extras, hidden[i])
+			hidden[i] = wire.Item{}
 		}
 	}
-	return true
+	left := settleGrid(visible)
+	for _, it := range extras {
+		if slot := firstGridSlot(visible, it.Index); slot >= 0 {
+			visible[slot] = it
+		} else {
+			left = append(left, it)
+		}
+	}
+	free := append(visible[:len(visible):len(visible)], hidden...) // visible slots first
+	for _, it := range left {
+		for i := range free {
+			if free[i].Index != 0 {
+				continue
+			}
+			if i < storageVisible {
+				visible[i] = it
+			} else {
+				hidden[i-storageVisible] = it
+			}
+			free[i] = it
+			break
+		}
+	}
 }
 
-// firstCarrySlot is the first slot where item id fits, or -1.
+// carryFits reports whether item id fits with its top-left cell at slot.
+func carryFits(inv *[64]wire.Item, slot int, id uint16) bool {
+	return gridFits(inv[:invSlots], slot, id)
+}
+
+// firstCarrySlot is the first inventory slot where item id fits, or -1.
 func firstCarrySlot(inv *[64]wire.Item, id uint16) int {
-	for slot := range invSlots {
-		if inv[slot].Index == 0 && carryFits(inv, slot, id) {
-			return slot
-		}
-	}
-	return -1
+	return firstGridSlot(inv[:invSlots], id)
+}
+
+// storageFits is carryFits for the cargo.
+func storageFits(st []wire.Item, slot int, id uint16) bool {
+	return gridFits(st[:storageVisible], slot, id)
+}
+
+// firstStorageSlot is the first cargo slot where item id fits, or -1.
+func firstStorageSlot(st []wire.Item, id uint16) int {
+	return firstGridSlot(st[:storageVisible], id)
 }
 
 // carrySlotFor keeps the requested slot when the item fits there and looks for
@@ -125,16 +185,26 @@ func carrySlotFor(inv *[64]wire.Item, id uint16, requested int) int {
 
 // carryMoveFits validates a move once both slots were emptied: newSrc goes to
 // the destination and newDst to the source.
-func carryMoveFits(pl *wire.Mob, src, ss, dst, ds int, newSrc, newDst *wire.Item) bool {
-	if dst == wire.SlotInv && newSrc.Index != 0 && !carryFits(&pl.Inventory, ds, newSrc.Index) {
+func carryMoveFits(pl *wire.Mob, storage []wire.Item, src, ss, dst, ds int, newSrc, newDst *wire.Item) bool {
+	grid := func(typ int) []wire.Item {
+		switch typ {
+		case wire.SlotInv:
+			return pl.Inventory[:invSlots]
+		case wire.SlotStorage:
+			return storage[:storageVisible]
+		}
+		return nil
+	}
+	dstGrid, srcGrid := grid(dst), grid(src)
+	if dstGrid != nil && newSrc.Index != 0 && !gridFits(dstGrid, ds, newSrc.Index) {
 		return false
 	}
-	if src != wire.SlotInv || newDst.Index == 0 {
+	if srcGrid == nil || newDst.Index == 0 {
 		return true
 	}
-	if dst == wire.SlotInv {
-		pl.Inventory[ds] = *newSrc
-		defer func() { pl.Inventory[ds] = wire.Item{} }()
+	if dstGrid != nil && ds < len(dstGrid) {
+		dstGrid[ds] = *newSrc
+		defer func() { dstGrid[ds] = wire.Item{} }()
 	}
-	return carryFits(&pl.Inventory, ss, newDst.Index)
+	return gridFits(srcGrid, ss, newDst.Index)
 }

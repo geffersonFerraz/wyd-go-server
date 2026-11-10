@@ -633,7 +633,7 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 			return
 		}
 	case auctionBars:
-		for i := 0; i < 60; i++ {
+		for i := 0; i < invSlots; i++ {
 			if me.Inventory[i].Index == 4011 && itemAmount(&me.Inventory[i]) >= int(price) && invSlotUsable(me, i) {
 				barSlot = i
 				break
@@ -673,8 +673,8 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 	}
 	sellerBarSlot := -1
 	if cat == auctionBars {
-		for i := 0; i < maxStorageSlot; i++ {
-			if i != bank && s.account.StorageItems[i].Index == 0 {
+		for i := 0; i < storageVisible; i++ {
+			if i != bank && s.account.StorageItems[i].Index == 0 && storageFits(s.account.StorageItems[:], i, 4011) {
 				sellerBarSlot = i
 				break
 			}

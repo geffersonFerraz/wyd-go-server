@@ -96,7 +96,7 @@ func (g *Game) useSoulSeal(u *User, p *wire.UseItem, src *wire.Item) {
 			return
 		}
 	}
-	for i := range 60 {
+	for i := range invSlots {
 		if i != int(p.SrcSlot) && pl.Inventory[i].Index > 0 {
 			refuse("Deixe o inventário vazio para selar seu personagem")
 			return
@@ -154,7 +154,7 @@ func (g *Game) requestPutOutSeal(u *User, pkt protocol.Packet) {
 		g.removeTrade(u.id)
 		return
 	}
-	if p.SrcType != wire.SlotInv || p.SrcSlot < 0 || p.SrcSlot >= 60 {
+	if p.SrcType != wire.SlotInv || p.SrcSlot < 0 || p.SrcSlot >= invSlots {
 		return
 	}
 	src := &pl.Inventory[p.SrcSlot]
@@ -212,7 +212,7 @@ func (g *Game) itemDelivery(u *User, pkt protocol.Packet) {
 		return
 	}
 	for i := range u.account.StorageItems {
-		if u.account.StorageItems[i].Index != 0 {
+		if u.account.StorageItems[i].Index != 0 || !storageFits(u.account.StorageItems[:], i, p.Item.Index) {
 			continue
 		}
 		u.account.StorageItems[i] = p.Item

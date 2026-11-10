@@ -51,7 +51,7 @@ func (g *Game) spinRoulette(u *User) {
 	info := &g.mobs[u.id].info
 	pl := &info.Player
 	slot := int(info.Roleta.BauSlot)
-	if slot < 0 || slot >= 60 || pl.Inventory[slot].Index != itemRouletteBox {
+	if slot < 0 || slot >= invSlots || pl.Inventory[slot].Index != itemRouletteBox {
 		g.clientMessage(u, "Selecione uma caixa para ser aberta")
 		return
 	}

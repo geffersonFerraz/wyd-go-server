@@ -251,7 +251,7 @@ func (g *Game) requestDeleteItem(u *User, pkt protocol.Packet) {
 		return
 	}
 	slot, id := int(p.SlotID), int(p.ItemID)
-	if id <= 0 || id >= MaxItemList || slot < 0 || slot >= 60 {
+	if id <= 0 || id >= MaxItemList || slot < 0 || slot >= invSlots {
 		g.log.Warn("delete item: bad packet", "slot", u.id, "inv", slot, "item", id)
 		return
 	}
@@ -321,7 +321,7 @@ func (g *Game) requestUngroupItem(u *User, pkt protocol.Packet) {
 		return
 	}
 	slot, amount := int(p.SlotID), int(p.Amount)
-	if slot < 0 || slot >= 60 || amount <= 0 {
+	if slot < 0 || slot >= invSlots || amount <= 0 {
 		return
 	}
 	pl := &g.mobs[u.id].info.Player

@@ -25,7 +25,7 @@ func (g *Game) requestEssenceUse(u *User, pkt protocol.Packet) {
 	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay {
 		return
 	}
-	if p.Slot < 0 || p.Slot >= 60 {
+	if p.Slot < 0 || p.Slot >= invSlots {
 		g.clientMessage(u, "%s", g.lang(nnMountNotMatch))
 		return
 	}

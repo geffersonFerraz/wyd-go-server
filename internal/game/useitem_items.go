@@ -390,14 +390,8 @@ func (g *Game) useItemByID(u *User, p *wire.UseItem, src *wire.Item, vol int) bo
 	case vol >= 235 && vol <= 238: // Mythril bars: +/- an Arch +11 bonus
 		g.useMythrilBar(u, p, src, vol-235)
 
-	case id == itemBag: // Bolsa do Andarilho: the bags are open to everyone
-		// The C++ gave 30 days of an extra bag; here every character has
-		// both bags for good (openBags), so the item is not used up.
-		if openBags(pl) {
-			g.sendItem(u, wire.SlotInv, 60, &pl.Inventory[60])
-			g.sendItem(u, wire.SlotInv, 61, &pl.Inventory[61])
-		}
-		refuse("As bolsas já estão liberadas para todos os personagens.")
+	case id == itemBag: // the old bags: every slot is open now
+		refuse("A Bolsa do Andarilho não é mais necessária.")
 
 	case id == 4528: // Caixa de Jóia: a random gem 2441..2444
 		gem := wire.Item{Index: uint16(2441 + rnd()%4)}
@@ -485,7 +479,7 @@ func (g *Game) useItemByID(u *User, p *wire.UseItem, src *wire.Item, vol int) bo
 			return true
 		}
 		left := total
-		for i := 0; i < 60 && left > 0; i++ {
+		for i := 0; i < invSlots && left > 0; i++ {
 			for pl.Inventory[i].Index == want && left > 0 {
 				amountMinus(&pl.Inventory[i])
 				left--

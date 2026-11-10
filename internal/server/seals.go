@@ -109,8 +109,6 @@ func (s *Server) handlePutInSeal(ctx context.Context, ch *channel, pkt protocol.
 	}
 	sealed.Escritura = wire.ItemDate{}
 	sealed.PesaEnter = 0
-	sealed.Player.Inventory[60] = wire.Item{} // bags
-	sealed.Player.Inventory[61] = wire.Item{}
 	sealed.Player.GuildIndex = 0
 	sealed.Player.GuildMemberType = 0
 	sealed.Fame = 0

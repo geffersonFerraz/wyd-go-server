@@ -98,7 +98,7 @@ func (g *Game) requestTrade(u *User, pkt protocol.Packet) {
 	for i := range tradeSlots {
 		if msg.Item[i].Index != 0 {
 			slot := int(msg.Slot[i])
-			if slot < 0 || slot >= 60 {
+			if slot < 0 || slot >= invSlots {
 				return
 			}
 			if me.Inventory[slot] != msg.Item[i] {
@@ -109,7 +109,7 @@ func (g *Game) requestTrade(u *User, pkt protocol.Packet) {
 		}
 		if opp.trade.Item[i].Index != 0 {
 			slot := int(opp.trade.Slot[i])
-			if slot < 0 || slot >= 60 {
+			if slot < 0 || slot >= invSlots {
 				return
 			}
 			if them.Inventory[slot] != opp.trade.Item[i] {
@@ -203,7 +203,7 @@ func (g *Game) requestTrade(u *User, pkt protocol.Packet) {
 			msg.Item[i] = wire.Item{}
 			continue
 		}
-		if slot < -1 || slot >= 60 {
+		if slot < -1 || slot >= invSlots {
 			g.clientMessage(u, "%s", g.lang(nnWrongTradePacket1))
 			g.removeTrade(u.id)
 			return

@@ -1326,7 +1326,6 @@ var (
 		coupons int
 		effects [3]wire.ItemEffect
 	}{
-		3467: {coupons: 10},
 		4140: {5, [3]wire.ItemEffect{{Index: 61, Value: 1}}},
 		3314: {2, [3]wire.ItemEffect{{Index: 61, Value: 1}}},
 		3173: {5, [3]wire.ItemEffect{{Index: 61, Value: 3}}},
@@ -1612,8 +1611,6 @@ func (g *Game) monsterPrize(gen, killer int) {
 			it.Index, it.Effect[0].Value = 3314, 3
 		case r < 75:
 			it.Index, it.Effect[0].Value = 4140, 2
-		case r < 85:
-			it = wire.Item{Index: 3467}
 		default:
 			it.Index, it.Effect[0].Value = 4140, 2
 		}

@@ -65,32 +65,21 @@ func (g *Game) requestOpenShop(u *User, pkt protocol.Packet) {
 	g.queue(u, &out)
 }
 
-// The bags are open to everyone on this server: the inventory always has
-// its 60 slots (the C++ opened 30..44 and 45..59 only with an active
-// Bolsa do Andarilho 3467 in slot 60 / 61). openBags puts permanent bags in
-// those slots so the client, which only checks for item 3467 there, shows
-// the extra pages too.
+// The inventory has one slot per cell of the 9x7 grid (slot 63 is the PK
+// counter). The Bolsa do Andarilho, which unlocked slots 30..59, no longer
+// exists; characters saved with one had it on slot 60 / 61.
 const (
-	invSlots = 60
+	invSlots = 63
 	itemBag  = 3467
 )
 
-// openBags gives slots 60 and 61 a permanent bag (expiry 31/12/2155), unless
-// something else is there. It reports whether anything changed.
-func openBags(pl *wire.Mob) bool {
-	changed := false
+// clearBagSlots removes the bags of the old system from slots 60 and 61.
+func clearBagSlots(pl *wire.Mob) {
 	for _, s := range [2]int{60, 61} {
-		it := &pl.Inventory[s]
-		if it.Index != 0 && it.Index != itemBag {
-			continue
-		}
-		bag := wire.Item{Index: itemBag, Effect: [3]wire.ItemEffect{{Index: 106, Value: 31}, {Index: 110, Value: 12}, {Index: 109, Value: 255}}}
-		if *it != bag {
-			*it = bag
-			changed = true
+		if pl.Inventory[s].Index == itemBag {
+			pl.Inventory[s] = wire.Item{}
 		}
 	}
-	return changed
 }
 
 // invSlotUsable reports whether an inventory slot exists.
@@ -130,7 +119,7 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 		return
 	}
 	mobID, sellSlot, invSlot := int(p.MobID), int(p.SellSlot), int(p.InvSlot)
-	if mobID < 0 || mobID >= MaxMob || sellSlot < 0 || sellSlot > 63 || invSlot < 0 || invSlot >= 60 {
+	if mobID < 0 || mobID >= MaxMob || sellSlot < 0 || sellSlot > 63 || invSlot < 0 || invSlot >= invSlots {
 		return
 	}
 	pl := &g.mobs[u.id].info.Player
@@ -234,7 +223,7 @@ func (g *Game) requestSellShop(u *User, pkt protocol.Packet) {
 	fairy := pl.Equip[13].Index
 	remote := fairy == 3914 || fairy == 3915 // fairies sell from anywhere
 	mobID, slot := int(p.NpcID), int(p.SellSlot)
-	if mobID < 0 || mobID >= MaxMob || (!isNPC(mobID) && !remote) || slot < 0 || slot >= 60 {
+	if mobID < 0 || mobID >= MaxMob || (!isNPC(mobID) && !remote) || slot < 0 || slot >= invSlots {
 		return
 	}
 	if mobID != 0 && !remote {

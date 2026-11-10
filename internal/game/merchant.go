@@ -297,7 +297,7 @@ func (g *Game) npcEvent(u *User, npc int) {
 			continue
 		}
 		need, evID := ev.AmountRequired[i], eventOf(want)
-		for s := 0; s < 60 && need > 0; s++ {
+		for s := 0; s < invSlots && need > 0; s++ {
 			if !matches(&pl.Inventory[s], want, evID) {
 				continue
 			}
@@ -512,7 +512,7 @@ func (g *Game) npcGriupan(u *User, npc int) {
 	for i := range slots {
 		slots[i] = -1
 	}
-	for s := range 60 {
+	for s := range invSlots {
 		idx := int(pl.Inventory[s].Index)
 		if idx < 1721 || idx > 1725 {
 			continue
@@ -553,7 +553,7 @@ func (g *Game) npcEnchantCrystals(u *User, npc int) {
 	pl := &g.mobs[u.id].info.Player
 	var have [7]bool
 	count := 0
-	for s := range 60 {
+	for s := range invSlots {
 		if idx := pl.Inventory[s].Index; idx >= 421 && idx <= 427 {
 			have[idx-421] = true
 			count++
@@ -574,7 +574,7 @@ func (g *Game) npcEnchantCrystals(u *User, npc int) {
 	}
 	w.Effect = [3]wire.ItemEffect{}
 	g.setItemBonusLevel(w, int(g.data.Item(w.Index).Level)+count/10*25, 1, g.mobs[u.id].combat.dropBonus)
-	for s := range 60 {
+	for s := range invSlots {
 		if idx := pl.Inventory[s].Index; idx >= 421 && idx <= 427 {
 			pl.Inventory[s] = wire.Item{}
 		}
@@ -755,7 +755,7 @@ func sapphiresHeld(pl *wire.Mob) int {
 // counts 10, whatever is left of it), slot by slot as the C++ did.
 func (g *Game) takeSapphires(u *User, need int) {
 	pl := &g.mobs[u.id].info.Player
-	for s := 0; s < 60 && need > 0; s++ {
+	for s := 0; s < invSlots && need > 0; s++ {
 		if pl.Inventory[s].Index == itemSapphire {
 			for pl.Inventory[s].Index == itemSapphire && need > 0 {
 				amountMinus(&pl.Inventory[s])

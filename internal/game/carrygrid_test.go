@@ -48,14 +48,14 @@ func TestCarryMoveFitsChecksBothItemsOfASwap(t *testing.T) {
 	var pl wire.Mob
 	pl.Inventory[4] = wire.Item{Index: gridItem2x2}
 	moving := wire.Item{Index: gridItem2x2}
-	if carryMoveFits(&pl, wire.SlotInv, 20, wire.SlotInv, 5, &moving, &wire.Item{}) {
+	if carryMoveFits(&pl, nil, wire.SlotInv, 20, wire.SlotInv, 5, &moving, &wire.Item{}) {
 		t.Error("the destination overlaps the item at slot 4")
 	}
-	if !carryMoveFits(&pl, wire.SlotInv, 20, wire.SlotInv, 6, &moving, &wire.Item{}) {
+	if !carryMoveFits(&pl, nil, wire.SlotInv, 20, wire.SlotInv, 6, &moving, &wire.Item{}) {
 		t.Error("the destination is free")
 	}
 	back := wire.Item{Index: gridItem2x2}
-	if carryMoveFits(&pl, wire.SlotInv, 3, wire.SlotInv, 30, &moving, &back) {
+	if carryMoveFits(&pl, nil, wire.SlotInv, 3, wire.SlotInv, 30, &moving, &back) {
 		t.Error("the swapped item would overlap slot 4 from slot 3")
 	}
 	if pl.Inventory[30].Index != 0 {

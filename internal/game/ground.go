@@ -36,7 +36,6 @@ const (
 	dropLifetimeMs  uint32 = 10 * 60 * 1000 // then it is destroyed
 	dropMaxDistance        = 8              // cells from the player, walking included
 	dropSearchRange        = 6              // how far an item that did not fit may fall
-	storageVisible         = 126            // cargo slots the client shows
 )
 
 // InitItemFile is one row of InitItem.csv (BASE_InitItem).
@@ -260,14 +259,7 @@ func (g *Game) dropNearPlayer(u *User, it wire.Item) int {
 func (g *Game) parkUnplacedItems(u *User, items []wire.Item) {
 	cargo, ground := 0, 0
 	for _, it := range items {
-		slot := -1
-		for s := range storageVisible {
-			if u.account.StorageItems[s].Index == 0 {
-				slot = s
-				break
-			}
-		}
-		if slot >= 0 {
+		if slot := firstStorageSlot(u.account.StorageItems[:], it.Index); slot >= 0 {
 			u.account.StorageItems[slot] = it
 			g.sendItem(u, wire.SlotStorage, slot, &u.account.StorageItems[slot])
 			cargo++
@@ -740,7 +732,7 @@ func (g *Game) requestDropItem(u *User, pkt protocol.Packet) {
 		}
 		it, refreshEquip = &pl.Equip[slot], slot < 8
 	case wire.SlotInv:
-		if slot < 0 || slot >= 60 {
+		if slot < 0 || slot >= invSlots {
 			return
 		}
 		it = &pl.Inventory[slot]

@@ -208,16 +208,6 @@ func (s *Server) characterPage(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, err)
 		return
 	}
-	for i := range inv {
-		switch {
-		case i >= 30 && i < 45:
-			inv[i].Label = fmt.Sprintf("%d (bolsa 1)", i)
-		case i >= 45 && i < 60:
-			inv[i].Label = fmt.Sprintf("%d (bolsa 2)", i)
-		case i == 60 || i == 61:
-			inv[i].Label = fmt.Sprintf("%d (bolsa)", i)
-		}
-	}
 	name := wire.DecodeGame(wire.CString(pl.Name[:]))
 	data["Title"] = name + " · " + user
 	data["Slot"] = slot

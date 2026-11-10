@@ -57,13 +57,7 @@ func (g *Game) giveLevelItems(u *User) {
 			pl.Inventory[slot] = li.Item
 			g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
 		} else {
-			slot = -1
-			for s := range 160 {
-				if u.account.StorageItems[s].Index == 0 {
-					slot = s
-					break
-				}
-			}
+			slot = firstStorageSlot(u.account.StorageItems[:], li.Item.Index)
 			if slot < 0 {
 				g.clientMessage(u, "Sem espaço no banco para receber o item!")
 				g.log.Info("level item not given: storage full", "slot", u.id, "item", li.Item.Index)

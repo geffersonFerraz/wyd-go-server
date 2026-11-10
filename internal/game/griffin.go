@@ -90,7 +90,7 @@ func (g *Game) requestRedeemGriffin(u *User, pkt protocol.Packet) {
 	if wire.Unmarshal(pkt.Raw, &p) != nil || u.status != userPlay {
 		return
 	}
-	if p.Parm1 < 0 || int(p.Parm1) >= len(griffinTickets) || p.Parm2 < 0 || p.Parm2 >= 60 {
+	if p.Parm1 < 0 || int(p.Parm1) >= len(griffinTickets) || p.Parm2 < 0 || p.Parm2 >= invSlots {
 		return
 	}
 	kind := &griffinTickets[p.Parm1]
