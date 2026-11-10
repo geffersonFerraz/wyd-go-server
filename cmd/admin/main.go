@@ -23,6 +23,9 @@
 //   - /serverlist.bin: the client's server list, built from the channels of
 //     -config (tmsrv.yaml) on every request;
 //   - /itemlist.bin: the client's item list, as it is in the database;
+//   - /registro: the account registration page opened by the client; it
+//     emails new players through Resend once RESEND_API_KEY and RESEND_FROM
+//     are set;
 //   - /guild/img_guilds/b0100000<id>.bmp: guild marks uploaded in the panel
 //     and saved to -guildmark-dir (GameURLMark in the client's TMPaths.h
 //     must point at this host).
@@ -205,6 +208,11 @@ func run(log *slog.Logger, o options) error {
 		}
 		mux.Handle("GET "+admin.ItemListPath, admin.ItemListHandler(st, log))
 		mux.Handle("GET "+admin.LauncherPath, admin.LauncherHandler())
+		mailer := admin.NewResendMailer(os.Getenv("RESEND_API_KEY"), os.Getenv("RESEND_FROM"))
+		if !mailer.Enabled() {
+			log.Info("registration email disabled: RESEND_API_KEY or RESEND_FROM not set")
+		}
+		mux.Handle(admin.RegisterPath, admin.RegisterHandler(st, mailer, log))
 		if o.markDir != "" {
 			mux.Handle(admin.GuildMarkPath, admin.GuildMarkHandler(o.markDir))
 		}

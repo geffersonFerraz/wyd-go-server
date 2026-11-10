@@ -177,6 +177,16 @@ func (s *Store) CreateAccount(ctx context.Context, username, passwordHash string
 	return tag.RowsAffected() == 1, err
 }
 
+// CreateAccountWithEmail is CreateAccount for the public registration page,
+// at access level 0. A nil email leaves the account without one.
+func (s *Store) CreateAccountWithEmail(ctx context.Context, username, passwordHash string, numericHash, email *string) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		INSERT INTO accounts (username, password_hash, numeric_pass_hash, email, data)
+		VALUES ($1, $2, $3, $4, '{"CharSlot": -1}')
+		ON CONFLICT (username) DO NOTHING`, strings.ToUpper(username), passwordHash, numericHash, email)
+	return tag.RowsAffected() == 1, err
+}
+
 // SetPassword updates the password hash and/or the numeric password hash;
 // a nil argument leaves that one unchanged. It reports false if the
 // account does not exist.

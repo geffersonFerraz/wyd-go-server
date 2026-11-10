@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Registro</title>
+<style>
+html, body { margin: 0; padding: 0; background: #17140f; color: #e8dfc8; font: 13px Tahoma, Arial, sans-serif; }
+.box { width: 360px; margin: 18px auto; padding: 18px 22px 20px; background: #26211a; border: 1px solid #8a7a4c; }
+h1 { margin: 0 0 14px; font-size: 18px; font-weight: bold; text-align: center; color: #f0c860; }
+label { display: block; margin: 9px 0 3px; font-weight: bold; }
+label span { font-weight: normal; color: #a89a78; }
+input.field { display: block; width: 342px; padding: 5px 8px; background: #0f0d0a; color: #fff; border: 1px solid #6b5f40; font: 13px Tahoma, Arial, sans-serif; }
+.notice { margin: 12px 0 0; padding: 8px 10px; background: #342b16; border-left: 3px solid #f0c860; line-height: 1.35; }
+.error { margin: 0 0 8px; padding: 8px 10px; background: #4a1c16; border-left: 3px solid #e0604c; }
+.done { padding: 14px 4px; text-align: center; font-size: 14px; line-height: 1.5; }
+button { display: block; width: 100%; margin-top: 14px; padding: 8px; background: #8a6a24; color: #fff; border: 1px solid #f0c860; font: bold 14px Tahoma, Arial, sans-serif; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="box">
+<h1>Criar conta</h1>
+{{if .Done}}
+<div class="done">Conta <b>{{.Username}}</b> criada!<br>Feche esta janela e entre com seu login e senha.</div>
+{{else}}
+{{if .Error}}<div class="error">{{.Error}}</div>{{end}}
+<form method="post" action="{{.Action}}" autocomplete="off">
+<label for="username">Login <span>(4 a 12 letras ou números)</span></label>
+<input class="field" id="username" name="username" maxlength="12" value="{{.Username}}" autofocus>
+<label for="password">Senha <span>(4 a 10 caracteres)</span></label>
+<input class="field" id="password" name="password" type="password" maxlength="10">
+<label for="password2">Confirmação de senha</label>
+<input class="field" id="password2" name="password2" type="password" maxlength="10">
+<label for="token">Token <span>(até 6 dígitos)</span></label>
+<input class="field" id="token" name="token" type="password" maxlength="6">
+<label for="email">Email <span>(opcional)</span></label>
+<input class="field" id="email" name="email" maxlength="254" value="{{.Email}}">
+<div class="notice">O email é opcional, mas é ele que será usado para recuperar a conta.</div>
+<button type="submit">Registrar</button>
+</form>
+{{end}}
+</div>
+</body>
+</html>
