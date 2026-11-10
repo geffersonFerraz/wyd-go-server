@@ -399,6 +399,23 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 	case "edit":
 		return s.deliverEdit(ctx, user, d.Payload)
 
+	case "login_unblock":
+		// The lock lives in each channel's memory: tell all of them.
+		out := wire.LoginUnblock{}
+		wire.PutCString(out.Username[:], user)
+		sent := 0
+		for i := range s.cfg.ChannelIPs {
+			if c := s.channel(i); c != nil {
+				out.Header = wire.NewHeader(wire.OpLoginUnblock, 0)
+				c.send(&out)
+				sent++
+			}
+		}
+		if sent == 0 {
+			return resNotOnline, true, nil
+		}
+		return fmt.Sprintf("%s: %d", resSentOnline, sent), true, nil
+
 	case "cash":
 		if p.Amount <= 0 || p.Amount > 1<<31-1 {
 			return resInvalid + ": amount", true, nil

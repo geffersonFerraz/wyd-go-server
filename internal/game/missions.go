@@ -219,7 +219,7 @@ func (g *Game) requestCollectMission(u *User, _ protocol.Packet) {
 			}
 			for range amount[i] {
 				it := items[i]
-				if !g.putItem(u, &it) {
+				if !g.eventItem(u, &it, "Missão") {
 					g.clientMessage(u, "Falta espaço no inventário")
 					return
 				}

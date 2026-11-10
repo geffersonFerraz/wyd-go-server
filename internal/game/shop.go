@@ -123,6 +123,9 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 		return
 	}
 	pl := &g.mobs[u.id].info.Player
+	if mobID >= firstNPC { // not a buyback, which keeps the item's own track
+		defer g.npcWatch(u, mobID, wire.TrackNPCBuy)()
+	}
 	if u.honorMarket || (mobID >= firstNPC && wire.CString(g.mobs[mobID].info.Player.Name[:]) == honorShopName) {
 		g.buyHonorMarket(u, mobID, sellSlot, invSlot)
 		return
@@ -207,6 +210,11 @@ func (g *Game) buyBack(u *User, slot int) {
 	g.signalParm64(u, uint16(u.id), wire.OpSrvGold, pl.Gold)
 	pl.Inventory[slotID] = *item
 	g.sendItem(u, wire.SlotInv, slotID, item)
+	if r := u.repurchaseTrack[slot]; r != nil {
+		g.giveTrack(u, r, wire.SlotInv, slotID)
+		g.trackEvent(wire.TrackBuyback, r.id, *item, trackParty{}, g.partyOf(u), price)
+	}
+	u.repurchaseTrack[slot] = nil
 	*item = wire.Item{}
 	g.sendRepurchase(u)
 }
@@ -220,6 +228,7 @@ func (g *Game) requestSellShop(u *User, pkt protocol.Packet) {
 		return
 	}
 	pl := &g.mobs[u.id].info.Player
+	goldBefore := pl.Gold
 	fairy := pl.Equip[13].Index
 	remote := fairy == 3914 || fairy == 3915 // fairies sell from anywhere
 	mobID, slot := int(p.NpcID), int(p.SellSlot)
@@ -240,15 +249,21 @@ func (g *Game) requestSellShop(u *User, pkt protocol.Packet) {
 		return
 	}
 	sold := *item
+	ref := g.takeTrack(u, wire.SlotInv, slot)
 	switch g.sellItem(u, item) {
 	case sellGoldLimit:
+		g.giveTrack(u, ref, wire.SlotInv, slot)
 		g.clientMessage(u, "%s", g.lang(nnCantGetMoreThan2G))
 		g.sendItem(u, int(p.Type), slot, item)
 		return
 	case sellBlocked:
+		g.giveTrack(u, ref, wire.SlotInv, slot)
 		g.clientMessage(u, "Não é possível vender este item")
 		g.sendItem(u, int(p.Type), slot, item)
 		return
+	}
+	if ref != nil {
+		g.trackEvent(wire.TrackNPCSell, ref.id, sold, g.partyOf(u), trackParty{}, pl.Gold-goldBefore)
 	}
 	free := -1
 	for i, it := range u.repurchase {
@@ -265,6 +280,7 @@ func (g *Game) requestSellShop(u *User, pkt protocol.Packet) {
 		free = u.repurchaseLast
 	}
 	u.repurchase[free] = sold
+	u.repurchaseTrack[free] = ref
 	g.sendItem(u, wire.SlotInv, slot, item)
 }
 

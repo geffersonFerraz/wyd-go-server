@@ -202,7 +202,7 @@ func (g *Game) giveRuna(sala, party int) {
 			continue
 		}
 		rune := wire.Item{Index: uint16(pistaRunes[sala][rnd()%len(pistaRunes[sala])])}
-		g.putItem(u, &rune)
+		g.eventItem(u, &rune, "Pista de Runas")
 		received[u.mac]++
 	}
 	leader := p.clients[party][pistaLeader]
@@ -216,7 +216,7 @@ func (g *Game) giveRuna(sala, party int) {
 	}
 	next := wire.Item{Index: itemPista}
 	next.Effect[0] = wire.ItemEffect{Index: 43, Value: uint16(sala + 1)}
-	g.putItem(lu, &next)
+	g.eventItem(lu, &next, "Pista de Runas")
 }
 
 func (g *Game) clearNPCsIn(area mapRect) {

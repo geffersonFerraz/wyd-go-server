@@ -80,10 +80,30 @@ Kept in the repo so the knowledge survives between sessions.
     (HandleMobDrop): per player/mob/item kill counters, "every N kills"
     (reduced by fairies 3901-3915 and drop bonus), MaxDrops per kill,
     GoldDrop added to the killer (Go caps at 2 billion; the C++ did not),
-    straight into the inventory with the C++ stacking rules (AgroupItem /
-    AgroupItemFada, GetMaxAmountItem) and the drop filter. Counters reset
-    when the character enters the world (the C++ kept them per slot id
-    forever). No items are ever placed on the ground by mobs.
+    with the C++ stacking rules (AgroupItem / AgroupItemFada,
+    GetMaxAmountItem) and the drop filter. Counters reset when the
+    character enters the world (the C++ kept them per slot id forever).
+    Changed from the C++ (which put the items straight into the
+    inventory): drops fall on the ground around the monster, reserved for
+    the killer for 10 minutes, then anyone's for 5 more, then destroyed
+    (player drops follow the same windows); stacks join the picker's on
+    pickup; with the ground list full the item goes to the inventory as
+    before. Item tracking (`itemtrack.go`, 0xC20-0xC22, tables
+    item_tracks / item_track_events): a non-stackable monster drop gets a
+    random id when picked up, recording monster, place, time and killer
+    (even when someone else picks it up once public); trades, store
+    purchases, ground pickups by another account, NPC sales and buybacks
+    append events; an item used up or destroyed is marked gone. Items
+    bought from an NPC shop (honor market included) or given by an NPC
+    (RequestMerchantNPC: quests, events) are tracked as they arrive, with
+    the NPC as origin (npc_buy / npc_reward): the items new in the
+    character after the NPC acted, not the ones it refined or moved.
+    Event prizes (eventItem: arena, missions, daily quest, Pista de Runas,
+    Quest da Água, roulette, coliseum bosses, Big Cubo, hit event, the
+    special monsters of monsterPrize and the Almas) are tracked the same
+    way with the event as origin (event_reward). The id
+    follows the item through RequestMoveItem and the transfers, and is
+    found again by its exact index and effects after other moves.
     gameconfig.txt note: its "Bônus experiência" and "Rates Refinação"
     headers never matched in the C++ (mis-encoded literals), so those
     values were never applied; the drop-rate table only fed the dead loop.

@@ -292,14 +292,30 @@ func (g *Game) completeTrade(u, opp *User) {
 	}
 	g.log.Info("trade", "a", u.id, "a_account", wire.CString(u.account.Username[:]), "a_gold", u.trade.Gold,
 		"b", opp.id, "b_account", wire.CString(opp.account.Username[:]), "b_gold", opp.trade.Gold)
+	mine, theirs := g.tradeTracks(u), g.tradeTracks(opp)
 	me.Inventory, them.Inventory = myInv, theirInv
 	me.Gold, them.Gold = myGold, theirGold
+	g.transferTracks(wire.TrackTrade, mine, u, opp, 0)
+	g.transferTracks(wire.TrackTrade, theirs, opp, u, 0)
 	g.sendCarry(u)
 	g.sendCarry(opp)
 	g.removeTrade(u.id)
 	g.removeTrade(opp.id)
 	g.saveUser(u, 0)
 	g.saveUser(opp, 0)
+}
+
+// tradeTracks takes the tracks of the items a player offers in a trade.
+func (g *Game) tradeTracks(u *User) []*trackRef {
+	var refs []*trackRef
+	for _, s := range u.trade.Slot {
+		if s >= 0 && int(s) < invSlots {
+			if r := g.takeTrack(u, wire.SlotInv, int(s)); r != nil {
+				refs = append(refs, r)
+			}
+		}
+	}
+	return refs
 }
 
 // canTrade is CanTrade: the inventory after giving away mySlots and

@@ -41,50 +41,63 @@ func writeDrops(t *testing.T, g *Game, mobs ...*MobDrop) {
 	}
 }
 
+// testOrigin is a monster killed next to player 1.
+func testOrigin(g *Game) *dropOrigin {
+	t := g.mobs[1].target
+	return &dropOrigin{mob: "Teste", x: int(t.X) + 2, y: int(t.Y), killerAccount: "DONO", killerChar: "Dono"}
+}
+
+// groundItems counts the ground items of an index and their amounts.
+func groundItems(g *Game, index uint16) (n, amount int) {
+	for i := g.initCount + 1; i < maxGroundItem; i++ {
+		if gi := &g.ground[i]; gi.open && gi.item.Index == index {
+			n++
+			amount += max(itemAmount(&gi.item), 1)
+		}
+	}
+	return n, amount
+}
+
 func TestDropEveryNKills(t *testing.T) {
-	g, a, _ := tradeGame(t)
+	g, a, _ := dropScene(t)
 	writeDrops(t, g, &MobDrop{Name: "Teste", MaxDrops: 5, Gold: 100, Items: []DropItem{{Kills: 3, Index: 1103}, {Kills: 1, Index: 4117}}})
 	pl := &g.mobs[1].info.Player
 	pl.Gold = 0
+	before := pl.Inventory
 	for range 3 {
-		g.handleMobDrop(a, "Teste")
+		g.handleMobDrop(a, "Teste", testOrigin(g))
 	}
 	if pl.Gold != 300 {
 		t.Fatalf("gold %d, want 300", pl.Gold)
 	}
-	swords, stack := 0, -1
-	for i := range 30 {
-		switch pl.Inventory[i].Index {
-		case 1103:
-			swords++
-		case 4117:
-			if stack != -1 {
-				t.Fatalf("4117 in two slots (%d and %d), should stack", stack, i)
-			}
-			stack = i
-		}
+	if pl.Inventory != before {
+		t.Fatal("a drop went into the inventory instead of the ground")
 	}
-	if swords != 1 {
-		t.Fatalf("%d x 1103 after 3 kills, want 1", swords)
+	if n, _ := groundItems(g, 1103); n != 1 {
+		t.Fatalf("%d x 1103 on the ground after 3 kills, want 1", n)
 	}
-	if stack == -1 || itemAmount(&pl.Inventory[stack]) != 3 {
-		t.Fatalf("4117 stack: slot %d, want amount 3", stack)
+	if _, amount := groundItems(g, 4117); amount != 3 {
+		t.Fatalf("4117 on the ground: %d, want 3", amount)
+	}
+	id := groundIDOf(g, 1103)
+	if gi := &g.ground[id]; gi.owner != "Dono" || gi.origin == nil || gi.origin.mob != "Teste" ||
+		gi.expireAt-g.now() != dropLifetimeMs || gi.ownerUntil-g.now() != dropOwnerMs {
+		t.Fatalf("ground drop: %+v", gi)
 	}
 }
 
 func TestDropFilter(t *testing.T) {
-	g, a, _ := tradeGame(t)
+	g, a, _ := dropScene(t)
 	writeDrops(t, g, &MobDrop{Name: "Teste", MaxDrops: 5, Items: []DropItem{{Kills: 1, Index: 1103}, {Kills: 1, Index: 1104}}})
 	ci := &g.mobs[1].info
 	ci.FilterDrop.IsEnabled = true
 	ci.FilterDrop.Items[0] = wire.Item{Index: 1104}
-	g.handleMobDrop(a, "Teste")
-	got := map[uint16]bool{}
-	for i := range 30 {
-		got[ci.Player.Inventory[i].Index] = true
+	g.handleMobDrop(a, "Teste", testOrigin(g))
+	if n, _ := groundItems(g, 1103); n != 0 {
+		t.Fatal("filtered item dropped")
 	}
-	if got[1103] || !got[1104] {
-		t.Fatalf("filter: got %v, want only 1104", got)
+	if n, _ := groundItems(g, 1104); n != 1 {
+		t.Fatal("allowed item not dropped")
 	}
 }
 

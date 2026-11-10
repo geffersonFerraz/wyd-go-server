@@ -764,6 +764,13 @@ type PanelCommand struct {
 	Command  [128]byte // Windows-1252
 }
 
+// LoginUnblock (Go only, 0xC1F): the panel clears the wrong-password lock
+// of an account on every channel.
+type LoginUnblock struct {
+	Header   Header
+	Username [16]byte
+}
+
 // PanelCommandResult (Go only, 0xC1B): what the command answered.
 type PanelCommandResult struct {
 	Header   Header
@@ -790,4 +797,71 @@ type StoreSale struct {
 	Buyer    [16]byte
 	Seller   [16]byte
 	Item     Item
+}
+
+// ClientIDItemTrack is the header ClientID of every TMSRV -> DBSRV tracking
+// packet: DBSRV runs one lane per ClientID, so they all keep their order.
+const ClientIDItemTrack = 0x7540
+
+// Kinds of ItemTrackEvent.
+const (
+	TrackPickup      = 1  // the first player picked up a monster's drop: the track is created
+	TrackTrade       = 2  // direct trade between two accounts
+	TrackStore       = 3  // bought from another player's store (auction)
+	TrackGround      = 4  // dropped by one account, picked up by another
+	TrackNPCSell     = 5  // sold to an NPC: out of the game
+	TrackBuyback     = 6  // bought back from the NPC
+	TrackDestroyed   = 7  // dropped and left on the ground until it vanished
+	TrackGone        = 8  // left the account some other way (used, refined into another item, deleted)
+	TrackNPCBuy      = 9  // bought from an NPC: the track is created
+	TrackNPCReward   = 10 // given by an NPC (quest, event): the track is created
+	TrackEventReward = 11 // an event's prize (arena, missions, bosses, roulette...): the track is created
+)
+
+// ItemTrackEvent (Go only, 0xC20): something happened to a tracked item.
+// For TrackPickup, Mob/Drop*/Killer* tell where the item came from and To
+// is the first owner; TrackNPCBuy / TrackNPCReward are the same with the
+// NPC in Mob and no killer. The other kinds move it From -> To.
+type ItemTrackEvent struct {
+	Header        Header
+	Kind          int32
+	TrackID       int64
+	At            int64 // unix ms
+	DroppedAt     int64 // unix ms, TrackPickup only
+	Price         int64
+	Channel       int32
+	DropX, DropY  int16
+	Item          Item
+	FromAccount   [16]byte
+	FromChar      [16]byte
+	ToAccount     [16]byte
+	ToChar        [16]byte
+	Mob           [16]byte
+	KillerAccount [16]byte
+	KillerChar    [16]byte
+	_             [2]byte
+}
+
+// ItemTrackPlace is where a tracked item is: CharSlot -1 is the account
+// storage; Type is SlotEquip / SlotInv / SlotStorage.
+type ItemTrackPlace struct {
+	TrackID  int64
+	CharSlot int16
+	Type     int16
+	Slot     int16
+	Item     Item
+	_        [4]byte
+}
+
+// ItemTrackPlaces is 0xC21 (TMSRV -> DBSRV, the places changed since the
+// last save) and 0xC22 (DBSRV -> TMSRV, a character's tracked items and
+// the storage's, sent right after 0x417).
+type ItemTrackPlaces struct {
+	Header   Header
+	CharSlot int32
+	Account  [16]byte
+	Char     [16]byte // the character playing
+	Count    int32
+	_        [4]byte
+	Places   [32]ItemTrackPlace
 }

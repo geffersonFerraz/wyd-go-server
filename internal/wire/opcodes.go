@@ -79,6 +79,10 @@ const (
 	OpOpenStore              = 0xC1C // Go only: TMSRV -> DBSRV, an open store, once a minute
 	OpStoreSale              = 0xC1D // Go only: TMSRV -> DBSRV, a sale in the auction stores
 	OpAdminStats             = 0xC1E // Go only: staff edit of a live character's attributes
+	OpLoginUnblock           = 0xC1F // Go only: DBSRV -> TMSRV, clear an account's wrong-password lock
+	OpItemTrackEvent         = 0xC20 // Go only: TMSRV -> DBSRV, a tracked item was created or changed hands
+	OpItemTrackSync          = 0xC21 // Go only: TMSRV -> DBSRV, where an account's tracked items are now
+	OpItemTrackList          = 0xC22 // Go only: DBSRV -> TMSRV, a character's tracked items on login
 	OpPutInSealSuccess       = 3135  // 0xC3F
 	OpCNFCharacterLoginExtra = 0x820
 	OpNumericPasswordWrong   = 0xFDF

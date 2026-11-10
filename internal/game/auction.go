@@ -710,9 +710,14 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 	}
 	// Deliver.
 	item := l.Item
+	ref := g.takeTrack(s, wire.SlotStorage, bank)
 	me.Inventory[free] = item
 	g.sendItem(u, wire.SlotInv, free, &item)
 	s.account.StorageItems[bank] = wire.Item{}
+	if ref != nil {
+		g.giveTrack(u, ref, wire.SlotInv, free)
+		g.trackEvent(wire.TrackStore, ref.id, item, g.partyOf(s), g.partyOf(u), int64(price))
+	}
 	if cat == auctionBars {
 		pack := wire.Item{Index: 4011}
 		pack.Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: uint16(price)}

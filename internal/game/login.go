@@ -474,6 +474,14 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 	case wire.OpBroadcastChat: // 0xD1D: a trumpet from any channel
 		g.relayChat(pkt.Raw)
 		return
+	case wire.OpLoginUnblock: // 0xC1F: the panel clears a wrong-password lock
+		var p wire.LoginUnblock
+		if wire.Unmarshal(pkt.Raw, &p) == nil {
+			login := strings.ToUpper(wire.CString(p.Username[:]))
+			failedLogins.clear(login)
+			g.log.Info("login lock cleared by the panel", "account", login)
+		}
+		return
 	}
 	if u == nil || u.conn == nil && u.status != userSaving4Quit {
 		return
@@ -591,6 +599,8 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 		}
 	case wire.OpCNFCharacterLogin: // 0x417
 		g.enterWorld(u, pkt)
+	case wire.OpItemTrackList: // 0xC22
+		g.itemTrackList(u, pkt)
 	case wire.OpReLoginForChange: // 0x52A: channel change key
 		g.channelChangeReply(u, pkt)
 	case wire.OpSavingQuit: // 0x40A
@@ -676,6 +686,7 @@ type failTable struct{ m map[string][]time.Time }
 
 func (f *failTable) add(login string)       { f.m[login] = append(f.recent(login), time.Now()) }
 func (f *failTable) count(login string) int { return len(f.recent(login)) }
+func (f *failTable) clear(login string)     { delete(f.m, login) }
 func (f *failTable) recent(login string) []time.Time {
 	var out []time.Time
 	for _, t := range f.m[login] {

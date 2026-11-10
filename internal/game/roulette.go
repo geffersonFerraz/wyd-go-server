@@ -144,7 +144,7 @@ func (g *Game) getRouletteReward(u *User) {
 	if info.Roleta.DropMsg == 1 {
 		g.notice("[Servidor] " + g.charName(u.id) + " obteve " + g.itemName(u.rouletteReward.Index) + " na roleta")
 	}
-	g.putItem(u, &u.rouletteReward)
+	g.eventItem(u, &u.rouletteReward, "Roleta")
 	u.rouletteReward = wire.Item{}
 }
 

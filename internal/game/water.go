@@ -108,7 +108,7 @@ func (g *Game) waterTimer() {
 				g.waterParty(w.leader, func(u *User) { g.signalParm(u, wire.ClientIDSystem, opSrvQuestSeconds, 15) })
 				if w.leader > 0 && w.leader < MaxPlayer && g.users[w.leader].status == userPlay && r != 8 {
 					it := wire.Item{Index: uint16(waterItemBase[t] + r)}
-					if lu := g.users[w.leader]; !g.putItem(lu, &it) {
+					if lu := g.users[w.leader]; !g.eventItem(lu, &it, "Quest da Água") {
 						g.clientMessage(lu, "Sem espaço para o pergaminho da próxima sala.")
 					}
 				}

@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"dbsrv/internal/wire"
 )
 
@@ -9,8 +11,13 @@ import (
 //
 // The C++ MobKilled still walks the mob's inventory with the gameconfig.txt
 // drop rates but its drop call was removed; drops come only from the
-// "controle drop/Controle.txt" table, straight into the killer's inventory:
-// every N kills of a mob (per player and item) gives that item.
+// "controle drop/Controle.txt" table: every N kills of a mob (per player
+// and item) gives that item.
+//
+// Changed from the C++, which put the drops straight into the killer's
+// inventory: they fall on the ground around the monster, reserved for the
+// killer (see dropOwned and dropMobItem), and are tracked once picked up
+// (itemtrack.go). Gold still goes straight to the killer.
 
 // MobDrop is one monster's drops. Name must match the monster's name
 // exactly, trailing spaces included: "Guer Caveira " and "Guer Caveira" are
@@ -49,8 +56,9 @@ func mobName(pl *wire.Mob) string {
 	return string(pl.Name[:n])
 }
 
-// handleMobDrop is HandleMobDrop(player, mobName).
-func (g *Game) handleMobDrop(u *User, name string) {
+// handleMobDrop is HandleMobDrop(player, mobName); the items fall where o
+// says.
+func (g *Game) handleMobDrop(u *User, name string, o *dropOrigin) {
 	drop := g.data.Drops[name]
 	if drop == nil || len(drop.Items) == 0 {
 		return
@@ -108,8 +116,31 @@ func (g *Game) handleMobDrop(u *User, name string) {
 		if m.info.FilterDrop.IsEnabled && !g.filterAllows(u, &item) {
 			continue
 		}
-		g.giveDrop(u, &item, fairy == 3915)
+		g.dropMobItem(u, item, fairy == 3915, o)
 	}
+}
+
+// mobOrigin is the origin of the drops of a monster u killed.
+func (g *Game) mobOrigin(u *User, dead *Mob) *dropOrigin {
+	return &dropOrigin{mob: wire.DecodeGame(mobName(&dead.info.Player)), x: int(dead.target.X), y: int(dead.target.Y), at: time.Now(),
+		killerAccount: wire.CString(u.account.Username[:]), killerChar: g.charName(u.id)}
+}
+
+// dropMobItem puts a monster's drop on the ground around it, reserved for
+// the killer. Items 1..40 (faces) never drop without the gold fairy (3915).
+// When the ground has no room the item goes to the inventory as before.
+func (g *Game) dropMobItem(u *User, it wire.Item, goldFairy bool, o *dropOrigin) {
+	if it.Index == 0 || (!goldFairy && it.Index <= 40) {
+		return
+	}
+	id := g.dropNear(o.x, o.y, it, g.charName(u.id))
+	if id == 0 {
+		g.log.Warn("no room on the ground for a drop: given to the inventory", "slot", u.id, "item", it.Index, "mob", o.mob)
+		g.giveDrop(u, &it, goldFairy)
+		return
+	}
+	g.ground[id].origin = o
+	g.log.Info("monster drop", "slot", u.id, "item", it.Index, "effects", it.Effect, "mob", o.mob, "x", g.ground[id].x, "y", g.ground[id].y)
 }
 
 // filterAllows is PanelCheckFilterDrop: the item is in the drop filter.
@@ -411,6 +442,7 @@ func (g *Game) rateDrop(u *User, dead *Mob) {
 	if drop == nil {
 		return
 	}
+	o := g.mobOrigin(u, dead)
 	level := int(dead.info.Player.Status.Level)
 	skipUntil := -1
 	for i := range drop.Rate {
@@ -441,11 +473,7 @@ func (g *Game) rateDrop(u *User, dead *Mob) {
 			continue
 		}
 		g.setItemBonusLevel(&it, level, 0, int(m.combat.dropBonus))
-		if firstEmptySlot(&m.info.Player) == -1 {
-			g.clientMessage(u, "Seu inventário está cheio")
-		} else {
-			g.putItem(u, &it)
-		}
+		g.dropMobItem(u, it, true, o)
 		if r.Slot >= 8 && r.Slot <= 10 {
 			skipUntil = 11
 		}

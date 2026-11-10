@@ -70,6 +70,10 @@ func (s *Server) handle(ch *channel, pkt protocol.Packet) {
 		s.handleMacBan(ctx, ch, pkt)
 	case wire.OpStoreSale:
 		s.handleStoreSale(ctx, ch, pkt)
+	case wire.OpItemTrackEvent:
+		s.handleItemTrackEvent(ctx, ch, pkt)
+	case wire.OpItemTrackSync:
+		s.handleItemTrackSync(ctx, ch, pkt)
 	case wire.OpOpenStore:
 		s.handleOpenStore(ctx, ch, pkt)
 	case wire.OpGMMessage:
@@ -240,6 +244,7 @@ func (ch *channel) sendCharacterLogin(client uint16, sess *session, withAccountE
 	}
 	copy(login.SkillBar2[:], c.SkillBar[:])
 	ch.send(&login)
+	ch.sendItemTracks(client, sess)
 }
 
 // sendAdditionalInfo sends 0x415 (CFileDB::SendAdditionalAccountInfo).

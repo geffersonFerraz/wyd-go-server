@@ -164,6 +164,7 @@ func (g *Game) requestMerchantNPC(u *User, pkt protocol.Packet) {
 	kind := merchantKind(info)
 	click := p.Click
 	g.log.Info("NPC clicked", "slot", u.id, "npc", wire.CString(np.Name[:]), "face", face, "info", info, "level", level)
+	defer g.npcWatch(u, npc, wire.TrackNPCReward)()
 
 	switch {
 	case level >= 700 && level <= 750:

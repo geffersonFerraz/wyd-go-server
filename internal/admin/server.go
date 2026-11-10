@@ -156,6 +156,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /accounts/{user}/password", s.auth(s.changePassword))
 	mux.HandleFunc("POST /accounts/{user}/token", s.auth(s.changeToken))
 	mux.HandleFunc("POST /accounts/{user}/kick", s.auth(s.kick))
+	mux.HandleFunc("POST /accounts/{user}/login-unblock", s.auth(s.loginUnblock))
 	mux.HandleFunc("POST /accounts/{user}/item", s.auth(s.deliverItem))
 	mux.HandleFunc("POST /accounts/{user}/lock/remove", s.auth(s.removeLock))
 	mux.HandleFunc("POST /accounts/{user}/lock/password", s.auth(s.resetLockPassword))
@@ -507,6 +508,16 @@ func (s *Server) kick(w http.ResponseWriter, r *http.Request) {
 	s.enqueue(w, r, "kick", r.PathValue("user"), map[string]any{})
 }
 
+// loginUnblock clears the "3 wrong passwords" lock the channels keep in
+// memory, so the player can try again at once.
+func (s *Server) loginUnblock(w http.ResponseWriter, r *http.Request) {
+	if msg := s.dbsrvProblem(r.Context()); msg != "" {
+		s.renderAccount(w, r, http.StatusServiceUnavailable, "LoginUnblock", msg)
+		return
+	}
+	s.enqueue(w, r, "login_unblock", r.PathValue("user"), map[string]any{})
+}
+
 func (s *Server) enqueue(w http.ResponseWriter, r *http.Request, kind, user string, payload any) {
 	user = strings.ToUpper(user)
 	sess := sessionOf(r)
@@ -643,6 +654,8 @@ func kindLabel(k string) string {
 		return "Bloqueio da conta"
 	case "notice":
 		return "Aviso global"
+	case "login_unblock":
+		return "Liberar login (senha errada)"
 	}
 	return k
 }
@@ -670,6 +683,10 @@ func resultLabel(d store.DeliveryInfo) (string, string) {
 		return "Jogador desconectado", "ok"
 	case r == "sent_online":
 		return "Enviado ao jogo", "ok"
+	case d.Kind == "login_unblock" && strings.HasPrefix(r, "sent_online: "):
+		return "Login liberado em " + strings.TrimPrefix(r, "sent_online: ") + " canal(is)", "ok"
+	case r == "not_online" && d.Kind == "login_unblock":
+		return "Nenhum canal aberto (o bloqueio some ao reiniciar o canal)", "ok"
 	case d.Kind == "notice" && strings.HasPrefix(r, "sent_online: "):
 		return "Enviado a " + strings.TrimPrefix(r, "sent_online: ") + " canal(is)", "ok"
 	case r == "not_online" && d.Kind == "gm_command":

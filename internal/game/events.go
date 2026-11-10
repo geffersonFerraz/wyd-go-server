@@ -710,7 +710,7 @@ func (g *Game) coliseumBossKilled(target int) {
 		}
 		for _, r := range drop.Rate {
 			if it := r.Item; rnd()%100 < rate {
-				g.putItem(u, &it)
+				g.eventItem(u, &it, "Coliseu: "+mobName(&g.mobs[target].info.Player))
 			}
 		}
 	})
@@ -1291,6 +1291,7 @@ func (g *Game) hitEventProgress(u *User, target int) bool {
 	u.hitEventCount = 0
 	prize := wire.Item{Index: hitEventPrize}
 	prize.Effect[0] = wire.ItemEffect{Index: 61, Value: 1}
+	defer g.eventWatch(u, "Evento de hits: "+hitEventBoss)()
 	g.grantGrouped(u, &prize, hitEventFairy(m.info.Player.Equip[13].Index))
 	return true
 }
@@ -1533,7 +1534,7 @@ func (g *Game) bigCuboKill(u *User) {
 		p := g.mobs[o.id].target
 		if bigCuboArea.contains(int(p.X), int(p.Y)) {
 			prize := wire.Item{Index: bigCuboPrize}
-			g.putItem(o, &prize)
+			g.eventItem(o, &prize, "Big Cubo")
 			g.sendCarry(o)
 			g.sendEtc(o)
 			g.clientMessage(o, "Parabéns participantes, todos foram recompensados com BAU I")
@@ -1569,10 +1570,10 @@ func (g *Game) gateTowerKilled(target int) {
 	}
 }
 
-func (g *Game) giveBonusItem(u *User, id uint16, level, sanc int) {
+func (g *Game) giveBonusItem(u *User, event string, id uint16, level, sanc int) {
 	it := wire.Item{Index: id}
 	g.setItemBonusLevel(&it, level, sanc, 0)
-	g.putItem(u, &it)
+	g.eventItem(u, &it, event)
 }
 
 // monsterPrize is what some monsters hand directly to whoever killed them.
@@ -1585,21 +1586,27 @@ func (g *Game) monsterPrize(gen, killer int) {
 	}
 	u := g.users[killer]
 	name := g.charName(killer)
+	event := "Prêmio de monstro"
+	if gen >= 0 && gen < len(g.data.Geners) {
+		if n := wire.DecodeGame(wire.CString(g.data.Geners[gen].Leader.Name[:])); n != "" {
+			event = n
+		}
+	}
 	switch {
 	case gen == 0 || gen == 1 || gen == 2:
 		switch rnd() % 14 {
 		case 0:
-			g.giveBonusItem(u, 420, 0, 0)
+			g.giveBonusItem(u, event, 420, 0, 0)
 		case 1:
-			g.giveBonusItem(u, 421, 0, 0)
+			g.giveBonusItem(u, event, 421, 0, 0)
 		}
 	case gen == 5 || gen == 6 || gen == 7:
 		if rnd()%14 == 0 {
-			g.giveBonusItem(u, uint16(rnd()%7+421), 0, 0)
+			g.giveBonusItem(u, event, uint16(rnd()%7+421), 0, 0)
 		}
 	case gen == genZakum:
 		if id := [7]uint16{1106, 1256, 1418, 1568}[rnd()%7]; id != 0 {
-			g.giveBonusItem(u, id, 75, 1)
+			g.giveBonusItem(u, event, id, 75, 1)
 		}
 	case gen == genBossFrost:
 		it := wire.Item{}
@@ -1614,27 +1621,27 @@ func (g *Game) monsterPrize(gen, killer int) {
 		default:
 			it.Index, it.Effect[0].Value = 4140, 2
 		}
-		g.putItem(u, &it)
+		g.eventItem(u, &it, event)
 		u.account.Honra += 20
 		g.sendEtc(u)
 		msg := fmt.Sprintf("O jogador %s derrotou o Boss %s", name, wire.DecodeGame(wire.CString(g.data.Geners[gen].Leader.Name[:])))
 		g.notice(msg)
 		g.chatAll(arenaAnnounce, msg)
 	case gen >= genAlmaUni && gen <= genAlmaUniEnd:
-		g.almaKill(u, &g.uniCount, 1740, fmt.Sprintf("O jogador %s dropou Alma do Uni", name))
+		g.almaKill(u, event, &g.uniCount, 1740, fmt.Sprintf("O jogador %s dropou Alma do Uni", name))
 	case gen >= genAlmaFenix && gen <= genAlmaFenixEnd:
-		g.almaKill(u, &g.phoenixCount, 1741, fmt.Sprintf("O jogador %s dropou Alma da Fênix", name))
+		g.almaKill(u, event, &g.phoenixCount, 1741, fmt.Sprintf("O jogador %s dropou Alma da Fênix", name))
 	}
 }
 
-func (g *Game) almaKill(u *User, count *int, item uint16, msg string) {
+func (g *Game) almaKill(u *User, event string, count *int, item uint16, msg string) {
 	*count++
 	if *count < almaKills {
 		return
 	}
 	*count = 0
 	it := wire.Item{Index: item}
-	g.putItem(u, &it)
+	g.eventItem(u, &it, event)
 	g.notice(msg)
 	g.chatAll(arenaAnnounce, msg)
 }

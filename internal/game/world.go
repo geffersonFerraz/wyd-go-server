@@ -14,6 +14,8 @@ import (
 func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	u.trade = emptyTrade()
 	u.dropKills = nil
+	u.tracks = nil // 0xC22 follows with this character's
+	u.repurchaseTrack = [10]*trackRef{}
 	u.partyInvite = 0
 	u.pkMode = false
 	g.clearQuestTime(u)
@@ -532,6 +534,7 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 		return
 	}
 	*srcItem, *dstItem = newDst, newSrc
+	u.moveTracks(src, ss, dst, ds)
 	g.giveTime(u, src, ss, dst, ds, time.Now())
 	if srcItem.Index <= 40 {
 		*srcItem = wire.Item{}
@@ -546,6 +549,7 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 		// A weapon left alone in the off hand moves to the main hand.
 		g.queue(u, &wire.MoveItem{Header: p.Header, DstType: wire.SlotEquip, DstSlot: 6, SrcType: wire.SlotEquip, SrcSlot: 7})
 		pl.Equip[6], pl.Equip[7] = pl.Equip[7], wire.Item{}
+		u.moveTracks(wire.SlotEquip, 7, wire.SlotEquip, 6)
 	}
 	if equipChanged {
 		g.getCurrentScore(u.id)
@@ -590,6 +594,7 @@ func (g *Game) charLogout(u *User) {
 
 // saveCharacter builds STRUCT_SAVECHARACTER like SaveUser / CloseUser.
 func (g *Game) saveCharacter(u *User, op uint16, quit bool) wire.SaveCharacter {
+	g.syncTracks(u)
 	m := &g.mobs[u.id]
 	a := &u.account
 	p := wire.SaveCharacter{

@@ -65,8 +65,11 @@ type User struct {
 
 	whisperOff, guildChatOff, citizenChatOff, kingdomChatOff bool
 
-	repurchase     [10]wire.Item // last items sold to NPCs
-	repurchaseLast int
+	repurchase      [10]wire.Item // last items sold to NPCs
+	repurchaseTrack [10]*trackRef // their tracks, for a buyback
+	repurchaseLast  int
+
+	tracks []*trackRef // tracked items of the character and its storage (itemtrack.go)
 
 	trade                        wire.Trade // own offer; trade.ClientID = partner, 0 = none
 	attackRange                  int
@@ -144,9 +147,10 @@ type Mob struct {
 
 // Game is the server.
 type Game struct {
-	cfg  Config
-	data *Data
-	log  *slog.Logger
+	npcGift *npcGift // the NPC giving items right now (itemtrack.go)
+	cfg     Config
+	data    *Data
+	log     *slog.Logger
 
 	users [MaxPlayer]*User
 	mobs  []Mob    // MaxMob: players 1..999, NPCs 1000..

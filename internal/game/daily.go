@@ -184,7 +184,7 @@ func (g *Game) requestCollectDaily(u *User, _ protocol.Packet) {
 		}
 	}
 	for i := range items {
-		if g.putItem(u, &items[i]) {
+		if g.eventItem(u, &items[i], "Quest diária") {
 			g.clientMessage(u, "Chegou um item: [%s]", g.itemName(items[i].Index))
 		} else {
 			g.clientMessage(u, "Falha ao receber %s", g.itemName(items[i].Index))

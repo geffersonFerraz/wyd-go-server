@@ -6,8 +6,8 @@ import (
 )
 
 // Items on the ground (g_pInitItem / g_pItemGrid): the gates, barriers and
-// doors of InitItem.csv, the guild towers, and what players drop or could not
-// carry (see dropOwned). Basedef.cpp CreateItem / UpdateItem /
+// doors of InitItem.csv, the guild towers, what monsters drop, and what
+// players drop or could not carry (see dropOwned). Basedef.cpp CreateItem / UpdateItem /
 // BASE_UpdateItem3 / ProcessDecayItem / SetCastleDoor..., GetFunc.cpp
 // GetCreateItem / GetEmptyItemGrid, RequestPickItem.cpp,
 // RequestDropItem.cpp, RequestOpenGate.cpp.
@@ -32,8 +32,8 @@ const (
 	towerFirst = 3145 // guild towers 3145..3149 (by win count)
 	towerLast  = 3149
 
-	dropOwnerMs     uint32 = 2 * 60 * 1000  // only the owner can pick it up
-	dropLifetimeMs  uint32 = 10 * 60 * 1000 // then it is destroyed
+	dropOwnerMs     uint32 = 10 * 60 * 1000 // only the owner can pick it up
+	dropLifetimeMs  uint32 = 15 * 60 * 1000 // then anyone, until it is destroyed
 	dropMaxDistance        = 8              // cells from the player, walking included
 	dropSearchRange        = 6              // how far an item that did not fit may fall
 )
@@ -55,10 +55,14 @@ type groundItem struct {
 	decayMark  bool // Unknow_36: removed on the next decay pass
 	height     int
 
-	playerDrop bool   // dropped by a player: follows the rules of dropOwned
+	playerDrop bool   // a drop of a player or a monster: follows the rules of dropOwned
 	owner      string // who can pick it up before ownerUntil
 	ownerUntil uint32
 	expireAt   uint32
+
+	origin    *dropOrigin // a monster's drop: tracked by whoever picks it up
+	track     *trackRef   // a tracked item a player dropped
+	trackFrom trackParty  // who dropped it
 }
 
 // CreateGroundItem mirrors p26E (32 bytes).
@@ -214,8 +218,9 @@ func (g *Game) createGroundItem(x, y int, it wire.Item, rotation, status int) in
 // timeReached compares g.now() values, which wrap around.
 func timeReached(now, t uint32) bool { return int32(now-t) >= 0 }
 
-// dropOwned puts a player's item on the ground: only the owner can pick it up
-// for 2 minutes, then anyone, and after 10 minutes it is destroyed. Items that
+// dropOwned puts an item on the ground for a player (who dropped it, or who
+// killed the monster that dropped it): only the owner can pick it up for 10
+// minutes, then anyone for 5 more, and then it is destroyed. Items that
 // cannot be traded stay reserved for the owner the whole time.
 func (g *Game) dropOwned(x, y int, it wire.Item, rotation int, owner string) int {
 	id := g.createGroundItem(x, y, it, rotation, 1)
@@ -236,18 +241,26 @@ func (g *Game) dropOwned(x, y int, it wire.Item, rotation int, owner string) int
 // closest free cell around the player. Returns the ground id, 0 without room.
 func (g *Game) dropNearPlayer(u *User, it wire.Item) int {
 	t := g.mobs[u.id].target
-	cx, cy := int(t.X), int(t.Y)
+	id := g.dropNear(int(t.X), int(t.Y), it, g.charName(u.id))
+	if id != 0 && g.npcGift != nil && g.npcGift.u == u {
+		g.ground[id].origin = g.npcGift.origin // an NPC's item: tracked when picked up
+	}
+	if id != 0 {
+		g.log.Info("item fell on the ground", "slot", u.id, "item", it.Index, "effects", it.Effect, "x", g.ground[id].x, "y", g.ground[id].y)
+	}
+	return id
+}
+
+// dropNear drops an owned item on the closest free cell around (cx, cy).
+// Returns the ground id, 0 without room.
+func (g *Game) dropNear(cx, cy int, it wire.Item, owner string) int {
 	for r := 0; r <= dropSearchRange; r++ {
 		for y := cy - r; y <= cy+r; y++ {
 			for x := cx - r; x <= cx+r; x++ {
 				if max(abs(x-cx), abs(y-cy)) != r || !inMap(x, y) || g.itemAt(x, y) != 0 || g.data.height(x, y) == 127 {
 					continue
 				}
-				id := g.dropOwned(x, y, it, rnd()&3, g.charName(u.id))
-				if id != 0 {
-					g.log.Info("item fell on the ground", "slot", u.id, "item", it.Index, "effects", it.Effect, "x", x, "y", y)
-				}
-				return id // 0 here means the list of ground items is full
+				return g.dropOwned(x, y, it, rnd()&3, owner) // 0 here means the list of ground items is full
 			}
 		}
 	}
@@ -596,6 +609,9 @@ func (g *Game) expirePlayerDrops() {
 		gi := &g.ground[id]
 		if gi.open && gi.playerDrop && timeReached(now, gi.expireAt) {
 			g.log.Info("dropped item destroyed", "item", gi.item.Index, "effects", gi.item.Effect, "owner", gi.owner, "x", gi.x, "y", gi.y)
+			if gi.track != nil {
+				g.trackEvent(wire.TrackDestroyed, gi.track.id, gi.item, gi.trackFrom, trackParty{}, 0)
+			}
 			g.removeGroundItem(id)
 		}
 	}
@@ -663,15 +679,47 @@ func (g *Game) requestPickItem(u *User, pkt protocol.Packet) {
 		gone()
 		return
 	}
+	if g.data.itemAbility(&gi.item, EF_VOLATILE) == 2 { // gold is not picked up (none falls any more)
+		g.removeGroundItem(id)
+		return
+	}
 	slot := firstCarrySlot(&pl.Inventory, idx)
+	if maxAmount[idx] > 0 {
+		// A stack joins the ones the player has; without a free slot it
+		// is picked up only when it fits in them whole.
+		if slot < 0 {
+			inv, it := pl.Inventory, gi.item
+			for i := range invSlots {
+				if inv[i].Index == idx && agroupItem(&it, &inv[i]) && it.Index == 0 {
+					break
+				}
+			}
+			if it.Index != 0 {
+				g.clientMessage(u, "Sem espaço no inventario")
+				return
+			}
+		}
+		it := gi.item
+		g.log.Info("picked item", "slot", u.id, "item", it.Index, "effects", it.Effect)
+		g.removeGroundItem(id)
+		g.giveDrop(u, &it, true)
+		return
+	}
 	if slot < 0 {
 		g.clientMessage(u, "Sem espaço no inventario")
 		return
 	}
-	if g.data.itemAbility(&gi.item, EF_VOLATILE) != 2 { // gold is not picked up (none falls any more)
-		pl.Inventory[slot] = gi.item
-		g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
-		g.log.Info("picked item", "slot", u.id, "item", gi.item.Index, "effects", gi.item.Effect)
+	pl.Inventory[slot] = gi.item
+	g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
+	g.log.Info("picked item", "slot", u.id, "item", gi.item.Index, "effects", gi.item.Effect)
+	switch picker := g.partyOf(u); {
+	case gi.track != nil:
+		g.giveTrack(u, gi.track, wire.SlotInv, slot)
+		if picker.account != gi.trackFrom.account {
+			g.trackEvent(wire.TrackGround, gi.track.id, gi.item, gi.trackFrom, picker, 0)
+		}
+	case gi.origin != nil && trackable(&gi.item):
+		g.giveTrack(u, g.createTrack(u, gi.origin, gi.item), wire.SlotInv, slot)
 	}
 	g.removeGroundItem(id)
 }
@@ -760,9 +808,14 @@ func (g *Game) requestDropItem(u *User, pkt protocol.Packet) {
 			return
 		}
 	}
-	if g.dropOwned(x, y, *it, int(p.Rotation), g.charName(u.id)) <= 0 {
+	gid := g.dropOwned(x, y, *it, int(p.Rotation), g.charName(u.id))
+	if gid <= 0 {
 		g.clientMessage(u, "Can't create object(item)")
 		return
+	}
+	if r := g.takeTrack(u, int(p.InvType), slot); r != nil {
+		g.ground[gid].track, g.ground[gid].trackFrom = r, g.partyOf(u)
+		g.leaveTrack(u, r)
 	}
 	g.log.Info("dropped item", "slot", u.id, "gm", !isPlayer, "item", it.Index, "effects", it.Effect, "x", x, "y", y, "inv_type", p.InvType, "inv_slot", slot)
 	*it = wire.Item{}

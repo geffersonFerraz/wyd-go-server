@@ -14,15 +14,19 @@ func rateGame(t *testing.T, rate ...RateItem) (*Game, *Mob) {
 	}
 	g.data.BlockedDrops = map[int]bool{413: true}
 	g.data.Drops = map[string]*MobDrop{"Teste": {Name: "Teste", Rate: rate}}
-	dead := &Mob{}
+	dead := &Mob{target: g.mobs[1].target}
 	wire.PutCString(dead.info.Player.Name[:], "Teste")
 	return g, dead
 }
 
+// rateDropped reports an item the monster dropped (on the ground, since
+// drops no longer go into the inventory).
+func rateDropped(g *Game, index uint16) bool { return groundIDOf(g, index) != 0 }
+
 func TestRateDropChanceOfOne(t *testing.T) {
 	g, dead := rateGame(t, RateItem{Slot: 5, Item: wire.Item{Index: 412}, Chance: 1})
 	g.rateDrop(g.users[1], dead)
-	if firstSlotOf(&g.mobs[1].info.Player, 412) < 0 {
+	if !rateDropped(g, 412) {
 		t.Fatal("chance 1 did not drop")
 	}
 }
@@ -30,7 +34,7 @@ func TestRateDropChanceOfOne(t *testing.T) {
 func TestRateDropBlocked(t *testing.T) {
 	g, dead := rateGame(t, RateItem{Slot: 5, Item: wire.Item{Index: 413}, Chance: 1})
 	g.rateDrop(g.users[1], dead)
-	if firstSlotOf(&g.mobs[1].info.Player, 413) >= 0 {
+	if rateDropped(g, 413) {
 		t.Fatal("a blocked item dropped")
 	}
 }
@@ -38,7 +42,7 @@ func TestRateDropBlocked(t *testing.T) {
 func TestRateDropSlot11Guaranteed(t *testing.T) {
 	g, dead := rateGame(t, RateItem{Slot: 11, Item: wire.Item{Index: 412}})
 	g.rateDrop(g.users[1], dead)
-	if firstSlotOf(&g.mobs[1].info.Player, 412) < 0 {
+	if !rateDropped(g, 412) {
 		t.Fatal("slot 11 did not drop")
 	}
 }
@@ -49,7 +53,7 @@ func TestRateDropSlotOff(t *testing.T) {
 	for range 200 {
 		g.rateDrop(g.users[1], dead)
 	}
-	if firstSlotOf(&g.mobs[1].info.Player, 412) >= 0 {
+	if rateDropped(g, 412) {
 		t.Fatal("a slot with base 0 dropped")
 	}
 }
@@ -59,7 +63,7 @@ func TestRateDropNameUsesSpaces(t *testing.T) {
 	g.data.Drops = map[string]*MobDrop{"Lobo Negro": {Name: "Lobo Negro", Rate: []RateItem{{Slot: 1, Item: wire.Item{Index: 412}, Chance: 1}}}}
 	wire.PutCString(dead.info.Player.Name[:], "Lobo_Negro")
 	g.rateDrop(g.users[1], dead)
-	if firstSlotOf(&g.mobs[1].info.Player, 412) < 0 {
+	if !rateDropped(g, 412) {
 		t.Fatal("name with underscore not matched")
 	}
 }

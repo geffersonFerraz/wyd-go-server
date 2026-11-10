@@ -112,7 +112,7 @@ func (g *Game) mobKilled(target, killer int) {
 	}
 	k := &g.mobs[killer]
 	if ku := g.player(killer); ku != nil && ku.status == userPlay {
-		g.handleMobDrop(ku, mobName(&dead.info.Player))
+		g.handleMobDrop(ku, mobName(&dead.info.Player), g.mobOrigin(ku, dead))
 	}
 	dead.info.Player.Status.CurHP = 0
 	msg := wire.Killed{

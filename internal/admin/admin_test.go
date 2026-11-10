@@ -334,6 +334,20 @@ func TestKickButton(t *testing.T) {
 	}
 }
 
+func TestLoginUnblock(t *testing.T) {
+	h := newPanel(t)
+	csrf := h.login()
+	if _, body, _ := h.get("/accounts/EXISTING"); !strings.Contains(body, "Liberar login agora</button>") {
+		t.Fatal("no login unblock button")
+	}
+	if code, _, _ := h.post("/accounts/existing/login-unblock", url.Values{"csrf": {csrf}}); code != http.StatusSeeOther {
+		t.Fatalf("login unblock: %d", code)
+	}
+	if kind, user, _, _ := h.lastPayload(); kind != "login_unblock" || user != "EXISTING" {
+		t.Errorf("queued %s for %s", kind, user)
+	}
+}
+
 func TestSearch(t *testing.T) {
 	h := newPanel(t)
 	h.login()

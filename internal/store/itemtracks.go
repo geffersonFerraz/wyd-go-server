@@ -1,0 +1,216 @@
+package store
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+)
+
+// Item tracking (item_tracks / item_track_events): see 0027_item_tracks.sql.
+
+// Event kinds, as stored.
+const (
+	TrackPickup      = "pickup"
+	TrackNPCBuy      = "npc_buy"
+	TrackNPCReward   = "npc_reward"
+	TrackEventReward = "event_reward"
+	TrackTrade       = "trade"
+	TrackStore       = "store"
+	TrackGround      = "ground"
+	TrackNPCSell     = "npc_sell"
+	TrackBuyback     = "buyback"
+	TrackDestroyed   = "destroyed"
+	TrackGone        = "gone"
+)
+
+// ItemTrackEvent is one entry of an item's history.
+type ItemTrackEvent struct {
+	ID                        int64
+	TrackID                   int64
+	Kind                      string
+	At                        time.Time
+	Channel                   int
+	FromAccount, FromChar     string
+	ToAccount, ToChar         string
+	Price                     int64
+	Item                      int
+	Effects                   [3]ItemEffect
+	Mob                       string // creation events only (the monster or NPC), like the fields below
+	DropX, DropY              int
+	DroppedAt                 time.Time
+	KillerAccount, KillerChar string
+}
+
+// AddItemTrackEvent appends an event and applies it to the track: a pickup
+// (or an NPC's purchase or reward) creates it, a transfer changes its holder, the other kinds take it out
+// of the game.
+func (s *Store) AddItemTrackEvent(ctx context.Context, e ItemTrackEvent) error {
+	effects, err := json.Marshal(e.Effects)
+	if err != nil {
+		return err
+	}
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var tag string
+		switch e.Kind {
+		case TrackPickup, TrackNPCBuy, TrackNPCReward, TrackEventReward:
+			origin := map[string]string{TrackPickup: "drop", TrackNPCBuy: "npc_buy", TrackNPCReward: "npc_reward", TrackEventReward: "event_reward"}[e.Kind]
+			ct, err := tx.Exec(ctx, `INSERT INTO item_tracks (id, origin, item, effects, mob, price, channel, drop_x, drop_y, dropped_at,
+					killer_account, killer_char, picked_at, holder_account, holder_char, current_item, current_effects)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $3, $4) ON CONFLICT (id) DO NOTHING`,
+				e.TrackID, origin, e.Item, effects, e.Mob, e.Price, e.Channel, e.DropX, e.DropY, e.DroppedAt,
+				e.KillerAccount, e.KillerChar, e.At, e.ToAccount, e.ToChar)
+			if err != nil {
+				return err
+			}
+			if ct.RowsAffected() == 0 {
+				return fmt.Errorf("item track %d already exists", e.TrackID)
+			}
+		case TrackTrade, TrackStore, TrackGround, TrackBuyback:
+			tag = "transfer"
+			ct, err := tx.Exec(ctx, `UPDATE item_tracks SET status = 'active', holder_account = $2, holder_char = $3,
+					holder_char_slot = NULL, loc_type = NULL, loc_slot = NULL, current_item = $4, current_effects = $5, updated_at = now()
+				WHERE id = $1`, e.TrackID, e.ToAccount, e.ToChar, e.Item, effects)
+			if err != nil {
+				return err
+			}
+			if ct.RowsAffected() == 0 {
+				return fmt.Errorf("item track %d not found (%s)", e.TrackID, tag)
+			}
+		case TrackNPCSell, TrackDestroyed, TrackGone:
+			status := map[string]string{TrackNPCSell: "sold", TrackDestroyed: "destroyed", TrackGone: "gone"}[e.Kind]
+			ct, err := tx.Exec(ctx, `UPDATE item_tracks SET status = $2, holder_account = NULL, holder_char = NULL,
+					holder_char_slot = NULL, loc_type = NULL, loc_slot = NULL, current_item = $3, current_effects = $4, updated_at = now()
+				WHERE id = $1`, e.TrackID, status, e.Item, effects)
+			if err != nil {
+				return err
+			}
+			if ct.RowsAffected() == 0 {
+				return fmt.Errorf("item track %d not found (%s)", e.TrackID, e.Kind)
+			}
+		default:
+			return fmt.Errorf("item track: unknown event %q", e.Kind)
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO item_track_events (track_id, at, kind, channel, from_account, from_char,
+				to_account, to_char, price, item, effects) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			e.TrackID, e.At, e.Kind, e.Channel, e.FromAccount, e.FromChar, e.ToAccount, e.ToChar, e.Price, e.Item, effects)
+		return err
+	})
+}
+
+// ItemTrackPlace is where a tracked item is inside an account. Type -1
+// means it left the account's slots without changing hands yet (it is on
+// the ground).
+type ItemTrackPlace struct {
+	TrackID  int64
+	CharSlot int // -1 = storage
+	Type     int
+	Slot     int
+	Item     int
+	Effects  [3]ItemEffect
+}
+
+// SyncItemTracks records where an account's tracked items are now.
+func (s *Store) SyncItemTracks(ctx context.Context, account, char string, places []ItemTrackPlace) error {
+	if len(places) == 0 {
+		return nil
+	}
+	batch := &pgx.Batch{}
+	for _, p := range places {
+		effects, err := json.Marshal(p.Effects)
+		if err != nil {
+			return err
+		}
+		if p.Type < 0 {
+			batch.Queue(`UPDATE item_tracks SET holder_char_slot = NULL, loc_type = NULL, loc_slot = NULL, updated_at = now()
+				WHERE id = $1 AND status = 'active' AND holder_account = $2`, p.TrackID, account)
+			continue
+		}
+		batch.Queue(`UPDATE item_tracks SET status = 'active', holder_account = $2, holder_char = $3, holder_char_slot = $4,
+				loc_type = $5, loc_slot = $6, current_item = $7, current_effects = $8, updated_at = now()
+			WHERE id = $1`, p.TrackID, account, char, p.CharSlot, p.Type, p.Slot, p.Item, effects)
+	}
+	return s.pool.SendBatch(ctx, batch).Close()
+}
+
+// AccountItemTracks lists the active tracked items of a character and of
+// its account's storage.
+func (s *Store) AccountItemTracks(ctx context.Context, account string, charSlot int) ([]ItemTrackPlace, error) {
+	rows, _ := s.pool.Query(ctx, `SELECT id, holder_char_slot, loc_type, loc_slot, current_item, current_effects
+		FROM item_tracks WHERE status = 'active' AND holder_account = $1 AND holder_char_slot IN ($2, -1) ORDER BY id`,
+		account, charSlot)
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (ItemTrackPlace, error) {
+		var p ItemTrackPlace
+		var raw []byte
+		if err := r.Scan(&p.TrackID, &p.CharSlot, &p.Type, &p.Slot, &p.Item, &raw); err != nil {
+			return p, err
+		}
+		return p, json.Unmarshal(raw, &p.Effects)
+	})
+}
+
+// ItemTrack is a tracked item with its history.
+type ItemTrack struct {
+	ID                        int64
+	Origin                    string // drop, npc_buy, npc_reward, event_reward
+	Price                     int64
+	Item                      int
+	ItemName                  string
+	Effects                   [3]ItemEffect
+	Mob                       string
+	Channel                   int
+	DropX, DropY              int
+	DroppedAt, PickedAt       time.Time
+	KillerAccount, KillerChar string
+	Status                    string
+	HolderAccount, HolderChar string
+	CurrentItem               int
+	CurrentEffects            [3]ItemEffect
+	UpdatedAt                 time.Time
+	Events                    []ItemTrackEvent
+}
+
+// SearchItemTracks lists the newest tracks; q matches the track id, an
+// account or a character (killer or holder), or the item number.
+func (s *Store) SearchItemTracks(ctx context.Context, q string, limit int) ([]ItemTrack, error) {
+	q = strings.ToLower(strings.TrimSpace(q))
+	rows, _ := s.pool.Query(ctx, `SELECT t.id, t.origin, t.price, t.item, COALESCE(i.name, ''), t.effects, t.mob, t.channel, t.drop_x, t.drop_y,
+			t.dropped_at, t.picked_at, t.killer_account, t.killer_char, t.status, COALESCE(t.holder_account, ''),
+			COALESCE(t.holder_char, ''), t.current_item, t.current_effects, t.updated_at
+		FROM item_tracks t LEFT JOIN gamedata.items i ON i.id = t.item
+		WHERE $1 = '' OR t.id::text = $1 OR t.item::text = $1 OR lower(t.killer_account) = $1 OR lower(t.killer_char) = $1
+			OR lower(t.holder_account) = $1 OR lower(t.holder_char) = $1
+			OR t.id IN (SELECT track_id FROM item_track_events WHERE lower(from_account) = $1 OR lower(to_account) = $1
+				OR lower(from_char) = $1 OR lower(to_char) = $1)
+		ORDER BY t.picked_at DESC LIMIT $2`, q, limit)
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (ItemTrack, error) {
+		var t ItemTrack
+		var eff, cur []byte
+		if err := r.Scan(&t.ID, &t.Origin, &t.Price, &t.Item, &t.ItemName, &eff, &t.Mob, &t.Channel, &t.DropX, &t.DropY, &t.DroppedAt, &t.PickedAt,
+			&t.KillerAccount, &t.KillerChar, &t.Status, &t.HolderAccount, &t.HolderChar, &t.CurrentItem, &cur, &t.UpdatedAt); err != nil {
+			return t, err
+		}
+		_ = json.Unmarshal(eff, &t.Effects) // display only
+		_ = json.Unmarshal(cur, &t.CurrentEffects)
+		return t, nil
+	})
+}
+
+// ItemTrackEvents is the history of one track, oldest first.
+func (s *Store) ItemTrackEvents(ctx context.Context, trackID int64) ([]ItemTrackEvent, error) {
+	rows, _ := s.pool.Query(ctx, `SELECT id, track_id, kind, at, channel, from_account, from_char, to_account, to_char, price, item, effects
+		FROM item_track_events WHERE track_id = $1 ORDER BY id`, trackID)
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (ItemTrackEvent, error) {
+		var e ItemTrackEvent
+		var raw []byte
+		if err := r.Scan(&e.ID, &e.TrackID, &e.Kind, &e.At, &e.Channel, &e.FromAccount, &e.FromChar, &e.ToAccount, &e.ToChar,
+			&e.Price, &e.Item, &raw); err != nil {
+			return e, err
+		}
+		_ = json.Unmarshal(raw, &e.Effects) // display only
+		return e, nil
+	})
+}

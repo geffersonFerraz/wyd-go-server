@@ -91,6 +91,13 @@
       {{else}}
         <p class="muted">Offline. Alterações diretas no banco valem no próximo login.</p>
       {{end}}
+      <h3>Senha errada</h3>
+      {{if .LoginUnblockError}}<p class="alert bad">{{.LoginUnblockError}}</p>{{end}}
+      <p class="muted small">Após 3 senhas erradas em 10 minutos, o canal recusa o login dessa conta até a primeira falha completar 10 minutos. Isso fica só na memória dos canais (não aparece aqui).</p>
+      <form method="post" action="/accounts/{{pathescape .Username}}/login-unblock">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <button>Liberar login agora</button>
+      </form>
     </section>
     <section class="card">
       <h2>Cash</h2>
