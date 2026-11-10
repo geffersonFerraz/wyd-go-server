@@ -1,6 +1,7 @@
 package game
 
 import (
+	"slices"
 	"time"
 
 	"dbsrv/internal/wire"
@@ -128,14 +129,22 @@ func (g *Game) mobOrigin(u *User, dead *Mob) *dropOrigin {
 
 // dropMobItem puts a monster's drop on the ground around it, reserved for
 // the killer. Items 1..40 (faces) never drop without the gold fairy (3915).
-// When the ground has no room the item goes to the inventory as before.
+// The items of drop_to_inventory (quest items) go straight to the
+// inventory, as in the C++; so does any item when the ground has no room.
 func (g *Game) dropMobItem(u *User, it wire.Item, goldFairy bool, o *dropOrigin) {
 	if it.Index == 0 || (!goldFairy && it.Index <= 40) {
+		return
+	}
+	if slices.Contains(g.cfg.DropToInventory, it.Index) {
+		defer g.watchGifts(u, o)()
+		g.giveDrop(u, &it, goldFairy)
+		g.log.Info("monster drop to the inventory", "slot", u.id, "item", it.Index, "effects", it.Effect, "mob", o.mob)
 		return
 	}
 	id := g.dropNear(o.x, o.y, it, g.charName(u.id))
 	if id == 0 {
 		g.log.Warn("no room on the ground for a drop: given to the inventory", "slot", u.id, "item", it.Index, "mob", o.mob)
+		defer g.watchGifts(u, o)()
 		g.giveDrop(u, &it, goldFairy)
 		return
 	}

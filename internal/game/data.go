@@ -97,7 +97,8 @@ type Config struct {
 	// ChangeChannelCooldown: minimum time between channel changes.
 	ChangeChannelCooldown time.Duration
 	NewbieZone            int
-	StatSapphire          int // sapphires the Mestre das Habilidades charges
+	StatSapphire          int      // sapphires the Mestre das Habilidades charges
+	DropToInventory       []uint16 // monster drops that skip the ground
 	MobAI                 MobAISettings
 	Login                 LoginSettings
 	Missions              MissionSettings
@@ -126,6 +127,7 @@ func (c *Config) ApplySettings(s Settings, channel int) error {
 	c.DBIP, c.DBPort = s.Network.DBSRVIP, s.Network.DBSRVPort
 	c.NewbieZone, c.MobAI = s.NewbieZone, s.MobAI
 	c.StatSapphire = s.StatSapphire
+	c.DropToInventory = s.DropToInventory
 	c.CashShop, c.HonorMarket = s.cashShopTabs(), s.honorMarketItems()
 	c.NoCPAreas, c.LevelItems = s.NoCPAreas, s.levelItems()
 	c.Arena = s.Arena

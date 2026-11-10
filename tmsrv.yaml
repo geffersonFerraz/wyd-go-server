@@ -65,6 +65,12 @@ newbie_zone: 35
 # C++: StatSapphire do gameconfig.txt (30).
 stat_sapphire: 30
 
+# Drops de monstro que vão direto para o inventário de quem matou, em vez
+# de cair no chão (itens de quest). Os demais drops caem no chão.
+# 4117 Caixa da Sabedoria, 4118 Lágrima Angelical, 4119 Coração do Kaizen,
+# 4120 Olho de Sangue, 4121 Pedra Espiritual dos Elfos.
+drop_to_inventory: [4117, 4118, 4119, 4120, 4121]
+
 login:
   # Contas jogando ao mesmo tempo a partir do mesmo computador. C++: 3.
   max_accounts_per_computer: 3

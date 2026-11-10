@@ -60,6 +60,7 @@ func groundItems(g *Game, index uint16) (n, amount int) {
 
 func TestDropEveryNKills(t *testing.T) {
 	g, a, _ := dropScene(t)
+	g.cfg.DropToInventory = nil
 	writeDrops(t, g, &MobDrop{Name: "Teste", MaxDrops: 5, Gold: 100, Items: []DropItem{{Kills: 3, Index: 1103}, {Kills: 1, Index: 4117}}})
 	pl := &g.mobs[1].info.Player
 	pl.Gold = 0
@@ -83,6 +84,43 @@ func TestDropEveryNKills(t *testing.T) {
 	if gi := &g.ground[id]; gi.owner != "Dono" || gi.origin == nil || gi.origin.mob != "Teste" ||
 		gi.expireAt-g.now() != dropLifetimeMs || gi.ownerUntil-g.now() != dropOwnerMs {
 		t.Fatalf("ground drop: %+v", gi)
+	}
+}
+
+// The items of drop_to_inventory skip the ground: they stack in the
+// inventory, and a non-stackable one is tracked with the monster as origin.
+func TestDropToInventory(t *testing.T) {
+	g, a, _ := dropScene(t)
+	g.cfg.DropToInventory = []uint16{4117, 1103}
+	writeDrops(t, g, &MobDrop{Name: "Teste", MaxDrops: 5, Items: []DropItem{{Kills: 1, Index: 4117}, {Kills: 1, Index: 1103}, {Kills: 1, Index: 1104}}})
+	pl := &g.mobs[1].info.Player
+	pl.Inventory = [64]wire.Item{}
+	for range 2 {
+		g.handleMobDrop(a, "Teste", testOrigin(g))
+	}
+	if n, _ := groundItems(g, 4117); n != 0 {
+		t.Fatal("4117 fell on the ground")
+	}
+	if n, _ := groundItems(g, 1103); n != 0 {
+		t.Fatal("1103 fell on the ground")
+	}
+	if n, _ := groundItems(g, 1104); n != 2 {
+		t.Fatalf("%d x 1104 on the ground, want 2 (not in the list)", n)
+	}
+	if s := firstSlotOf(pl, 4117); s < 0 || itemAmount(&pl.Inventory[s]) != 2 {
+		t.Fatalf("4117 not stacked in the inventory: slot %d", s)
+	}
+	swords := 0
+	for i := range invSlots {
+		if pl.Inventory[i].Index == 1103 {
+			swords++
+		}
+	}
+	if swords != 2 {
+		t.Fatalf("%d x 1103 in the inventory, want 2", swords)
+	}
+	if len(a.tracks) != 2 || a.tracks[0].item.Index != 1103 || a.tracks[1].item.Index != 1103 {
+		t.Fatalf("tracks: %d", len(a.tracks))
 	}
 }
 

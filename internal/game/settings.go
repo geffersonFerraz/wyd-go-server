@@ -37,11 +37,14 @@ type Settings struct {
 	NewbieZone    int                   `yaml:"newbie_zone"`
 	// StatSapphire: sapphires the Mestre das Habilidades (stat reset NPC)
 	// charges (gameconfig.txt StatSapphire, 30 in the shipped file).
-	StatSapphire int             `yaml:"stat_sapphire"`
-	Login        LoginSettings   `yaml:"login"`
-	Missions     MissionSettings `yaml:"missions"`
-	Store        StoreSettings   `yaml:"store"`
-	MobAI        MobAISettings   `yaml:"mob_ai"`
+	StatSapphire int `yaml:"stat_sapphire"`
+	// DropToInventory: monster drops that go straight to the killer's
+	// inventory instead of falling on the ground (quest items).
+	DropToInventory []uint16        `yaml:"drop_to_inventory"`
+	Login           LoginSettings   `yaml:"login"`
+	Missions        MissionSettings `yaml:"missions"`
+	Store           StoreSettings   `yaml:"store"`
+	MobAI           MobAISettings   `yaml:"mob_ai"`
 	// CashShop and HonorMarket replace Data/CashShop.xml and MarketHonra.txt.
 	CashShop    []CashShopTabSettings `yaml:"cash_shop"`
 	HonorMarket []HonorItemSettings   `yaml:"honor_market"`
@@ -241,14 +244,15 @@ func CppSettings() Settings {
 		Network: NetworkSettings{DBSRVIP: "127.0.0.1", DBSRVPort: 7514},
 		ServerList: cluster.ServerList{Group: 1, PublicIP: "127.0.0.1",
 			StatusURL: "http://127.0.0.1/serv00.htm"},
-		Channels:      []cluster.Channel{{Number: 1, IP: "127.0.0.1", Port: 8281}},
-		ChangeChannel: ChangeChannelSettings{CooldownSeconds: 10},
-		NewbieZone:    35,
-		StatSapphire:  30,
-		Limits:        LimitSettings{MaxGold: 2_000_000_000, MaxDamage: 64_000, MaxAttackDefense: 100_000},
-		Login:         LoginSettings{MaxAccountsPerComputer: 3},
-		Missions:      MissionSettings{OfferEverySeconds: 1152, TimeToCompleteSeconds: 1152},
-		Store:         StoreSettings{HonorEverySeconds: 600},
+		Channels:        []cluster.Channel{{Number: 1, IP: "127.0.0.1", Port: 8281}},
+		ChangeChannel:   ChangeChannelSettings{CooldownSeconds: 10},
+		NewbieZone:      35,
+		StatSapphire:    30,
+		DropToInventory: []uint16{4117, 4118, 4119, 4120, 4121},
+		Limits:          LimitSettings{MaxGold: 2_000_000_000, MaxDamage: 64_000, MaxAttackDefense: 100_000},
+		Login:           LoginSettings{MaxAccountsPerComputer: 3},
+		Missions:        MissionSettings{OfferEverySeconds: 1152, TimeToCompleteSeconds: 1152},
+		Store:           StoreSettings{HonorEverySeconds: 600},
 		MobAI: MobAISettings{
 			IdleThinkSeconds:   3,
 			BattleThinkSeconds: 2,
@@ -334,6 +338,11 @@ func (s *Settings) validate() error {
 	}
 	if s.NewbieZone < 0 {
 		return fmt.Errorf("newbie_zone must be >= 0, got %d", s.NewbieZone)
+	}
+	for _, id := range s.DropToInventory {
+		if id == 0 || id >= MaxItemList {
+			return fmt.Errorf("drop_to_inventory: item %d must be 1..%d", id, MaxItemList-1)
+		}
 	}
 	if s.StatSapphire < 0 || s.StatSapphire > 1000 {
 		return fmt.Errorf("stat_sapphire must be 0..1000, got %d", s.StatSapphire)
