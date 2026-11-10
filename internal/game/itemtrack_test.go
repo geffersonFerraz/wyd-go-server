@@ -303,6 +303,10 @@ func TestItemBoughtFromNPCIsTracked(t *testing.T) {
 	g.db = &dbLink{g: g, out: make(chan []byte, 4096)}
 	pl := &g.mobs[1].info.Player
 	item := g.mobs[npc].info.Player.Inventory[slot]
+	pl.Inventory = [64]wire.Item{}
+	for i := range 3 {
+		pl.Inventory[i] = wire.Item{Index: 412}
+	}
 
 	g.requestBuyShop(u, packet(&wire.BuyShop{MobID: int16(npc), SellSlot: int16(slot), InvSlot: 3}))
 	if pl.Inventory[3].Index != item.Index {

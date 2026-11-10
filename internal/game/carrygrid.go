@@ -62,10 +62,14 @@ func gridFits(items []wire.Item, slot int, id uint16) bool {
 	if x+w > carryColumns || y+h > len(items)/carryColumns {
 		return false
 	}
+	cells := len(items)
+	if cells == invSlots {
+		cells = invUsable // the inventory's last 3 cells take no item
+	}
 	occupied := gridOccupancy(items)
 	for cy := y; cy < y+h; cy++ {
 		for cx := x; cx < x+w; cx++ {
-			if occupied[cy*carryColumns+cx] {
+			if c := cy*carryColumns + cx; c >= cells || occupied[c] {
 				return false
 			}
 		}

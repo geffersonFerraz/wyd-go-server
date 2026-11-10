@@ -57,6 +57,7 @@ var clientMinSize = map[uint16]int{
 	wire.OpCliMoveIllus:     52,
 	wire.OpCliMoveItem:      20,
 	wire.OpCliRequestMob:    16,
+	opCliInvAction:          16,
 }
 
 // handleClient is CUser::PacketControl (Phase A subset).
@@ -196,6 +197,8 @@ func (g *Game) handleClient(u *User, pkt protocol.Packet) {
 		g.requestPickItem(u, pkt)
 	case opCliDropItem:
 		g.requestDropItem(u, pkt)
+	case opCliInvAction:
+		g.requestInvAction(u, pkt)
 	case opGate:
 		g.requestOpenGate(u, pkt)
 	case opCliMerchantNPC:

@@ -67,14 +67,14 @@ func TestShopBuySellRepurchase(t *testing.T) {
 	perc := int64(g.data.Cities[g.shopCity(npc)].PercImpost)
 	cost := price + price*perc/100
 
-	g.requestBuyShop(u, packet(&wire.BuyShop{MobID: int16(npc), SellSlot: int16(slot), InvSlot: 3}))
-	if pl.Inventory[3].Index != item.Index || int64(pl.Gold) != 5000-cost {
-		t.Fatalf("buy: slot3=%d gold=%d (cost %d)", pl.Inventory[3].Index, pl.Gold, cost)
-	}
-	// Buying into an occupied slot does nothing.
-	g.requestBuyShop(u, packet(&wire.BuyShop{MobID: int16(npc), SellSlot: int16(slot), InvSlot: 3}))
-	if int64(pl.Gold) != 5000-cost {
-		t.Fatal("bought into an occupied slot")
+	pl.Inventory = [64]wire.Item{}
+	pl.Inventory[0] = wire.Item{Index: 412}
+	pl.Inventory[1] = wire.Item{Index: 412}
+	pl.Inventory[2] = wire.Item{Index: 412}
+	// The slot the client asks for is ignored: the first free cell wins.
+	g.requestBuyShop(u, packet(&wire.BuyShop{MobID: int16(npc), SellSlot: int16(slot), InvSlot: 45}))
+	if pl.Inventory[3].Index != item.Index || pl.Inventory[45].Index != 0 || int64(pl.Gold) != 5000-cost {
+		t.Fatalf("buy: slot3=%d slot45=%d gold=%d (cost %d)", pl.Inventory[3].Index, pl.Inventory[45].Index, pl.Gold, cost)
 	}
 
 	before := pl.Gold
@@ -88,6 +88,7 @@ func TestShopBuySellRepurchase(t *testing.T) {
 
 	// Buy it back (mobID < 1000): list price, first free slot.
 	afterSell := pl.Gold
+	pl.Inventory[0] = wire.Item{}
 	g.requestBuyShop(u, packet(&wire.BuyShop{MobID: 0, SellSlot: 0, InvSlot: 0}))
 	if pl.Inventory[0].Index != item.Index || int64(pl.Gold) != int64(afterSell)-price || u.repurchase[0].Index != 0 {
 		t.Fatalf("buy back: slot0=%d gold %d -> %d", pl.Inventory[0].Index, afterSell, pl.Gold)

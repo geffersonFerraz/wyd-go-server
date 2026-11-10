@@ -71,6 +71,9 @@ func (g *Game) requestOpenShop(u *User, pkt protocol.Packet) {
 const (
 	invSlots = 63
 	itemBag  = 3467
+	// invUsable: the client draws items only on slots 0..59; the last 3
+	// cells of the grid hold the inventory buttons.
+	invUsable = 60
 )
 
 // clearBagSlots removes the bags of the old system from slots 60 and 61.
@@ -141,14 +144,10 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 	if item.Index == 0 || int(item.Index) >= MaxItemList {
 		return
 	}
-	if pl.Inventory[invSlot].Index != 0 {
-		g.sendItem(u, wire.SlotInv, invSlot, &pl.Inventory[invSlot])
-		return
-	}
-	if invSlot >= 30 && !invSlotUsable(pl, invSlot) {
-		return
-	}
-	if invSlot = carrySlotFor(&pl.Inventory, item.Index, invSlot); invSlot == -1 {
+	// The slot the client asks for comes from the inventory page the mouse
+	// last passed over, not from the 9x7 grid: the item goes to the first
+	// cell where it fits, in reading order.
+	if invSlot = firstCarrySlot(&pl.Inventory, item.Index); invSlot == -1 {
 		g.clientMessage(u, "Não há espaço no inventário para este item.")
 		return
 	}

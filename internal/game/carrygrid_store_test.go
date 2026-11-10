@@ -6,13 +6,32 @@ import (
 	"dbsrv/internal/wire"
 )
 
-func TestInventoryHasEveryCellOfTheGrid(t *testing.T) {
-	var inv [64]wire.Item
-	if !carryFits(&inv, 62, 1) {
-		t.Error("the last cell of the 9x7 grid must be usable")
+func TestInventoryButtonCellsTakeNoItem(t *testing.T) {
+	var one uint16 // an item that covers a single cell
+	for id := uint16(41); one == 0; id++ {
+		if w, h := itemFootprint(id); w == 1 && h == 1 {
+			one = id
+		}
 	}
-	if carryFits(&inv, 63, 1) {
-		t.Error("slot 63 is the PK counter")
+	var inv [64]wire.Item
+	if !carryFits(&inv, 59, one) {
+		t.Error("slot 59 must be usable")
+	}
+	for _, s := range []int{60, 61, 62, 63} {
+		if carryFits(&inv, s, one) {
+			t.Errorf("slot %d must not receive items", s)
+		}
+	}
+	for i := range invUsable {
+		inv[i] = wire.Item{Index: one}
+	}
+	inv[59] = wire.Item{}
+	if got := firstCarrySlot(&inv, one); got != 59 {
+		t.Errorf("first free slot %d, want 59", got)
+	}
+	inv[59] = wire.Item{Index: one}
+	if got := firstCarrySlot(&inv, one); got != -1 {
+		t.Errorf("full inventory gave slot %d", got)
 	}
 }
 
