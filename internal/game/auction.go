@@ -508,7 +508,7 @@ func (g *Game) requestAuctionAdd(u *User, pkt protocol.Packet) {
 		return
 	}
 	if cat < auctionDonate || cat > auctionBars {
-		g.clientMessage(u, "%s esta sem definição de valor. Processo reiniciado!", g.data.Item(p.Item.Index).Name)
+		g.clientMessage(u, "%s esta sem definição de valor. Processo reiniciado!", g.itemName(p.Item.Index))
 		resend()
 		return
 	}
@@ -530,7 +530,7 @@ func (g *Game) requestAuctionAdd(u *User, pkt protocol.Packet) {
 		}
 		l.OwnerID, l.TaxRate, l.Item = int32(u.id), g.data.Cities[v].PercImpost, p.Item
 		l.Category, l.SlotBank, l.Price = int32(cat), int32(slot), price
-		g.clientMessage(u, "Item '%s' anunciado por %d em %s.", g.data.Item(p.Item.Index).Name, price, [4]string{"NA", "donate", "gold", "barras de 1b"}[cat])
+		g.clientMessage(u, "Item '%s' anunciado por %d em %s.", g.itemName(p.Item.Index), price, [4]string{"NA", "donate", "gold", "barras de 1b"}[cat])
 		g.sendStoreOf(u, u.id)
 		return
 	}
@@ -722,7 +722,7 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 	g.sendItem(s, wire.SlotStorage, bank, &s.account.StorageItems[bank])
 	s.store.removeListing(slot)
 
-	itemName := g.data.Item(item.Index).Name
+	itemName := g.itemName(item.Index)
 	sale := wire.StoreSale{Header: wire.NewHeader(wire.OpStoreSale, uint16(u.id)), Channel: int32(g.cfg.Channel), Category: int32(cat), Price: int64(price), Tax: int64(impost), Item: item}
 	copy(sale.Buyer[:15], me.Name[:15])
 	copy(sale.Seller[:15], sp.Name[:15])

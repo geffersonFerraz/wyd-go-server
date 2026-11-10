@@ -267,7 +267,7 @@ func (g *Game) npcEvent(u *User, npc int) {
 			}
 		}
 		if have < need {
-			g.sendSay(npc, "Traga-me [%02d] %s", need, g.data.Item(want.Index).Name)
+			g.sendSay(npc, "Traga-me [%02d] %s", need, g.itemName(want.Index))
 			return
 		}
 	}
@@ -324,7 +324,7 @@ func (g *Game) npcEvent(u *User, npc int) {
 			}
 			g.putItem(u, &it)
 			g.log.Info("NPC event prize", "slot", u.id, "npc", idx, "item", it.Index, "effects", it.Effect, "roll", roll, "rate", ev.Rates[tier])
-			g.clientMessage(u, "Chegou um item: [%s]", g.data.Item(it.Index).Name)
+			g.clientMessage(u, "Chegou um item: [%s]", g.itemName(it.Index))
 		}
 		if ev.Msg[tier] != "" {
 			g.clientMessage(u, "%s", ev.Msg[tier])
@@ -383,7 +383,7 @@ func (g *Game) npcMountMaster(u *User, click uint32) {
 	}
 	price := int64(g.data.Item(mount.Index).Price)
 	if click == 0 {
-		g.clientMessage(u, g.lang(nnCurePrice), g.data.Item(mount.Index).Name, price)
+		g.clientMessage(u, g.lang(nnCurePrice), g.itemName(mount.Index), price)
 		return
 	}
 	if pl.Gold < price {

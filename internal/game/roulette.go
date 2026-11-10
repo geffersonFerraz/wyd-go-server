@@ -142,7 +142,7 @@ func (g *Game) getRouletteReward(u *User) {
 	}
 	g.clientMessage(u, "Recompensa retirada com sucesso")
 	if info.Roleta.DropMsg == 1 {
-		g.notice("[Servidor] " + g.charName(u.id) + " obteve " + g.data.Item(u.rouletteReward.Index).Name + " na roleta")
+		g.notice("[Servidor] " + g.charName(u.id) + " obteve " + g.itemName(u.rouletteReward.Index) + " na roleta")
 	}
 	g.putItem(u, &u.rouletteReward)
 	u.rouletteReward = wire.Item{}

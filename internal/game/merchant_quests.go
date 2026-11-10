@@ -100,7 +100,7 @@ func (g *Game) npcQuest(u *User, npc int, click uint32) {
 		want := uint16(4128 + k)
 		slot := firstSlotOf(pl, want)
 		if slot < 0 {
-			g.sendSay(npc, g.lang(nnGiveMeItem), g.data.Item(want).Name)
+			g.sendSay(npc, g.lang(nnGiveMeItem), g.itemName(want))
 			return
 		}
 		g.replaceCarry(u, slot, wire.Item{Index: uint16(3986 + k)})
@@ -295,7 +295,7 @@ func (g *Game) npcQuest(u *User, npc int, click uint32) {
 		to := [4]uint16{939, 943, 940, 941}[k]
 		w := &pl.Equip[6]
 		if w.Index != from {
-			g.sendSay(npc, "Traga-me o %s para que eu possa recompensá-lo", g.data.Item(from).Name)
+			g.sendSay(npc, "Traga-me o %s para que eu possa recompensá-lo", g.itemName(from))
 			return
 		}
 		if itemSanc(w) != 6 {
@@ -555,7 +555,7 @@ func (g *Game) npcOracle(u *User, npc int) {
 				soul = 1741
 			}
 			g.putItem(u, &wire.Item{Index: soul})
-			g.notice(name + " compôs com sucesso a " + g.data.Item(soul).Name + " usando Pedaço da Alma")
+			g.notice(name + " compôs com sucesso a " + g.itemName(soul) + " usando Pedaço da Alma")
 		} else {
 			g.notice(name + " falhou na composição usando Pedaço da Alma")
 		}

@@ -177,7 +177,7 @@ func (g *Game) requestCashShopBuy(u *User, pkt protocol.Packet) {
 	}
 	g.log.Info("cash shop", "slot", u.id, "account", wire.CString(u.account.Username[:]), "char", g.charName(u.id),
 		"item", slot.Item.Index, "effects", slot.Item.Effect, "quant", quant, "cost", cost, "cash", u.account.Cash)
-	name := g.data.Item(slot.Item.Index).Name
+	name := g.itemName(slot.Item.Index)
 	g.clientMessage(u, "Você comprou %d %s por um total de %d. Restam %d Cash.", quant, name, cost, u.account.Cash)
 	g.signalParm(u, uint16(u.id), opSrvCash, int32(u.account.Cash))
 	g.saveUser(u, 0) // a purchase must survive a crash
