@@ -126,10 +126,7 @@ func (g *Game) take(c *compor, idx ...int) {
 
 // give puts it into the inventory slot of place i.
 func (g *Game) give(c *compor, i int, it wire.Item) {
-	pl := &g.mobs[c.u.id].info.Player
-	s := c.slot(i)
-	pl.Inventory[s] = it
-	g.sendItem(c.u, wire.SlotInv, s, &pl.Inventory[s])
+	g.replaceCarry(c.u, c.slot(i), it)
 }
 
 func (g *Game) closeCompor(u *User) { g.signalParm(u, wire.ClientIDSystem, opSrvCloseInv, 2) }

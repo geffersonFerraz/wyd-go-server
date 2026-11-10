@@ -157,7 +157,7 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 		return
 	}
 	if invSlot = carrySlotFor(&pl.Inventory, item.Index, invSlot); invSlot == -1 {
-		g.clientMessage(u, "NÃ£o hÃ¡ espaÃ§o no inventÃ¡rio para este item.")
+		g.clientMessage(u, "Não há espaço no inventário para este item.")
 		return
 	}
 	if g.locked(u, lockBuy, "Bloqueio de compra ativo!") {
@@ -209,7 +209,7 @@ func (g *Game) buyBack(u *User, slot int) {
 		g.clientMessage(u, "%s", g.lang(nnNotEnoughGoldBuyShop))
 		return
 	}
-	slotID := firstEmptySlot(pl)
+	slotID := firstCarrySlot(&pl.Inventory, item.Index)
 	if slotID == -1 {
 		g.clientMessage(u, "Não ha espaço no inventario")
 		return

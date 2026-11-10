@@ -651,7 +651,7 @@ func (g *Game) requestAuctionBuy(u *User, pkt protocol.Packet) {
 		g.clientMessage(u, "Invalido!")
 		return
 	}
-	free := firstEmptySlot(me)
+	free := firstCarrySlot(&me.Inventory, l.Item.Index)
 	if free < 0 {
 		g.clientMessage(u, "%s", g.lang(nnYouHaveNoSpaceToTrade))
 		return

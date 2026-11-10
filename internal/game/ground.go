@@ -6,9 +6,8 @@ import (
 )
 
 // Items on the ground (g_pInitItem / g_pItemGrid): the gates, barriers and
-// doors of InitItem.csv, the guild towers, and what a GM drops. Players
-// cannot drop items and monsters never do (drops go to the inventory), so
-// this is mostly the gates. Basedef.cpp CreateItem / UpdateItem /
+// doors of InitItem.csv, the guild towers, and what players drop or could not
+// carry (see dropOwned). Basedef.cpp CreateItem / UpdateItem /
 // BASE_UpdateItem3 / ProcessDecayItem / SetCastleDoor..., GetFunc.cpp
 // GetCreateItem / GetEmptyItemGrid, RequestPickItem.cpp,
 // RequestDropItem.cpp, RequestOpenGate.cpp.
@@ -32,6 +31,12 @@ const (
 	gateLocked = 3
 	towerFirst = 3145 // guild towers 3145..3149 (by win count)
 	towerLast  = 3149
+
+	dropOwnerMs     uint32 = 2 * 60 * 1000  // only the owner can pick it up
+	dropLifetimeMs  uint32 = 10 * 60 * 1000 // then it is destroyed
+	dropMaxDistance        = 8              // cells from the player, walking included
+	dropSearchRange        = 6              // how far an item that did not fit may fall
+	storageVisible         = 126            // cargo slots the client shows
 )
 
 // InitItemFile is one row of InitItem.csv (BASE_InitItem).
@@ -50,6 +55,11 @@ type groundItem struct {
 	closeArmed bool // IsOpen: a keyed gate closes on the second minute tick
 	decayMark  bool // Unknow_36: removed on the next decay pass
 	height     int
+
+	playerDrop bool   // dropped by a player: follows the rules of dropOwned
+	owner      string // who can pick it up before ownerUntil
+	ownerUntil uint32
+	expireAt   uint32
 }
 
 // CreateGroundItem mirrors p26E (32 bytes).
@@ -200,6 +210,82 @@ func (g *Game) createGroundItem(x, y int, it wire.Item, rotation, status int) in
 	p := g.groundItemPacket(id)
 	g.multicast2(x, y, &p, 0)
 	return id
+}
+
+// timeReached compares g.now() values, which wrap around.
+func timeReached(now, t uint32) bool { return int32(now-t) >= 0 }
+
+// dropOwned puts a player's item on the ground: only the owner can pick it up
+// for 2 minutes, then anyone, and after 10 minutes it is destroyed. Items that
+// cannot be traded stay reserved for the owner the whole time.
+func (g *Game) dropOwned(x, y int, it wire.Item, rotation int, owner string) int {
+	id := g.createGroundItem(x, y, it, rotation, 1)
+	if id <= 0 {
+		return 0
+	}
+	now := g.now()
+	gi := &g.ground[id]
+	gi.playerDrop, gi.owner = true, owner
+	gi.ownerUntil, gi.expireAt = now+dropOwnerMs, now+dropLifetimeMs
+	if g.data.itemAbility(&it, EF_NOTRADE) != 0 {
+		gi.ownerUntil = gi.expireAt
+	}
+	return id
+}
+
+// dropNearPlayer drops an item that did not fit in the inventory on the
+// closest free cell around the player. Returns the ground id, 0 without room.
+func (g *Game) dropNearPlayer(u *User, it wire.Item) int {
+	t := g.mobs[u.id].target
+	cx, cy := int(t.X), int(t.Y)
+	for r := 0; r <= dropSearchRange; r++ {
+		for y := cy - r; y <= cy+r; y++ {
+			for x := cx - r; x <= cx+r; x++ {
+				if max(abs(x-cx), abs(y-cy)) != r || !inMap(x, y) || g.itemAt(x, y) != 0 || g.data.height(x, y) == 127 {
+					continue
+				}
+				id := g.dropOwned(x, y, it, rnd()&3, g.charName(u.id))
+				if id != 0 {
+					g.log.Info("item fell on the ground", "slot", u.id, "item", it.Index, "effects", it.Effect, "x", x, "y", y)
+				}
+				return id // 0 here means the list of ground items is full
+			}
+		}
+	}
+	return 0
+}
+
+// parkUnplacedItems handles the items a saved inventory has no room for now
+// that items cover several cells: the cargo first, the ground if it is full.
+func (g *Game) parkUnplacedItems(u *User, items []wire.Item) {
+	cargo, ground := 0, 0
+	for _, it := range items {
+		slot := -1
+		for s := range storageVisible {
+			if u.account.StorageItems[s].Index == 0 {
+				slot = s
+				break
+			}
+		}
+		if slot >= 0 {
+			u.account.StorageItems[slot] = it
+			g.sendItem(u, wire.SlotStorage, slot, &u.account.StorageItems[slot])
+			cargo++
+			g.log.Info("item moved to cargo: inventory reorganized", "slot", u.id, "item", it.Index, "effects", it.Effect, "cargo_slot", slot)
+			continue
+		}
+		if g.dropNearPlayer(u, it) != 0 {
+			ground++
+		} else {
+			g.log.Warn("item lost reorganizing the inventory", "slot", u.id, "item", it.Index, "effects", it.Effect)
+		}
+	}
+	if cargo > 0 {
+		g.clientMessage(u, "Inventário reorganizado: %d item(ns) foram para o baú.", cargo)
+	}
+	if ground > 0 {
+		g.clientMessage(u, "Inventário reorganizado: %d item(ns) no chão. Pegue em até 10 minutos.", ground)
+	}
 }
 
 // groundItemPacket is GetCreateItem.
@@ -417,7 +503,7 @@ func (g *Game) requestOpenGate(u *User, pkt protocol.Packet) {
 	}
 	gi := &g.ground[id]
 	// Fixed: the C++ acted on any slot, even one with nothing on it.
-	if !gi.open {
+	if !gi.open || gi.playerDrop {
 		return
 	}
 	want, was := int(p.Status), gi.status
@@ -500,7 +586,7 @@ func (g *Game) decayGroundItems() {
 		gi := &g.ground[g.decayCursor]
 		// The C++ cursor started at 0 and only skipped the gates by
 		// marking them on its first pass; here they are never touched.
-		if !gi.open || g.decayCursor <= g.initCount || noDecay(gi.item.Index) {
+		if !gi.open || g.decayCursor <= g.initCount || gi.playerDrop || noDecay(gi.item.Index) {
 			continue
 		}
 		if !gi.decayMark {
@@ -508,6 +594,18 @@ func (g *Game) decayGroundItems() {
 			continue
 		}
 		g.removeGroundItem(g.decayCursor)
+	}
+}
+
+// expirePlayerDrops destroys the player drops whose time on the ground is over.
+func (g *Game) expirePlayerDrops() {
+	now := g.now()
+	for id := g.initCount + 1; id < maxGroundItem; id++ {
+		gi := &g.ground[id]
+		if gi.open && gi.playerDrop && timeReached(now, gi.expireAt) {
+			g.log.Info("dropped item destroyed", "item", gi.item.Index, "effects", gi.item.Effect, "owner", gi.owner, "x", gi.x, "y", gi.y)
+			g.removeGroundItem(id)
+		}
 	}
 }
 
@@ -549,6 +647,10 @@ func (g *Game) requestPickItem(u *User, pkt protocol.Packet) {
 	if pickBlocked[idx] || idx == 0 || int(idx) >= MaxItemList || id <= g.initCount || (idx >= towerFirst && idx <= towerLast) {
 		return
 	}
+	if gi.playerDrop && !timeReached(g.now(), gi.ownerUntil) && gi.owner != g.charName(u.id) {
+		g.clientMessage(u, "Este item ainda está reservado para %s.", gi.owner)
+		return
+	}
 	switch {
 	case idx == 470: // Pílula: the skill-point quest, on the spot
 		if m.info.Info&questPilula != 0 {
@@ -569,7 +671,7 @@ func (g *Game) requestPickItem(u *User, pkt protocol.Packet) {
 		gone()
 		return
 	}
-	slot := firstEmptySlot(pl)
+	slot := firstCarrySlot(&pl.Inventory, idx)
 	if slot < 0 {
 		g.clientMessage(u, "Sem espaço no inventario")
 		return
@@ -587,14 +689,24 @@ func guildMedal(id uint16) bool {
 	return id == 0x1FC || id == 0x1FD || id == 0x20A || (id >= 0x20E && id < 0x219) || id == 0x1BE || id == 0x2EB
 }
 
-// requestDropItem is CUser::RequestDropItem (0x272): GMs only (the C++
-// returned for AccessLevel 0 before doing anything).
+// playerCantDrop reports the items only a GM can put on the ground: what the
+// trade rules protect and what requestPickItem would never give back.
+func (g *Game) playerCantDrop(it *wire.Item) bool {
+	id := it.Index
+	return id == 747 || id == 3993 || id == 3994 || id == 470 || (id >= 490 && id <= 500) || pickBlocked[id] ||
+		(id >= towerFirst && id <= towerLast) ||
+		g.data.itemAbility(it, EF_NOTRADE) != 0 || g.data.itemAbility(it, EF_VOLATILE) == 2
+}
+
+// requestDropItem is CUser::RequestDropItem (0x272). Changed from the C++,
+// which was GM only: players drop from the inventory (see dropOwned).
 func (g *Game) requestDropItem(u *User, pkt protocol.Packet) {
 	var p DropGroundItem
 	if wire.Unmarshal(pkt.Raw, &p) != nil {
 		return
 	}
-	pl := &g.mobs[u.id].info.Player
+	m := &g.mobs[u.id]
+	pl := &m.info.Player
 	if u.status != userPlay || pl.Status.CurHP <= 0 {
 		g.sendHpMode(u)
 		return
@@ -603,11 +715,15 @@ func (g *Game) requestDropItem(u *User, pkt protocol.Packet) {
 		g.removeTrade(other)
 		return
 	}
-	if u.accessLevel == 0 {
+	isPlayer := u.accessLevel == 0
+	if isPlayer && p.InvType != wire.SlotInv {
 		return
 	}
 	x, y := int(p.PosX), int(p.PosY)
 	if !inMap(x, y) {
+		return
+	}
+	if isPlayer && max(abs(x-int(m.target.X)), abs(y-int(m.target.Y))) > dropMaxDistance {
 		return
 	}
 	if dx, dy := x, y; !g.emptyItemGrid(&dx, &dy) {
@@ -643,11 +759,20 @@ func (g *Game) requestDropItem(u *User, pkt protocol.Packet) {
 		g.clientMessage(u, "%s", g.lang(nnGuildMedalCantDrop))
 		return
 	}
-	if g.createGroundItem(x, y, *it, int(p.Rotation), 1) <= 0 {
+	if isPlayer {
+		if g.playerCantDrop(it) {
+			g.clientMessage(u, "Este item não pode ser largado.")
+			return
+		}
+		if g.locked(u, lockTrade, "Bloqueio de troca ativo!") {
+			return
+		}
+	}
+	if g.dropOwned(x, y, *it, int(p.Rotation), g.charName(u.id)) <= 0 {
 		g.clientMessage(u, "Can't create object(item)")
 		return
 	}
-	g.log.Info("GM dropped item", "slot", u.id, "item", it.Index, "effects", it.Effect, "x", x, "y", y, "inv_type", p.InvType, "inv_slot", slot)
+	g.log.Info("dropped item", "slot", u.id, "gm", !isPlayer, "item", it.Index, "effects", it.Effect, "x", x, "y", y, "inv_type", p.InvType, "inv_slot", slot)
 	*it = wire.Item{}
 	g.queue(u, &DropItemAck{Header: wire.NewHeader(opSrvDropItem, 0xCCCC), InvType: p.InvType, InvSlot: p.InvSlot, PosX: p.PosX, PosY: p.PosY})
 	// Dropping the main weapon moves the off-hand one into its place
@@ -665,4 +790,5 @@ func (g *Game) requestDropItem(u *User, pkt protocol.Packet) {
 		g.getCurrentScore(u.id)
 		g.sendScore(u.id)
 	}
+	g.saveUser(u, 0) // an item on the ground must not still be in the saved character
 }

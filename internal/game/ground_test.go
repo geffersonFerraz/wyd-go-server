@@ -130,13 +130,8 @@ func TestDropPickDecay(t *testing.T) {
 		g.requestDropItem(u, packet(&DropGroundItem{Header: wire.NewHeader(opCliDropItem, 1), InvType: wire.SlotInv, InvSlot: 2, PosX: int16(x + 1), PosY: int16(y)}))
 	}
 	drop()
-	if pl.Inventory[2].Index != 412 {
-		t.Fatal("a player (not GM) dropped an item")
-	}
-	u.accessLevel = 1
-	drop()
 	if pl.Inventory[2].Index != 0 {
-		t.Fatal("GM drop failed")
+		t.Fatal("player drop failed")
 	}
 	id := 0
 	for i := g.initCount + 1; i < maxGroundItem; i++ {
@@ -171,7 +166,7 @@ func TestDropPickDecay(t *testing.T) {
 		g.mobs[1].target = wire.Position{X: uint16(x), Y: uint16(y)}
 	}
 
-	// Dropped items decay after two passes of the cursor.
+	// Player drops ignore the decay cursor and are destroyed when they expire.
 	pl.Inventory[3] = wire.Item{Index: 413}
 	g.requestDropItem(u, packet(&DropGroundItem{Header: wire.NewHeader(opCliDropItem, 1), InvType: wire.SlotInv, InvSlot: 3, PosX: int16(x - 1), PosY: int16(y)}))
 	open := func() bool {
@@ -188,8 +183,17 @@ func TestDropPickDecay(t *testing.T) {
 	for range 2 * maxGroundItem / 8 {
 		g.decayGroundItems()
 	}
+	if !open() {
+		t.Fatal("a player drop decayed before its time")
+	}
+	for i := g.initCount + 1; i < maxGroundItem; i++ {
+		if g.ground[i].open && g.ground[i].item.Index == 413 {
+			g.ground[i].expireAt = g.now() - 1
+		}
+	}
+	g.expirePlayerDrops()
 	if open() {
-		t.Fatal("dropped item did not decay")
+		t.Fatal("dropped item did not expire")
 	}
 	for id := 1; id <= g.initCount; id++ {
 		if !g.ground[id].open {

@@ -626,7 +626,7 @@ func (g *Game) npcMysticalReward(u *User, npc int) {
 		it := wire.Item{Index: uint16(base + rnd()&3)}
 		it.Effect[0].Index = EF_SANC
 		randomAmuletEffects(&it)
-		slot := firstEmptySlot(pl)
+		slot := firstCarrySlot(&pl.Inventory, it.Index)
 		if slot < 0 {
 			g.sendSay(npc, "%s", g.lang(nnCarryFull))
 			return

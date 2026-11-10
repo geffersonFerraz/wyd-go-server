@@ -102,6 +102,7 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 
 	g.guildKingdomCape(pl)
 	openBags(pl) // the inventory always has its 60 slots (sent in p.Mob)
+	unplaced := settleCarry(&pl.Inventory)
 	u.guildInvite = guildInvite{}
 
 	p.Header = wire.NewHeader(wire.OpSrvEnterWorld, wire.ClientIDCharList)
@@ -127,6 +128,7 @@ func (g *Game) enterWorld(u *User, pkt protocol.Packet) {
 	g.mountProcess(u.id)
 	g.block199(u)
 	g.fixStoredBoots(u)
+	g.parkUnplacedItems(u, unplaced)
 	g.loadLock(u)
 	g.sendLockStatus(u)
 	g.log.Info("entered world", "slot", u.id, "account", wire.CString(u.account.Username[:]),
@@ -514,7 +516,7 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 	if !ok || !fits {
 		*srcItem, *dstItem = newSrc, newDst
 		if !fits {
-			g.clientMessage(u, "NÃ£o hÃ¡ espaÃ§o para este item nesse local.")
+			g.clientMessage(u, "Não há espaço para este item nesse local.")
 			g.sendItem(u, src, ss, srcItem)
 			g.sendItem(u, dst, ds, dstItem)
 		}

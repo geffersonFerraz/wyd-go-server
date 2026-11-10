@@ -399,6 +399,7 @@ func (g *Game) secTimer() {
 	g.mobTimer()
 	g.regenTimer()
 	g.decayGroundItems()
+	g.expirePlayerDrops()
 	g.followTimer()
 	if g.secCounter%4 == 0 {
 		g.rankingTimer()

@@ -2,6 +2,7 @@ package game
 
 import (
 	_ "embed"
+	"sort"
 
 	"dbsrv/internal/wire"
 )
@@ -49,9 +50,40 @@ func carryOccupancy(inv *[64]wire.Item) (occupied [carryRows][carryColumns]bool)
 	return occupied
 }
 
+// settleCarry removes the overlaps of a saved inventory: items keep their slot
+// in order while they fit, the others move to a free place (largest first).
+// What finds no place is returned.
+func settleCarry(inv *[64]wire.Item) (left []wire.Item) {
+	var placed [64]wire.Item
+	copy(placed[invSlots:], inv[invSlots:])
+	var pending []wire.Item
+	for slot := range invSlots {
+		switch it := inv[slot]; {
+		case it.Index == 0:
+		case carryFits(&placed, slot, it.Index):
+			placed[slot] = it
+		default:
+			pending = append(pending, it)
+		}
+	}
+	area := func(it wire.Item) int {
+		w, h := itemFootprint(it.Index)
+		return w * h
+	}
+	sort.SliceStable(pending, func(a, b int) bool { return area(pending[a]) > area(pending[b]) })
+	for _, it := range pending {
+		if slot := firstCarrySlot(&placed, it.Index); slot >= 0 {
+			placed[slot] = it
+		} else {
+			left = append(left, it)
+		}
+	}
+	*inv = placed
+	return left
+}
+
 // carryFits reports whether item id can be placed with its top-left cell at
-// slot. Items already saved overlapping stay where they are; they only block
-// new placements.
+// slot, without covering another item.
 func carryFits(inv *[64]wire.Item, slot int, id uint16) bool {
 	if slot < 0 || slot >= invSlots {
 		return false

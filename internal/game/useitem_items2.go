@@ -218,7 +218,7 @@ func (g *Game) useItemByID2(u *User, p *wire.UseItem, src *wire.Item) bool {
 	case id == 3447 || id == 3448: // Paclac / Pacori: open into single Lac / Ori
 		single := 412 + id - 3447
 		for n := itemAmount(src); n > 0; n-- {
-			slot := firstEmptySlot(pl)
+			slot := firstCarrySlot(&pl.Inventory, uint16(single))
 			if slot == -1 {
 				g.clientMessage(u, "%s", g.lang(nnYouHaveNoSpaceToTrade))
 				break

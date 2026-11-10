@@ -330,7 +330,7 @@ func (g *Game) requestUngroupItem(u *User, pkt protocol.Packet) {
 		g.sendItem(u, wire.SlotInv, slot, it)
 		return
 	}
-	free := firstEmptySlot(pl)
+	free := firstCarrySlot(&pl.Inventory, it.Index)
 	if free < 0 {
 		g.clientMessage(u, "Não ha espaço para separar!")
 		return

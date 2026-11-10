@@ -400,21 +400,20 @@ func (g *Game) useItemByID(u *User, p *wire.UseItem, src *wire.Item, vol int) bo
 		refuse("As bolsas já estão liberadas para todos os personagens.")
 
 	case id == 4528: // Caixa de Jóia: a random gem 2441..2444
-		slot, last := int(p.SrcSlot), itemAmount(src) == 1
-		if !last {
-			slot = firstEmptySlot(pl)
-		}
-		if slot == -1 || p.SrcType != wire.SlotInv {
+		gem := wire.Item{Index: uint16(2441 + rnd()%4)}
+		last := itemAmount(src) == 1
+		if p.SrcType != wire.SlotInv || (!last && firstCarrySlot(&pl.Inventory, gem.Index) == -1) {
 			refuse("Sem espaço no inventário")
 			return true
 		}
-		if !last {
+		if last {
+			g.replaceCarry(u, int(p.SrcSlot), gem)
+		} else {
 			amountMinus(src)
 			g.sendItem(u, int(p.SrcType), int(p.SrcSlot), src)
+			g.putItem(u, &gem)
 		}
-		pl.Inventory[slot] = wire.Item{Index: uint16(2441 + rnd()%4)}
-		g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
-		g.clientMessage(u, "Chegou um item [%s]", g.itemName(pl.Inventory[slot].Index))
+		g.clientMessage(u, "Chegou um item [%s]", g.itemName(gem.Index))
 
 	case id == 3020: // Pedra da Fúria
 		g.useFuryStone(u, src)
@@ -479,7 +478,8 @@ func (g *Game) useItemByID(u *User, p *wire.UseItem, src *wire.Item, vol int) bo
 			refuse("Não há %s para juntar", g.itemName(want))
 			return true
 		}
-		slot := firstEmptySlot(pl)
+		pack := uint16(3447 + id - 3445)
+		slot := firstCarrySlot(&pl.Inventory, pack)
 		if slot == -1 {
 			refuse("%s", g.lang(nnCarryFull))
 			return true
@@ -491,7 +491,7 @@ func (g *Game) useItemByID(u *User, p *wire.UseItem, src *wire.Item, vol int) bo
 				left--
 			}
 		}
-		pl.Inventory[slot] = wire.Item{Index: 3447 + id - 3445, Effect: [3]wire.ItemEffect{{Index: EF_AMOUNT, Value: uint16(total)}}}
+		pl.Inventory[slot] = wire.Item{Index: pack, Effect: [3]wire.ItemEffect{{Index: EF_AMOUNT, Value: uint16(total)}}}
 		amountMinus(src)
 		g.sendCarry(u)
 
@@ -739,7 +739,7 @@ func (g *Game) useFuryStone(u *User, src *wire.Item) {
 	if r := rnd() % 101; r <= 95 {
 		g.clientMessage(u, "%s", g.lang(nnSuccessComp))
 		g.sendEmotion(u.id, 14, 3)
-		if s := firstEmptySlot(pl); s == -1 {
+		if s := firstCarrySlot(&pl.Inventory, 3502); s == -1 {
 			g.clientMessage(u, g.lang(nnNoSpaceItem), g.itemName(3502))
 		} else {
 			pl.Inventory[s] = wire.Item{Index: 3502}

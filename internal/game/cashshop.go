@@ -242,6 +242,10 @@ func (g *Game) buyHonorMarket(u *User, mobID, sellSlot, invSlot int) {
 	if !invSlotUsable(pl, invSlot) {
 		return
 	}
+	if invSlot = carrySlotFor(&pl.Inventory, offer.Item.Index, invSlot); invSlot == -1 {
+		g.clientMessage(u, "Não há espaço no inventário para este item.")
+		return
+	}
 	u.account.Honra -= uint32(offer.Price)
 	pl.Inventory[invSlot] = offer.Item
 	g.sendItem(u, wire.SlotInv, invSlot, &pl.Inventory[invSlot])

@@ -53,7 +53,7 @@ func (g *Game) giveLevelItems(u *User) {
 			continue
 		}
 		name := g.data.Item(li.Item.Index).Name
-		if slot := firstEmptySlot(pl); slot >= 0 {
+		if slot := firstCarrySlot(&pl.Inventory, li.Item.Index); slot >= 0 {
 			pl.Inventory[slot] = li.Item
 			g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
 		} else {

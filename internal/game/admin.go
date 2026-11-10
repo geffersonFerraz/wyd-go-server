@@ -102,7 +102,7 @@ func (g *Game) runAdminCommand(u *User, value string) {
 			it = wire.Item{Index: it.Index}
 			g.setItemBonusLevel(&it, int(pl.Status.Level), 0, 100)
 		}
-		slot := firstEmptySlot(pl)
+		slot := firstCarrySlot(&pl.Inventory, it.Index)
 		if slot == -1 {
 			g.adminSay("%s", g.lang(nnYouHaveNoSpaceToTrade))
 			return

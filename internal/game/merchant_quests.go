@@ -103,8 +103,7 @@ func (g *Game) npcQuest(u *User, npc int, click uint32) {
 			g.sendSay(npc, g.lang(nnGiveMeItem), g.data.Item(want).Name)
 			return
 		}
-		pl.Inventory[slot] = wire.Item{Index: uint16(3986 + k)}
-		g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
+		g.replaceCarry(u, slot, wire.Item{Index: uint16(3986 + k)})
 		g.sendSay(npc, g.lang(nnReceivedMountPerzen), g.data.Item(uint16(3986+k)).Name)
 
 	case typ == 14: // Juli: to and from Nippleheim
@@ -578,7 +577,7 @@ func (g *Game) npcOracle(u *User, npc int) {
 	}
 	amountMinus(&pl.Inventory[slot])
 	amountMinus(&pl.Inventory[slot+1])
-	pl.Inventory[slot] = wire.Item{Index: 1742}
+	g.replaceCarry(u, slot, wire.Item{Index: 1742})
 	g.sendCarry(u)
 	g.sendSay(npc, "Pedra Eterna foi produzida. Equipe-a e procure seu rei.")
 }

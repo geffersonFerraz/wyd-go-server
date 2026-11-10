@@ -149,7 +149,9 @@ func (g *Game) giveDrop(u *User, it *wire.Item, goldFairy bool) {
 	g.putItem(u, it)
 }
 
-// putItem is PutItem: first free inventory slot (lost when full, as in the C++).
+// putItem is PutItem: the first slot where the item fits. Without one the item
+// falls next to the player, reserved for them (the C++ lost it). False only
+// when not even the ground has room.
 func (g *Game) putItem(u *User, it *wire.Item) bool {
 	if u.status != userPlay {
 		return false
@@ -157,15 +159,30 @@ func (g *Game) putItem(u *User, it *wire.Item) bool {
 	pl := &g.mobs[u.id].info.Player
 	slot := firstCarrySlot(&pl.Inventory, it.Index)
 	if slot == -1 {
-		// Callers only checked for one free slot: better overlapping than lost.
-		slot = firstEmptySlot(pl)
-	}
-	if slot == -1 {
-		return false
+		if g.dropNearPlayer(u, *it) == 0 {
+			g.log.Warn("item lost: no room in the inventory or on the ground", "slot", u.id, "item", it.Index, "effects", it.Effect)
+			return false
+		}
+		g.clientMessage(u, "Sem espaço no inventário: [%s] caiu no chão.", g.itemName(it.Index))
+		return true
 	}
 	pl.Inventory[slot] = *it
 	g.sendItem(u, wire.SlotInv, slot, it)
 	return true
+}
+
+// replaceCarry turns the item at slot into it, which may cover other cells
+// than the old one: it moves to another slot, or to the ground, when needed.
+func (g *Game) replaceCarry(u *User, slot int, it wire.Item) {
+	pl := &g.mobs[u.id].info.Player
+	pl.Inventory[slot] = wire.Item{}
+	if carryFits(&pl.Inventory, slot, it.Index) {
+		pl.Inventory[slot] = it
+		g.sendItem(u, wire.SlotInv, slot, &it)
+		return
+	}
+	g.sendItem(u, wire.SlotInv, slot, &pl.Inventory[slot])
+	g.putItem(u, &it)
 }
 
 // firstSlotOf is GetFirstSlot(clientId, itemId) for itemId != 0.

@@ -106,10 +106,9 @@ func (g *Game) requestRedeemGriffin(u *User, pkt protocol.Packet) {
 	}
 	costume := wire.Item{Index: kind.costumes[p.Parm3]}
 	if itemAmount(ticket) == 1 {
-		*ticket = costume
-		g.sendItem(u, wire.SlotInv, slot, ticket)
+		g.replaceCarry(u, slot, costume)
 	} else {
-		free := firstEmptySlot(pl)
+		free := firstCarrySlot(&pl.Inventory, costume.Index)
 		if free < 0 {
 			g.clientMessage(u, "Sem espaço livre no inventario")
 			return
