@@ -93,14 +93,9 @@ func (g *Game) requestAddPoint(u *User, pkt protocol.Packet) {
 		if pl.StatusPoint > 200 {
 			add = 100
 		}
-		stat := [4]*uint16{&pl.BStatus.STR, &pl.BStatus.INT, &pl.BStatus.DEX, &pl.BStatus.CON}[info]
-		// The C++ fields are shorts: stop before they would wrap negative.
-		if int(*stat)+int(add) > 32767 {
-			g.sendEtc(u)
-			return
-		}
+		stat := [4]*int64{&pl.BStatus.STR, &pl.BStatus.INT, &pl.BStatus.DEX, &pl.BStatus.CON}[info]
 		pl.StatusPoint -= add
-		*stat += add
+		*stat += int64(add)
 
 	case 1: // mastery points
 		if pl.MasterPoint == 0 {

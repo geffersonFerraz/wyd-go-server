@@ -468,13 +468,13 @@ func (g *Game) runAdminCommand(u *User, value string) {
 		x, _ := num(1)
 		switch mode {
 		case 0:
-			pl.BStatus.STR = uint16(x)
+			pl.BStatus.STR = int64(x)
 		case 1:
-			pl.BStatus.DEX = uint16(x)
+			pl.BStatus.DEX = int64(x)
 		case 2:
-			pl.BStatus.INT = uint16(x)
+			pl.BStatus.INT = int64(x)
 		case 3:
-			pl.BStatus.CON = uint16(x)
+			pl.BStatus.CON = int64(x)
 		}
 		g.getCurrentScore(u.id)
 		g.sendScore(u.id)

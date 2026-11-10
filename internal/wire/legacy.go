@@ -61,7 +61,7 @@ func (s legacyStatus) status() Status {
 		Level: s.Level, Defense: int64(s.Defense), Attack: int64(s.Attack),
 		Merchant: s.Merchant, Move: s.Move,
 		MaxHP: int64(s.MaxHP), MaxMP: int64(s.MaxMP), CurHP: int64(s.CurHP), CurMP: int64(s.CurMP),
-		STR: s.STR, INT: s.INT, DEX: s.DEX, CON: s.CON, Mastery: s.Mastery,
+		STR: int64(s.STR), INT: int64(s.INT), DEX: int64(s.DEX), CON: int64(s.CON), Mastery: s.Mastery,
 	}
 }
 

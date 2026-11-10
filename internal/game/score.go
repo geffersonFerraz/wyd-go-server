@@ -908,14 +908,12 @@ func (g *Game) curScore(id int) {
 	if id < MaxPlayer {
 		attack = min(attack, int(g.cfg.Limits.MaxAttackDefense))
 		defense = min(defense, int(g.cfg.Limits.MaxAttackDefense))
-		str, intel, con, dex = min(str, maxPoints), min(intel, maxPoints), min(con, maxPoints), min(dex, maxPoints)
-		maxHP, maxMP = min(maxHP, int(g.cfg.Limits.MaxHPMP)), min(maxMP, int(g.cfg.Limits.MaxHPMP))
 	}
 	magic = min(magic, maxMagicIncrement)
 	mob.Status.Attack = int64(attack)
 	mob.Status.Defense = int64(defense)
-	mob.Status.STR, mob.Status.INT = uint16(str), uint16(intel)
-	mob.Status.CON, mob.Status.DEX = uint16(con), uint16(dex)
+	mob.Status.STR, mob.Status.INT = int64(str), int64(intel)
+	mob.Status.CON, mob.Status.DEX = int64(con), int64(dex)
 	c.magicIncrement = magic
 	m.info.MagicIncrement = uint32(magic)
 	mob.MagicIncrement = uint16(magic)
@@ -1012,17 +1010,11 @@ func (g *Game) scorePoint(id int) {
 	cls := pl.ClassInfo
 	b := &pl.BStatus
 	total := int(b.STR) - baseSIDCHM[cls][0] + int(b.INT) - baseSIDCHM[cls][1] + int(b.DEX) - baseSIDCHM[cls][2] + int(b.CON) - baseSIDCHM[cls][3]
-	for left := pnts - total; left < 0; left++ {
-		switch {
-		case int(b.STR) > baseSIDCHM[cls][0]:
-			b.STR--
-		case int(b.INT) > baseSIDCHM[cls][1]:
-			b.INT--
-		case int(b.DEX) > baseSIDCHM[cls][2]:
-			b.DEX--
-		case int(b.CON) > baseSIDCHM[cls][3]:
-			b.CON--
-		}
+	excess := max(total-pnts, 0)
+	for i, stat := range [4]*int64{&b.STR, &b.INT, &b.DEX, &b.CON} {
+		take := min(excess, max(int(*stat)-baseSIDCHM[cls][i], 0))
+		*stat -= int64(take)
+		excess -= take
 	}
 	pl.StatusPoint = uint16(max(pnts-total, 0))
 }

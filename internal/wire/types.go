@@ -42,7 +42,7 @@ type ItemDate struct {
 	_       [1]byte
 }
 
-// Status mirrors STRUCT_STATUS (80 bytes).
+// Status mirrors STRUCT_STATUS (104 bytes).
 type Status struct {
 	Level    int16
 	_        [6]byte
@@ -55,14 +55,14 @@ type Status struct {
 	MaxMP    int64
 	CurHP    int64
 	CurMP    int64
-	STR      uint16
-	INT      uint16
-	DEX      uint16
-	CON      uint16
+	STR      int64
+	INT      int64
+	DEX      int64
+	CON      int64
 	Mastery  [4]uint16
 }
 
-// Mob mirrors STRUCT_MOB (1416 bytes). The NPC files on disk keep the old
+// Mob mirrors STRUCT_MOB (1464 bytes). The NPC files on disk keep the old
 // 848-byte layout; see UnmarshalLegacyMob.
 type Mob struct {
 	Name            [16]byte
@@ -96,7 +96,7 @@ type Mob struct {
 	_               [2]byte  // tail pad to 8
 }
 
-// SubInfo mirrors STRUCT_SUBINFO (424 bytes).
+// SubInfo mirrors STRUCT_SUBINFO (448 bytes).
 type SubInfo struct {
 	Status    int32
 	_         [4]byte
@@ -153,7 +153,7 @@ type Roleta struct {
 	DropMsg int8
 }
 
-// CharInfo mirrors STRUCT_CHARINFO (2768 bytes).
+// CharInfo mirrors STRUCT_CHARINFO (2840 bytes).
 type CharInfo struct {
 	Player           Mob
 	Affects          [32]Affect
@@ -200,7 +200,7 @@ type Water struct {
 	Total int32
 }
 
-// Account mirrors STRUCT_ACCOUNT (14216 bytes). Only the admin protocol ever
+// Account mirrors STRUCT_ACCOUNT (14504 bytes). Only the admin protocol ever
 // put it on the wire; DBSRV uses it as its in-memory/session model.
 type Account struct {
 	Username     [16]byte
@@ -241,15 +241,15 @@ type Account struct {
 	PassBlock    [16]byte
 }
 
-// SealInfo mirrors STRUCT_SEALINFO (44 bytes).
+// SealInfo mirrors STRUCT_SEALINFO (52 bytes).
 type SealInfo struct {
 	Status    int32
 	Face      int16
 	Level     int16
-	STR       int16
-	INT       int16
-	DEX       int16
-	CON       int16
+	STR       int32
+	INT       int32
+	DEX       int32
+	CON       int32
 	Evolution int16
 	CapeID    int16
 	Unk3      int16

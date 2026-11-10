@@ -328,7 +328,7 @@ func (g *Game) makeCelestial(u *User, src *wire.Item, refuse func(string)) {
 	}
 	// Base stats by class (from the Arch face kept in EF2). Fixed: the
 	// C++ gave a BeastMaster the FoeMaster's INT/DEX/CON.
-	stats := map[int][4]uint16{0: {8, 4, 7, 6}, 1: {5, 8, 5, 5}, 2: {6, 6, 9, 5}, 3: {8, 9, 13, 6}}
+	stats := map[int][4]int64{0: {8, 4, 7, 6}, 1: {5, 8, 5, 5}, 2: {6, 6, 9, 5}, 3: {8, 9, 13, 6}}
 	face := int(pl.Equip[0].Effect[1].Index)
 	cls := -1
 	switch {

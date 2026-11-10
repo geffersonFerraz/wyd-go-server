@@ -209,7 +209,7 @@ func (d *Data) ability(it *wire.Item, eff int, withSanc bool) int {
 	if eff == EF_GRID && (result < 0 || result > 7) {
 		result = 0
 	}
-	return int(int16(result)) // the C++ returned short
+	return int(result)
 }
 
 // infoClass is GetInfoClass (class from the face id).

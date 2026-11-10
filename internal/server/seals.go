@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"math"
 
 	"dbsrv/internal/protocol"
 	"dbsrv/internal/store"
@@ -80,10 +81,10 @@ func (s *Server) handlePutInSeal(ctx context.Context, ch *channel, pkt protocol.
 
 	info := wire.SealInfo{
 		Status:    int32(id),
-		CON:       int16(m.BStatus.CON),
-		STR:       int16(m.BStatus.STR),
-		INT:       int16(m.BStatus.INT),
-		DEX:       int16(m.BStatus.DEX),
+		CON:       sealStat(m.BStatus.CON),
+		STR:       sealStat(m.BStatus.STR),
+		INT:       sealStat(m.BStatus.INT),
+		DEX:       sealStat(m.BStatus.DEX),
 		Evolution: int16(m.Equip[0].Effect[1].Value),
 		Face:      int16(m.Equip[0].Effect[1].Index),
 		Level:     m.BStatus.Level,
@@ -228,4 +229,9 @@ func (s *Server) handleOutSeal(ctx context.Context, ch *channel, pkt protocol.Pa
 	}
 	ch.log.Info("character unsealed", "account", sess.username, "name", name, "seal", sealID)
 	ch.sendCharList(client, wire.OpCNFNewCharacter, a)
+}
+
+// sealStat fits an attribute into the 32-bit field of the seal tooltip.
+func sealStat(v int64) int32 {
+	return int32(min(v, math.MaxInt32))
 }

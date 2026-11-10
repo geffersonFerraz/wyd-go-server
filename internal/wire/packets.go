@@ -57,7 +57,7 @@ type AccountLogin struct {
 	Keys     [12]byte
 }
 
-// CharList mirrors st_CharList (1592 bytes).
+// CharList mirrors st_CharList (1688 bytes).
 type CharList struct {
 	PositionX [4]int16
 	PositionY [4]int16
@@ -69,7 +69,7 @@ type CharList struct {
 	Exp       [4]int64
 }
 
-// CNFAccountLogin mirrors p416 (4008 bytes), sent as 0x416.
+// CNFAccountLogin mirrors p416 (4104 bytes), sent as 0x416.
 type CNFAccountLogin struct {
 	Header      Header
 	Keys        [16]byte
@@ -81,7 +81,7 @@ type CNFAccountLogin struct {
 	Unknow      [8]byte
 }
 
-// CharListPacket mirrors p418 (1608 bytes), sent as 0x418 / 0x419.
+// CharListPacket mirrors p418 (1704 bytes), sent as 0x418 / 0x419.
 type CharListPacket struct {
 	Header   Header
 	_        [4]byte
@@ -95,7 +95,7 @@ type CharacterLogin struct {
 	Zero      [16]byte
 }
 
-// CNFCharacterLogin mirrors p114 (1728 bytes), sent as 0x417.
+// CNFCharacterLogin mirrors p114 (1776 bytes), sent as 0x417.
 type CNFCharacterLogin struct {
 	Header      Header
 	WorldPos    Position
@@ -112,7 +112,7 @@ type CNFCharacterLogin struct {
 	Hold        int64
 }
 
-// CNFCharacterLoginExtra mirrors p820 (2848 bytes), sent as 0x820.
+// CNFCharacterLoginExtra mirrors p820 (2920 bytes), sent as 0x820.
 type CNFCharacterLoginExtra struct {
 	Header    Header
 	_         [4]byte
@@ -176,8 +176,8 @@ type DeleteCharacter struct {
 	Pwd       [12]byte
 }
 
-// SaveCharacter mirrors STRUCT_SAVECHARACTER (5816 bytes; TMSRV's copy is
-// 5800, it has no TypeBlock), 0x806 / 0x807.
+// SaveCharacter mirrors STRUCT_SAVECHARACTER (5888 bytes; TMSRV's copy is
+// 5872, it has no TypeBlock), 0x806 / 0x807.
 type SaveCharacter struct {
 	Header     Header
 	CharSlot   uint32

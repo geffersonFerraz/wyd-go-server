@@ -77,9 +77,9 @@ func TestUnmarshalShortTMSRVSave(t *testing.T) {
 	in.Cash = 13300
 	full := MustMarshal(&in)
 
-	// TMSRV sends only 5800 bytes (no TypeBlock).
+	// TMSRV sends only 5872 bytes (no TypeBlock).
 	var out SaveCharacter
-	if err := Unmarshal(full[:5800], &out); err != nil {
+	if err := Unmarshal(full[:5872], &out); err != nil {
 		t.Fatal(err)
 	}
 	if CString(out.User[:]) != "ANDERSON" || out.Cash != 13300 || CString(out.PassBlock[:]) != "1234" {

@@ -11,7 +11,7 @@ import (
 const beyond32Bits = int64(5_000_000_000)
 
 func x64Game(limit int64) (*Game, *User) {
-	g := New(Config{Channel: 1, Limits: LimitSettings{MaxGold: limit, MaxDamage: limit, MaxHPMP: limit, MaxAttackDefense: limit}},
+	g := New(Config{Channel: 1, Limits: LimitSettings{MaxGold: limit, MaxDamage: limit, MaxAttackDefense: limit}},
 		&Data{}, slog.New(slog.DiscardHandler))
 	u := g.users[1]
 	u.status = userPlay
@@ -53,13 +53,13 @@ func TestStorageRejectsNegativeAndOverLimitGold(t *testing.T) {
 }
 
 func TestLimitsAreValidated(t *testing.T) {
-	ok := LimitSettings{MaxGold: 1, MaxDamage: 1, MaxHPMP: 1, MaxAttackDefense: wire.MaxLimit}
+	ok := LimitSettings{MaxGold: 1, MaxDamage: 1, MaxAttackDefense: wire.MaxLimit}
 	if err := ok.validate(); err != nil {
 		t.Fatal(err)
 	}
 	for _, bad := range []LimitSettings{
-		{MaxGold: 0, MaxDamage: 1, MaxHPMP: 1, MaxAttackDefense: 1},
-		{MaxGold: 1, MaxDamage: wire.MaxLimit + 1, MaxHPMP: 1, MaxAttackDefense: 1},
+		{MaxGold: 0, MaxDamage: 1, MaxAttackDefense: 1},
+		{MaxGold: 1, MaxDamage: wire.MaxLimit + 1, MaxAttackDefense: 1},
 	} {
 		if bad.validate() == nil {
 			t.Errorf("%+v was accepted", bad)

@@ -626,9 +626,9 @@ func (g *Game) npcSkillMaster(u *User, npc int) {
 		limit = 2000
 	}
 	b := &pl.BStatus
-	for i, st := range []*uint16{&b.STR, &b.INT, &b.DEX, &b.CON} {
+	for i, st := range []*int64{&b.STR, &b.INT, &b.DEX, &b.CON} {
 		take := min(max(int(*st)-baseSIDCHM[cls][i], 0), limit)
-		*st -= uint16(take)
+		*st -= int64(take)
 	}
 	if scroll >= 0 {
 		amountMinus(&pl.Inventory[scroll])

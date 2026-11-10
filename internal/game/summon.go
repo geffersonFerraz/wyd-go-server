@@ -162,7 +162,7 @@ func (g *Game) generateSummon(user, summonID int, item *wire.Item) bool {
 		base := mountCon[int(pl.Equip[0].Index)-mountSummonFirst]
 		lo := base/2 - 1000
 		con := lo + (base-lo)*sanc/100
-		pl.BStatus.CON, pl.Status.CON = uint16(int16(con)), uint16(int16(con))
+		pl.BStatus.CON, pl.Status.CON = int64(con), int64(con)
 		pl.BStatus.Attack += int64((g.data.itemAbility(item, EF_MOUNTSANC) & 255) * 6)
 		pl.Status.Attack = pl.BStatus.Attack
 	}

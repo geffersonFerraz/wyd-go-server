@@ -180,13 +180,12 @@ type ChangeChannelSettings struct {
 type LimitSettings struct {
 	MaxGold          int64 `yaml:"max_gold"`           // inventory, storage, trade and auction gold
 	MaxDamage        int64 `yaml:"max_damage"`         // one hit of a player against a mob, skills included
-	MaxHPMP          int64 `yaml:"max_hp_mp"`          // a player's maximum HP and MP
 	MaxAttackDefense int64 `yaml:"max_attack_defense"` // a player's attack and defense
 }
 
 func (l LimitSettings) validate() error {
 	for name, v := range map[string]int64{"max_gold": l.MaxGold, "max_damage": l.MaxDamage,
-		"max_hp_mp": l.MaxHPMP, "max_attack_defense": l.MaxAttackDefense} {
+		"max_attack_defense": l.MaxAttackDefense} {
 		if v < 1 || v > wire.MaxLimit {
 			return fmt.Errorf("limits.%s must be 1..%d, got %d", name, int64(wire.MaxLimit), v)
 		}
@@ -246,7 +245,7 @@ func CppSettings() Settings {
 		ChangeChannel: ChangeChannelSettings{CooldownSeconds: 10},
 		NewbieZone:    35,
 		StatSapphire:  30,
-		Limits:        LimitSettings{MaxGold: 2_000_000_000, MaxDamage: 64_000, MaxHPMP: 200_000, MaxAttackDefense: 100_000},
+		Limits:        LimitSettings{MaxGold: 2_000_000_000, MaxDamage: 64_000, MaxAttackDefense: 100_000},
 		Login:         LoginSettings{MaxAccountsPerComputer: 3},
 		Missions:      MissionSettings{OfferEverySeconds: 1152, TimeToCompleteSeconds: 1152},
 		Store:         StoreSettings{HonorEverySeconds: 600},

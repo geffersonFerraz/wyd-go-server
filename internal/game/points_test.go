@@ -28,7 +28,7 @@ func TestAddStatusAndMastery(t *testing.T) {
 		}
 		dex := pl.BStatus.DEX
 		addPoint(g, u, 0, 2)
-		if pl.BStatus.DEX != dex+want || pl.StatusPoint != pts-want {
+		if pl.BStatus.DEX != dex+int64(want) || pl.StatusPoint != pts-want {
 			t.Fatalf("level %d: dex %d -> %d, points %d -> %d", level, dex, pl.BStatus.DEX, pts, pl.StatusPoint)
 		}
 		addPoint(g, u, 0, 4) // out of range
@@ -186,5 +186,31 @@ func TestChangeCity(t *testing.T) {
 	g.requestChangeCity(u, packet(&wire.SignalValue{Header: wire.NewHeader(opCliChangeCity, 1), Value: 2}))
 	if pl.Info != 1|2<<6 {
 		t.Fatalf("info %08b", pl.Info)
+	}
+}
+
+func TestAttributesHaveNoLimit(t *testing.T) {
+	g, u, pl := useItemGame(t)
+	bonus := [3]wire.ItemEffect{{Index: EF_STR, Value: 60000}, {Index: EF_STR, Value: 60000}, {Index: EF_STR, Value: 60000}}
+	for slot := 1; slot <= 5; slot++ {
+		pl.Equip[slot] = wire.Item{Index: 1103, Effect: bonus}
+	}
+	g.getCurrentScore(u.id)
+	if pl.Status.STR < 900_000 {
+		t.Fatalf("str was cut: %d", pl.Status.STR)
+	}
+}
+
+func TestExcessPointsAreTakenBackInOrder(t *testing.T) {
+	g, u, pl := useItemGame(t)
+	pl.BStatus.Level, pl.Status.Level = 10, 10
+	cls := pl.ClassInfo
+	pl.BStatus.STR = 5_000_000_000
+	pl.BStatus.INT = int64(baseSIDCHM[cls][1])
+	pl.BStatus.DEX = int64(baseSIDCHM[cls][2])
+	pl.BStatus.CON = int64(baseSIDCHM[cls][3])
+	g.getCurrentScore(u.id)
+	if pl.BStatus.STR >= 5_000_000_000 || pl.BStatus.STR < int64(baseSIDCHM[cls][0]) || pl.StatusPoint != 0 {
+		t.Fatalf("str %d, points %d", pl.BStatus.STR, pl.StatusPoint)
 	}
 }

@@ -33,10 +33,10 @@ func ReadSealFile(path string, id int) (*Seal, error) {
 	s := &Seal{ID: id}
 	s.Info = wire.SealInfo{
 		Status:    int32(id),
-		CON:       int16(p.num("CON", x.CON)),
-		STR:       int16(p.num("STR", x.STR)),
-		DEX:       int16(p.num("DEX", x.DEX)),
-		INT:       int16(p.num("INT", x.INT)),
+		CON:       int32(p.num("CON", x.CON)),
+		STR:       int32(p.num("STR", x.STR)),
+		DEX:       int32(p.num("DEX", x.DEX)),
+		INT:       int32(p.num("INT", x.INT)),
 		Face:      int16(p.num("face", x.Face)),
 		Level:     int16(p.num("level", x.Level)),
 		QuestInfo: int16(p.num("quest", x.Quest)),

@@ -99,13 +99,13 @@ func TestKingdomBrokerAndSkillMaster(t *testing.T) {
 	g.cfg.StatSapphire = 30
 	pl.ClassInfo = 0
 	pl.BStatus.Level, pl.Status.Level = 300, 300 // enough points for the stats below
-	pl.BStatus.STR = uint16(baseSIDCHM[0][0] + 150)
-	pl.BStatus.INT = uint16(baseSIDCHM[0][1] + 20)
+	pl.BStatus.STR = int64(baseSIDCHM[0][0] + 150)
+	pl.BStatus.INT = int64(baseSIDCHM[0][1] + 20)
 	pl.Inventory[1] = wire.Item{Index: itemSapphire}
 	pl.Inventory[1].Effect[0] = wire.ItemEffect{Index: EF_AMOUNT, Value: 40}
 	npc = questNPC(g, 8, 130, 1)
 	clickNPC(g, u, npc, 1)
-	if pl.BStatus.STR != uint16(baseSIDCHM[0][0]+50) || pl.BStatus.INT != uint16(baseSIDCHM[0][1]) {
+	if pl.BStatus.STR != int64(baseSIDCHM[0][0]+50) || pl.BStatus.INT != int64(baseSIDCHM[0][1]) {
 		t.Fatalf("stats after reset: STR %d INT %d", pl.BStatus.STR, pl.BStatus.INT)
 	}
 	if got := inventoryAmount(pl, itemSapphire); got != 10 {

@@ -406,7 +406,7 @@ func (g *Game) useStatReset(u *User, src *wire.Item, big bool) {
 		resend()
 		return
 	}
-	stats := [4]*uint16{&pl.BStatus.STR, &pl.BStatus.INT, &pl.BStatus.DEX, &pl.BStatus.CON}
+	stats := [4]*int64{&pl.BStatus.STR, &pl.BStatus.INT, &pl.BStatus.DEX, &pl.BStatus.CON}
 	need := 5
 	if big {
 		need = 100
@@ -425,7 +425,7 @@ func (g *Game) useStatReset(u *User, src *wire.Item, big bool) {
 	points := int(pl.StatusPoint)
 	for i, s := range stats {
 		back := min(max(int(*s)-baseSIDCHM[cls][i], 0), 100)
-		*s -= uint16(back)
+		*s -= int64(back)
 		points += back
 	}
 	pl.StatusPoint = uint16(min(points, maxPoints))
