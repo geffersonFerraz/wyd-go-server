@@ -152,3 +152,57 @@ func TestRemoveIsAllOrNothing(t *testing.T) {
 		}
 	}
 }
+
+func TestApplyStats(t *testing.T) {
+	a := account()
+	c := &a.Mob[0]
+	pl := &c.Player
+	pl.BStatus.STR, pl.Status.STR = 10, 25 // 15 from equipment
+	pl.BStatus.Mastery[1] = 4
+	pl.StatusPoint, pl.MasterPoint, pl.SkillPoint = 20, 6, 9
+	pl.Learn[0] = 1<<30 | 1<<3
+
+	e := Edit{Op: OpStats, Stats: map[string]int64{"str": 110, "status_point": 5, "mastery1": 14, "skill_point": 30, "exp": 777},
+		LearnAdd: 1 << 1, LearnDel: 1 << 3, LearnCost: 2}
+	if msg := e.Validate(); msg != "" {
+		t.Fatal(msg)
+	}
+	if !e.CharScoped() {
+		t.Fatal("a stats edit is of one character")
+	}
+	if r := e.Apply(a); r != ResOK {
+		t.Fatal(r)
+	}
+	if pl.BStatus.STR != 110 || pl.Status.STR != 125 || pl.StatusPoint != 5 || pl.BStatus.Mastery[1] != 14 || pl.SkillPoint != 30 || pl.Exp != 777 {
+		t.Fatalf("values: %+v", pl.BStatus)
+	}
+	if pl.Learn[0] != 1<<30|1<<1 {
+		t.Fatalf("learn %x: the bits above the class skills must stay", pl.Learn[0])
+	}
+	// +100 attribute -15 free; +10 mastery; +21 free skill + 2 of cost.
+	if c.StatusBonus != 85 || c.MasterBonus != 10 || c.SkillBonus != 23 {
+		t.Fatalf("bonuses %d %d %d", c.StatusBonus, c.MasterBonus, c.SkillBonus)
+	}
+
+	p := e.StatsPacket("ACC", 3)
+	back, err := FromStatsPacket(&p)
+	if err != nil || back.Stats["str"] != 110 || back.Stats["exp"] != 777 || len(back.Stats) != 5 || back.LearnAdd != 2 || back.LearnDel != 8 || back.LearnCost != 2 {
+		t.Fatalf("packet: %v %+v", err, back)
+	}
+
+	for _, bad := range []Edit{
+		{Op: OpStats},
+		{Op: OpStats, Char: 4, Stats: map[string]int64{"str": 1}},
+		{Op: OpStats, Stats: map[string]int64{"nope": 1}},
+		{Op: OpStats, Stats: map[string]int64{"str": -1}},
+		{Op: OpStats, Stats: map[string]int64{"str": MaxAttribute + 1}},
+		{Op: OpStats, Stats: map[string]int64{"mastery0": MaxMastery + 1}},
+		{Op: OpStats, Stats: map[string]int64{"skill_point": MaxPoints + 1}},
+		{Op: OpStats, LearnAdd: 1 << 24},
+		{Op: OpStats, LearnAdd: 1, LearnDel: 1},
+	} {
+		if bad.Validate() == "" {
+			t.Errorf("accepted %+v", bad)
+		}
+	}
+}

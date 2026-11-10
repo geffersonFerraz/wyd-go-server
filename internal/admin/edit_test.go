@@ -95,3 +95,60 @@ func TestAccountEditor(t *testing.T) {
 		t.Fatal("account page does not show the edit or the access form")
 	}
 }
+
+func TestStatsEditor(t *testing.T) {
+	h := newPanel(t)
+	csrf := h.login()
+
+	rec, err := h.st.LoadAccount(h.ctx, "EXISTING")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pl := &rec.Account.Mob[1].Player
+	wire.PutCString(pl.Name[:], "Heroi")
+	pl.BStatus.STR, pl.BStatus.DEX, pl.StatusPoint = 40, 9, 5
+	pl.Learn[0] = 1<<30 | 1<<4
+	if err := h.st.SaveAccount(h.ctx, rec); err != nil {
+		t.Fatal(err)
+	}
+
+	code, body, _ := h.get("/accounts/EXISTING/chars/1")
+	for _, want := range []string{`name="str"`, `name="orig_str" value="40"`, `name="status_point"`, `name="mastery3"`, `name="skill_point"`, `name="learn_orig" value="16"`, `value="4" checked`} {
+		if code != http.StatusOK || !strings.Contains(body, want) {
+			t.Fatalf("character page %d: no %s", code, want)
+		}
+	}
+
+	back := "/accounts/EXISTING/chars/1"
+	form := func(str, status string, learn ...string) url.Values {
+		v := url.Values{"csrf": {csrf}, "back": {back}, "op": {"stats"}, "char": {"1"}, "class": {"0"}, "learn_orig": {"16"}, "learn": learn,
+			"str": {str}, "orig_str": {"40"}, "dex": {"9"}, "orig_dex": {"9"}, "status_point": {status}, "orig_status_point": {"5"}}
+		return v
+	}
+	code, _, hdr := h.post("/accounts/EXISTING/edit", form("100", "5", "4", "6"))
+	if code != http.StatusSeeOther || !strings.Contains(hdr.Get("Location"), "?req=") {
+		t.Fatalf("stats edit: %d %s", code, hdr.Get("Location"))
+	}
+	_, _, _, payload := h.lastPayload()
+	stats, _ := payload["stats"].(map[string]any)
+	if payload["op"] != "stats" || payload["char"] != float64(1) || len(stats) != 1 || stats["str"] != float64(100) || payload["learn_add"] != float64(64) || payload["learn_del"] != nil {
+		t.Fatalf("payload %v", payload)
+	}
+	if _, body, _ := h.get(back); !strings.Contains(body, "Força = 100") || !strings.Contains(body, "1 skills adicionadas") {
+		t.Fatal("the request list does not describe the edit")
+	}
+
+	before, _ := h.st.PendingDeliveries(h.ctx, 100)
+	_, _, same := h.post("/accounts/EXISTING/edit", form("40", "5", "4"))
+	_, _, high := h.post("/accounts/EXISTING/edit", form("500000001", "5", "4"))
+	_, _, points := h.post("/accounts/EXISTING/edit", form("40", "32768", "4"))
+	_, _, badBit := h.post("/accounts/EXISTING/edit", form("40", "5", "24"))
+	if after, _ := h.st.PendingDeliveries(h.ctx, 100); len(after) != len(before) {
+		t.Fatalf("bad stats queued: %d -> %d", len(before), len(after))
+	}
+	for _, h := range []http.Header{same, high, points, badBit} {
+		if !strings.Contains(h.Get("Location"), "err=") {
+			t.Fatalf("no error: %s", h.Get("Location"))
+		}
+	}
+}

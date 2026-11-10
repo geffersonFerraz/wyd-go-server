@@ -7,6 +7,31 @@
 <div class="grid">
   <div>
     <section class="card">
+      <h2>Atributos e pontos</h2>
+      <form method="post" action="/accounts/{{pathescape .Username}}/edit" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="back" value="{{.Back}}">
+        <input type="hidden" name="op" value="stats">
+        <input type="hidden" name="char" value="{{.Slot}}">
+        <input type="hidden" name="class" value="{{.Class}}">
+        <input type="hidden" name="learn_orig" value="{{.LearnOrig}}">
+        <h3>Atributos</h3>
+        <div class="fields">{{range .Attributes}}{{template "statfield" .}}{{end}}</div>
+        <h3>Especiais</h3>
+        <div class="fields">{{range .Masteries}}{{template "statfield" .}}{{end}}</div>
+        <h3>Pontos livres e experiência</h3>
+        <div class="fields">{{range .Points}}{{template "statfield" .}}{{end}}{{template "statfield" .ExpStat}}</div>
+        {{if .Skills}}
+        <details>
+          <summary>Skills da classe</summary>
+          <div class="fields">{{range .Skills}}<label class="check"><input type="checkbox" name="learn" value="{{.Bit}}"{{if .Learned}} checked{{end}}> {{.Name}}</label>{{end}}</div>
+        </details>
+        {{end}}
+        <p class="muted small">Valores base, sem equipamento e buffs. Só o que você mudar é alterado; o resto continua como está no jogo. Os pontos livres ficam exatamente como digitados, mesmo ao mudar atributos ou skills, e subir de nível continua somando pontos.</p>
+        <button class="primary" data-confirm="Aplicar as alterações neste personagem?">Salvar atributos</button>
+      </form>
+    </section>
+    <section class="card">
       <h2>Equipamento</h2>
       {{template "itemrows" (dict "Cells" .Equip "Root" . "Char" .Slot)}}
     </section>

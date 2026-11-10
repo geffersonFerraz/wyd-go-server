@@ -528,6 +528,8 @@ func (g *Game) handleDB(pkt protocol.Packet) {
 		g.adminEdit(u, pkt)
 	case wire.OpAdminRemove: // 0xC15
 		g.adminRemove(u, pkt)
+	case wire.OpAdminStats: // 0xC1E
+		g.adminStats(u, pkt)
 	case wire.OpNewCharFail: // 0x41D
 		g.signal(u, 0, wire.OpSrvCreateFail)
 		u.status = userSelChar

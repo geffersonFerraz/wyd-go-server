@@ -50,6 +50,20 @@ func (g *Game) adminRemove(u *User, pkt protocol.Packet) {
 	g.applyAdminEdit(u, e)
 }
 
+// adminStats is 0xC1E.
+func (g *Game) adminStats(u *User, pkt protocol.Packet) {
+	var p wire.AdminStats
+	if wire.Unmarshal(pkt.Raw, &p) != nil || !g.deliveryFor(u, p.Username[:], "admin stats") {
+		return
+	}
+	e, err := acctedit.FromStatsPacket(&p)
+	if err != nil {
+		g.log.Error("admin edit refused", "slot", u.id, "err", err)
+		return
+	}
+	g.applyAdminEdit(u, e)
+}
+
 // liveSlot is the slot of a player in game an admin edit may change.
 func (g *Game) liveSlot(u *User, where, slot int) *wire.Item {
 	pl := &g.mobs[u.id].info.Player
@@ -171,6 +185,13 @@ func (g *Game) applyAdminEdit(u *User, e acctedit.Edit) {
 		if !g.applySlots(u, &e, log) {
 			return
 		}
+	case acctedit.OpStats:
+		e.ApplyStats(&m.info)
+		g.getCurrentScore(u.id)
+		g.sendScore(u.id)
+		g.sendEtc(u)
+		g.refreshMob(u.id)
+		log.Info("admin stats applied", "stats", e.Stats, "learn_add", e.LearnAdd, "learn_del", e.LearnDel)
 	}
 	g.saveUser(u, 0)
 	log.Info("admin edit applied", "char", e.Char, "where", e.Where, "slot", e.Slot, "value", e.Value, "item", e.Item)

@@ -1,6 +1,7 @@
-// Package acctedit is the staff edit of an account: a character's gold or
-// level, an item of its equipment or inventory, the storage (cargo) items
-// or gold, and the account's GM access level.
+// Package acctedit is the staff edit of an account: a character's gold,
+// level, attributes, points, exp and skills, an item of its equipment or
+// inventory, the storage (cargo) items or gold, and the account's GM access
+// level.
 //
 // The admin panel queues an Edit as an "edit" delivery; DBSRV applies it to
 // the stored account when the player is offline (or playing another
@@ -30,6 +31,8 @@ const (
 	// panel removed it or changed its password. Nothing is stored in the
 	// account; offline it is a no-op (the file is read on entering the game).
 	OpLock = "lock"
+	// OpStats sets the Stats named and the class skills of LearnAdd/LearnDel.
+	OpStats = "stats"
 )
 
 const (
@@ -38,6 +41,12 @@ const (
 	MaxRemove    = wire.AdminRemoveMax
 	MaxLevel     = 400
 	MaxAccess    = 255
+	MaxAttribute = 500_000_000 // four of them still fit CharInfo.StatusBonus
+	MaxMastery   = 255         // what the game itself allows
+	MaxPoints    = 32767       // the client reads the free points as int16
+	MaxExp       = wire.MaxLimit
+	ClassSkills  = 1<<24 - 1 // the Learn bits of the 24 class skills
+	maxLearnCost = 1_000_000
 	StorageSize  = 128 // MAX_CARGO
 	EquipSize    = 16  // equipment slots the client shows (0 = face)
 	MoveEquipEnd = 15  // the cape (15) never moves, as in the game
@@ -62,6 +71,84 @@ type Edit struct {
 	ExpectTo []int `json:"expect_to,omitempty"`
 	// OpRemove.
 	Removes []SlotRef `json:"removes,omitempty"`
+	// OpStats: only what the admin changed, by StatFields key.
+	Stats    map[string]int64 `json:"stats,omitempty"`
+	LearnAdd uint32           `json:"learn_add,omitempty"`
+	LearnDel uint32           `json:"learn_del,omitempty"`
+	// LearnCost is the skill points of LearnAdd minus those of LearnDel.
+	LearnCost int `json:"learn_cost,omitempty"`
+}
+
+// StatField is one value OpStats can set. Get reads the base value (without
+// equipment and buffs); set keeps Status in step for the character list.
+type StatField struct {
+	Key, Label string
+	Max        int64
+	Get        func(*wire.Mob) int64
+	set        func(*wire.Mob, int64)
+}
+
+func attribute(key, label string, f func(*wire.Status) *int64) StatField {
+	return StatField{key, label, MaxAttribute, func(m *wire.Mob) int64 { return *f(&m.BStatus) },
+		func(m *wire.Mob, v int64) {
+			*f(&m.Status) += v - *f(&m.BStatus)
+			*f(&m.BStatus) = v
+		}}
+}
+
+func mastery(i int) StatField {
+	return StatField{fmt.Sprintf("mastery%d", i), fmt.Sprintf("Especial %d", i+1), MaxMastery,
+		func(m *wire.Mob) int64 { return int64(m.BStatus.Mastery[i]) },
+		func(m *wire.Mob, v int64) {
+			m.Status.Mastery[i] = uint16(int64(m.Status.Mastery[i]) + v - int64(m.BStatus.Mastery[i]))
+			m.BStatus.Mastery[i] = uint16(v)
+		}}
+}
+
+func points(key, label string, f func(*wire.Mob) *uint16) StatField {
+	return StatField{key, label, MaxPoints, func(m *wire.Mob) int64 { return int64(*f(m)) },
+		func(m *wire.Mob, v int64) { *f(m) = uint16(v) }}
+}
+
+// StatFields lists what OpStats can set, in the order of AdminStats.Values.
+var StatFields = [wire.AdminStatCount]StatField{
+	attribute("str", "Força", func(s *wire.Status) *int64 { return &s.STR }),
+	attribute("int", "Inteligência", func(s *wire.Status) *int64 { return &s.INT }),
+	attribute("dex", "Destreza", func(s *wire.Status) *int64 { return &s.DEX }),
+	attribute("con", "Constituição", func(s *wire.Status) *int64 { return &s.CON }),
+	mastery(0), mastery(1), mastery(2), mastery(3),
+	points("status_point", "Pontos de atributo livres", func(m *wire.Mob) *uint16 { return &m.StatusPoint }),
+	points("master_point", "Pontos de especial livres", func(m *wire.Mob) *uint16 { return &m.MasterPoint }),
+	points("skill_point", "Pontos de skill livres", func(m *wire.Mob) *uint16 { return &m.SkillPoint }),
+	{"exp", "Experiência", MaxExp, func(m *wire.Mob) int64 { return m.Exp }, func(m *wire.Mob, v int64) { m.Exp = v }},
+}
+
+// ApplyStats sets the values. TMSRV derives the free points from the level
+// and cuts attributes above them (GetScorePoint and friends), so the bonuses
+// grow by what the edit added: the next recalculation gives what the admin
+// set, and leveling up keeps adding points as usual.
+func (e *Edit) ApplyStats(c *wire.CharInfo) {
+	pl := &c.Player
+	sum := func(from, to int) int64 {
+		var t int64
+		for _, f := range StatFields[from:to] {
+			t += f.Get(pl)
+		}
+		return t
+	}
+	const attrs, masteries, statusPt, masterPt, skillPt = 0, 4, 8, 9, 10
+	spent := sum(attrs, masteries) + sum(statusPt, statusPt+1)
+	master := sum(masteries, statusPt) + sum(masterPt, masterPt+1)
+	skill := sum(skillPt, skillPt+1)
+	for _, f := range StatFields {
+		if v, ok := e.Stats[f.Key]; ok {
+			f.set(pl, v)
+		}
+	}
+	pl.Learn[0] = pl.Learn[0]&^e.LearnDel | e.LearnAdd
+	c.StatusBonus += int32(sum(attrs, masteries) + sum(statusPt, statusPt+1) - spent)
+	c.MasterBonus += int32(sum(masteries, statusPt) + sum(masterPt, masterPt+1) - master)
+	c.SkillBonus += int32(sum(skillPt, skillPt+1) - skill + int64(e.LearnCost))
 }
 
 // SlotRef is one slot and the item the admin saw in it.
@@ -93,6 +180,10 @@ func (e *Edit) Validate() string {
 		return ""
 	case OpLock:
 		return ""
+	case OpStats:
+		if msg := e.checkStats(); msg != "" {
+			return msg
+		}
 	case OpMove:
 		if e.Slot < 0 || e.Slot >= InvSize {
 			return "inventory slot out of range"
@@ -147,6 +238,31 @@ func (e *Edit) Validate() string {
 	}
 	if e.Op != OpCoin && (e.Char < 0 || e.Char > 3) {
 		return "character slot out of range"
+	}
+	return ""
+}
+
+func (e *Edit) checkStats() string {
+	if len(e.Stats) == 0 && e.LearnAdd == 0 && e.LearnDel == 0 {
+		return "nothing to change"
+	}
+	known := 0
+	for _, f := range StatFields {
+		if v, ok := e.Stats[f.Key]; ok {
+			known++
+			if v < 0 || v > f.Max {
+				return f.Key + " out of range"
+			}
+		}
+	}
+	if known != len(e.Stats) {
+		return "unknown stat"
+	}
+	if (e.LearnAdd|e.LearnDel)&^ClassSkills != 0 || e.LearnAdd&e.LearnDel != 0 {
+		return "skills out of range"
+	}
+	if e.LearnCost < -maxLearnCost || e.LearnCost > maxLearnCost {
+		return "skill cost out of range"
 	}
 	return ""
 }
@@ -214,7 +330,7 @@ func (e *Edit) CharScoped() bool {
 	if e.Op == OpRemove {
 		return len(e.Removes) > 0 && e.Removes[0].Where != wire.SlotStorage
 	}
-	return e.Op == OpGold || e.Op == OpLevel || e.Op == OpMove || (e.Op == OpItem && e.Where != wire.SlotStorage)
+	return e.Op == OpGold || e.Op == OpLevel || e.Op == OpMove || e.Op == OpStats || (e.Op == OpItem && e.Where != wire.SlotStorage)
 }
 
 // ApplySlots does an OpMove or OpRemove on the item slots slot returns (nil
@@ -318,6 +434,8 @@ func (e *Edit) Apply(a *wire.Account) string {
 		level := int16(e.Value - 1)
 		pl.BStatus.Level, pl.Status.Level = level, level
 		pl.Exp = LevelExp(int(pl.Equip[0].Effect[1].Value), int(level))
+	case OpStats:
+		e.ApplyStats(c)
 	case OpItem:
 		if e.Where == wire.SlotEquip {
 			return e.putItem(&pl.Equip[e.Slot])
@@ -342,8 +460,40 @@ func (e *Edit) Wire(user string, client uint16) any {
 		p := e.RemovePacket(user, client)
 		return &p
 	}
+	if e.Op == OpStats {
+		p := e.StatsPacket(user, client)
+		return &p
+	}
 	p := e.Packet(user, client)
 	return &p
+}
+
+// StatsPacket is the 0xC1E of an OpStats.
+func (e *Edit) StatsPacket(user string, client uint16) wire.AdminStats {
+	p := wire.AdminStats{Header: wire.NewHeader(wire.OpAdminStats, client), Char: int32(e.Char),
+		LearnAdd: e.LearnAdd, LearnDel: e.LearnDel, LearnCost: int32(e.LearnCost)}
+	for i, f := range StatFields {
+		if v, ok := e.Stats[f.Key]; ok {
+			p.Mask |= 1 << i
+			p.Values[i] = v
+		}
+	}
+	wire.PutCString(p.Username[:], user)
+	return p
+}
+
+// FromStatsPacket is the inverse of StatsPacket.
+func FromStatsPacket(p *wire.AdminStats) (Edit, error) {
+	e := Edit{Op: OpStats, Char: int(p.Char), LearnAdd: p.LearnAdd, LearnDel: p.LearnDel, LearnCost: int(p.LearnCost), Stats: map[string]int64{}}
+	for i, f := range StatFields {
+		if p.Mask&(1<<i) != 0 {
+			e.Stats[f.Key] = p.Values[i]
+		}
+	}
+	if msg := e.Validate(); msg != "" {
+		return e, fmt.Errorf("admin stats: %s", msg)
+	}
+	return e, nil
 }
 
 // RemovePacket is the 0xC15 of an OpRemove.

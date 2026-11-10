@@ -1007,6 +1007,7 @@ func (g *Game) scorePoint(id int) {
 	default:
 		return
 	}
+	pnts += int(g.mobs[id].info.StatusBonus)
 	cls := pl.ClassInfo
 	b := &pl.BStatus
 	total := int(b.STR) - baseSIDCHM[cls][0] + int(b.INT) - baseSIDCHM[cls][1] + int(b.DEX) - baseSIDCHM[cls][2] + int(b.CON) - baseSIDCHM[cls][3]
@@ -1047,13 +1048,14 @@ func (g *Game) skillPoint(id int) {
 	if g.mobs[id].info.Info&questPilula != 0 {
 		pnts += 9
 	}
+	pnts += int(g.mobs[id].info.SkillBonus)
 	initial := int(pl.ClassInfo) * 24
 	for i := initial; i < initial+24; i++ {
 		if pl.Learn[0]&(1<<uint(i%24)) != 0 {
 			pnts -= g.data.Skills[i].Points
 		}
 	}
-	pl.SkillPoint = uint16(pnts)
+	pl.SkillPoint = uint16(max(pnts, 0))
 }
 
 // masterPoint is GetMasterPoint.
@@ -1071,8 +1073,9 @@ func (g *Game) masterPoint(id int) {
 	default:
 		return
 	}
+	pnts += int(g.mobs[id].info.MasterBonus)
 	for i := range 4 {
 		pnts -= int(pl.BStatus.Mastery[i])
 	}
-	pl.MasterPoint = uint16(pnts)
+	pl.MasterPoint = uint16(max(pnts, 0))
 }

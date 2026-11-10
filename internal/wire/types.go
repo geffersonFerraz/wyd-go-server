@@ -163,7 +163,8 @@ type CharInfo struct {
 	PesaEnter        int8
 	Citizen          uint8
 	Soul             uint8
-	_                [5]byte
+	_                [1]byte
+	StatusBonus      int32 // Go only: points the admin panel added to the level's status points
 	Hold             int64
 	SkillBar         [16]uint8
 	MagicIncrement   uint32
@@ -177,7 +178,7 @@ type CharInfo struct {
 	AffectInfo       int32
 	Nightmare        [3]Position
 	Counters         Counters
-	_                [4]byte
+	SkillBonus       int32 // Go only: same, skill points
 	Insignias01      uint64
 	Insignias02      uint64
 	DailyQuest       DailyQuest
@@ -186,7 +187,8 @@ type CharInfo struct {
 	LastGuildKickOut ItemDate
 	RvRPoints        int32
 	Roleta           Roleta
-	_                [5]byte
+	_                [1]byte
+	MasterBonus      int32 // Go only: same, mastery points
 }
 
 type Daily struct {

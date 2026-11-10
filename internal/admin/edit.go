@@ -2,8 +2,10 @@ package admin
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
+	"math/bits"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -14,8 +16,8 @@ import (
 	"dbsrv/internal/wire"
 )
 
-// Account editing: a character's gold, level, equipment and inventory, the
-// storage (cargo) items and gold, and the GM access level. Every change is
+// Account editing: a character's gold, level, attributes, points, exp,
+// skills, equipment and inventory, the storage (cargo) items and gold, and the GM access level. Every change is
 // an "edit" delivery (package acctedit): DBSRV writes it to the database
 // when the player is offline, or has TMSRV apply it live when the player is
 // in game with that character.
@@ -224,6 +226,19 @@ func (s *Server) characterPage(w http.ResponseWriter, r *http.Request) {
 	data["Evolution"] = int16(pl.Equip[0].Effect[1].Value)
 	data["Gold"] = pl.Gold
 	data["Exp"] = pl.Exp
+	data["Class"] = int(pl.ClassInfo)
+	data["LearnOrig"] = pl.Learn[0] & acctedit.ClassSkills
+	stats := make([]statRow, len(acctedit.StatFields))
+	for i, f := range acctedit.StatFields {
+		stats[i] = statRow{Key: f.Key, Label: f.Label, Max: f.Max, Value: f.Get(pl)}
+	}
+	data["Attributes"], data["Masteries"], data["Points"], data["ExpStat"] = stats[:4], stats[4:8], stats[8:11], stats[11]
+	skills, err := s.skillRows(r.Context(), pl)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	data["Skills"] = skills
 	if err := s.addEquipOptions(r, inv, equip); err != nil {
 		s.fail(w, err)
 		return
@@ -233,6 +248,84 @@ func (s *Server) characterPage(w http.ResponseWriter, r *http.Request) {
 	data["Pick"] = picked(equip, inv)
 	data["Back"] = fmt.Sprintf("/accounts/%s/chars/%d", url.PathEscape(user), slot)
 	s.page(w, r, http.StatusOK, "character", data)
+}
+
+// statRow is one number of the character's attribute form.
+type statRow struct {
+	Key, Label string
+	Max, Value int64
+}
+
+// skillRow is one class skill of the character's attribute form.
+type skillRow struct {
+	Bit     int
+	Name    string
+	Learned bool
+}
+
+// skillRows lists the 24 skills of the character's class. A skill's name is
+// the name of its book in the item list (5000 + class*24 + position).
+func (s *Server) skillRows(ctx context.Context, pl *wire.Mob) ([]skillRow, error) {
+	if pl.ClassInfo >= 4 {
+		return nil, nil
+	}
+	first := 5000 + int(pl.ClassInfo)*24
+	ids := make([]int, 24)
+	for i := range ids {
+		ids[i] = first + i
+	}
+	names, err := s.st.ItemNames(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]skillRow, 24)
+	for i := range rows {
+		rows[i] = skillRow{Bit: i, Name: cmp.Or(names[first+i], fmt.Sprintf("Skill %d", i+1)), Learned: pl.Learn[0]&(1<<i) != 0}
+	}
+	return rows, nil
+}
+
+// readStats fills an OpStats with what differs from the values the form was
+// drawn with, so the rest keeps its live value when the player is in game.
+func (s *Server) readStats(r *http.Request, f *formReader, e *acctedit.Edit) error {
+	e.Stats = map[string]int64{}
+	for _, st := range acctedit.StatFields {
+		if r.PostFormValue(st.Key) != r.PostFormValue("orig_"+st.Key) {
+			e.Stats[st.Key] = int64(f.int(st.Key, st.Label, 0, int(st.Max)))
+		}
+	}
+	orig := uint32(f.int("learn_orig", "As skills originais", 0, acctedit.ClassSkills))
+	var now uint32
+	for _, raw := range r.PostForm["learn"] {
+		bit, err := strconv.Atoi(raw)
+		if err != nil || bit < 0 || bit > 23 {
+			f.errs = append(f.errs, "Skill inválida; recarregue a página.")
+			return nil
+		}
+		now |= 1 << bit
+	}
+	e.LearnAdd, e.LearnDel = now&^orig, orig&^now
+	if e.LearnAdd == 0 && e.LearnDel == 0 {
+		return nil
+	}
+	class := f.int("class", "A classe", 0, 3)
+	list, err := s.st.ListSkills(r.Context())
+	if err != nil {
+		return err
+	}
+	points := make(map[int]int, len(list))
+	for _, k := range list {
+		points[k.ID] = k.Points
+	}
+	for bit := range 24 {
+		switch id := class*24 + bit; {
+		case e.LearnAdd&(1<<bit) != 0:
+			e.LearnCost += points[id]
+		case e.LearnDel&(1<<bit) != 0:
+			e.LearnCost -= points[id]
+		}
+	}
+	return nil
 }
 
 // addEquipOptions offers each inventory item the equipment slots its
@@ -359,6 +452,16 @@ func (s *Server) submitEdit(w http.ResponseWriter, r *http.Request) {
 			s.fail(w, err)
 			return
 		}
+	case acctedit.OpStats:
+		e.Char = f.int("char", "O personagem", 0, 3)
+		if err := s.readStats(r, f, &e); err != nil {
+			s.fail(w, err)
+			return
+		}
+		if f.err() == "" && len(e.Stats) == 0 && e.LearnAdd == 0 && e.LearnDel == 0 {
+			fail("Nenhum valor foi alterado.")
+			return
+		}
 	case acctedit.OpRemove:
 		e.Char = f.int("char", "O personagem", 0, 3)
 		sel := r.PostForm["sel"]
@@ -404,7 +507,8 @@ func (s *Server) submitEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.log.Info("admin edit", "admin", sess.user, "account", user, "op", e.Op, "char", e.Char,
-		"where", e.Where, "slot", e.Slot, "value", e.Value, "item", e.Item, "delivery", id)
+		"where", e.Where, "slot", e.Slot, "value", e.Value, "item", e.Item, "stats", e.Stats,
+		"learn_add", e.LearnAdd, "learn_del", e.LearnDel, "delivery", id)
 	http.Redirect(w, r, back+"?req="+strconv.FormatInt(id, 10), http.StatusSeeOther)
 }
 
@@ -428,6 +532,20 @@ func editLabel(d store.DeliveryInfo) string {
 		return fmt.Sprintf("acesso = %d", e.Value)
 	case acctedit.OpLock:
 		return "bloqueio da conta (avisar o jogo)"
+	case acctedit.OpStats:
+		var parts []string
+		for _, f := range acctedit.StatFields {
+			if v, ok := e.Stats[f.Key]; ok {
+				parts = append(parts, fmt.Sprintf("%s = %d", f.Label, v))
+			}
+		}
+		if n := bits.OnesCount32(e.LearnAdd); n > 0 {
+			parts = append(parts, fmt.Sprintf("%d skills adicionadas", n))
+		}
+		if n := bits.OnesCount32(e.LearnDel); n > 0 {
+			parts = append(parts, fmt.Sprintf("%d skills removidas", n))
+		}
+		return char + ": " + strings.Join(parts, ", ")
 	case acctedit.OpMove:
 		return fmt.Sprintf("%s: item [%d] do inventário slot %d para %s", char, e.Expect[0], e.Slot, equipNames[e.To])
 	case acctedit.OpRemove:

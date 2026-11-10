@@ -123,3 +123,54 @@ func TestAdminMoveAndRemoveInGame(t *testing.T) {
 		t.Fatalf("remove: %+v / %+v", pl.Inventory[5], pl.Equip[6])
 	}
 }
+
+// The free points are derived from the level on every recalculation; what
+// the panel sets must survive that, and a level up must still add points.
+func TestAdminStatsSurviveRecalculation(t *testing.T) {
+	g := worldGame(t)
+	u := placePlayer(g, 2100, 2100, 0)
+	listen(u)
+	wire.PutCString(u.account.Username[:], "TESTER")
+	u.charSlot = 0
+	pl := &g.mobs[1].info.Player
+	pl.ClassInfo = 0
+	pl.BStatus.Level = 9
+	pl.BStatus.STR, pl.BStatus.INT, pl.BStatus.DEX, pl.BStatus.CON = 8, 4, 7, 6
+	g.getCurrentScore(1)
+	if pl.StatusPoint != 45 || pl.SkillPoint != 27 || pl.MasterPoint != 18 {
+		t.Fatalf("starting points %d %d %d", pl.StatusPoint, pl.SkillPoint, pl.MasterPoint)
+	}
+
+	e := acctedit.Edit{Op: acctedit.OpStats, LearnAdd: 1 << 2, LearnCost: g.data.Skills[2].Points, Stats: map[string]int64{
+		"str": 1008, "status_point": 7, "mastery0": 50, "master_point": 3, "skill_point": 11, "exp": 12345}}
+	p := e.StatsPacket("TESTER", 1)
+	g.adminStats(u, packet(&p))
+	check := func(status, master, skill uint16) {
+		t.Helper()
+		if pl.BStatus.STR != 1008 || pl.BStatus.Mastery[0] != 50 || pl.Learn[0]&(1<<2) == 0 || pl.Exp != 12345 ||
+			pl.StatusPoint != status || pl.MasterPoint != master || pl.SkillPoint != skill {
+			t.Fatalf("STR %d mastery %d learn %x exp %d points %d %d %d", pl.BStatus.STR, pl.BStatus.Mastery[0], pl.Learn[0], pl.Exp,
+				pl.StatusPoint, pl.MasterPoint, pl.SkillPoint)
+		}
+	}
+	check(7, 3, 11)
+	if pl.Status.STR < 1008 || len(sent(u, wire.OpSrvEtc)) == 0 {
+		t.Fatalf("live status %d, or the client was not told", pl.Status.STR)
+	}
+	g.getCurrentScore(1)
+	check(7, 3, 11)
+
+	pl.BStatus.Level = 19 // ten levels: +50 status, +20 mastery, +30 skill
+	g.getCurrentScore(1)
+	check(57, 23, 41)
+
+	// Other values stay when they are not in the edit.
+	only := acctedit.Edit{Op: acctedit.OpStats, Stats: map[string]int64{"dex": 17}}
+	p = only.StatsPacket("TESTER", 1)
+	g.adminStats(u, packet(&p))
+	g.getCurrentScore(1)
+	if pl.BStatus.DEX != 17 {
+		t.Fatalf("DEX %d", pl.BStatus.DEX)
+	}
+	check(57, 23, 41)
+}

@@ -22,6 +22,11 @@
 {{end}}
 {{end}}
 
+{{define "statfield"}}
+<label>{{.Label}} <input name="{{.Key}}" type="number" min="0" max="{{.Max}}" value="{{.Value}}" required>
+  <input type="hidden" name="orig_{{.Key}}" value="{{.Value}}"></label>
+{{end}}
+
 {{/* itemrows: dict "Cells" "Root" "Char" */}}
 {{define "itemrows"}}
 <div class="table-wrap">

@@ -541,6 +541,23 @@ type AdminEdit struct {
 	_         [4]byte
 }
 
+// AdminStatCount is how many values one AdminStats can carry.
+const AdminStatCount = 12
+
+// AdminStats (Go only, 0xC1E): a staff edit of the attributes, points, exp and
+// class skills of a player in game. Bit i of Mask says Values[i] is set; the
+// order is acctedit.StatFields.
+type AdminStats struct {
+	Header    Header
+	Username  [16]byte
+	Char      int32
+	Mask      uint32
+	LearnAdd  uint32
+	LearnDel  uint32
+	LearnCost int32
+	Values    [AdminStatCount]int64
+}
+
 // AdminRemoveMax is the most slots one AdminRemove can clear (a whole storage).
 const AdminRemoveMax = 128
 
