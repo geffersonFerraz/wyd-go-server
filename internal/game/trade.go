@@ -316,13 +316,7 @@ func canTrade(d *Data, inv *[64]wire.Item, mySlots *[15]int8, incoming [15]wire.
 		if it.Index == 0 {
 			continue
 		}
-		free := -1
-		for i := range invSlots {
-			if dest[i].Index == 0 {
-				free = i
-				break
-			}
-		}
+		free := firstCarrySlot(&dest, it.Index)
 		if free == -1 {
 			return dest, false
 		}

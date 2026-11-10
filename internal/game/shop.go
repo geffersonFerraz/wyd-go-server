@@ -156,6 +156,10 @@ func (g *Game) requestBuyShop(u *User, pkt protocol.Packet) {
 	if invSlot >= 30 && !invSlotUsable(pl, invSlot) {
 		return
 	}
+	if invSlot = carrySlotFor(&pl.Inventory, item.Index, invSlot); invSlot == -1 {
+		g.clientMessage(u, "NÃ£o hÃ¡ espaÃ§o no inventÃ¡rio para este item.")
+		return
+	}
 	if g.locked(u, lockBuy, "Bloqueio de compra ativo!") {
 		return
 	}

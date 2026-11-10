@@ -130,8 +130,9 @@ func TestDropNotStackableTakesNewSlot(t *testing.T) {
 	first, second := wire.Item{Index: sword}, wire.Item{Index: sword}
 	g.giveDrop(a, &first, true)
 	g.giveDrop(a, &second, true)
-	if pl.Inventory[0].Index != sword || pl.Inventory[1].Index != sword {
-		t.Fatalf("got %+v / %+v", pl.Inventory[0], pl.Inventory[1])
+	// Item 2x2: the second one starts right after the cells of the first.
+	if pl.Inventory[0].Index != sword || pl.Inventory[1].Index != 0 || pl.Inventory[2].Index != sword {
+		t.Fatalf("got %+v / %+v / %+v", pl.Inventory[0], pl.Inventory[1], pl.Inventory[2])
 	}
 }
 

@@ -510,8 +510,14 @@ func (g *Game) requestMoveItem(u *User, pkt protocol.Packet) {
 	if ok && (src == wire.SlotStorage || dst == wire.SlotStorage) && !g.storageAllowedHere(m.target) {
 		ok = false
 	}
-	if !ok {
+	fits := !ok || carryMoveFits(pl, src, ss, dst, ds, &newSrc, &newDst)
+	if !ok || !fits {
 		*srcItem, *dstItem = newSrc, newDst
+		if !fits {
+			g.clientMessage(u, "NÃ£o hÃ¡ espaÃ§o para este item nesse local.")
+			g.sendItem(u, src, ss, srcItem)
+			g.sendItem(u, dst, ds, dstItem)
+		}
 		return
 	}
 	*srcItem, *dstItem = newDst, newSrc

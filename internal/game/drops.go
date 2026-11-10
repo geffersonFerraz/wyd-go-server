@@ -155,7 +155,11 @@ func (g *Game) putItem(u *User, it *wire.Item) bool {
 		return false
 	}
 	pl := &g.mobs[u.id].info.Player
-	slot := firstEmptySlot(pl)
+	slot := firstCarrySlot(&pl.Inventory, it.Index)
+	if slot == -1 {
+		// Callers only checked for one free slot: better overlapping than lost.
+		slot = firstEmptySlot(pl)
+	}
 	if slot == -1 {
 		return false
 	}
