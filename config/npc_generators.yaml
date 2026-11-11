@@ -4236,7 +4236,7 @@ generators:
       - {segment: 0, x: 2402, "y": 2086}
       - {segment: 1, x: 2402, "y": 2091}
       - {segment: 4, x: 2402, "y": 2097}
-    die_actions: [Em breve retornarei!, Minha ascensao esta proxima!, Os esqueletos dominarao este cemiterio!, VocÃª nÃ£o sobrevivera a prÃ³xima batalha!]
+    die_actions: [Em breve retornarei!, Minha ascensao esta proxima!, Os esqueletos dominarao este cemiterio!, Você não sobrevivera a próxima batalha!]
   - id: 307
     minute: -1
     max_mobs: 1
@@ -4250,7 +4250,7 @@ generators:
       - {segment: 0, x: 2236, "y": 1723}
       - {segment: 1, x: 2236, "y": 1715}
       - {segment: 4, x: 2236, "y": 1706}
-    die_actions: ['Carbuncles amaldicoados, me ajudem!', 'Minha ascensao esta proxima, retornarei em breve!', Os Carbuncles dominarao este Jardim!, VocÃª nÃ£o sobrevivera a prÃ³xima batalha!]
+    die_actions: ['Carbuncles amaldicoados, me ajudem!', 'Minha ascensao esta proxima, retornarei em breve!', Os Carbuncles dominarao este Jardim!, Você não sobrevivera a próxima batalha!]
   - id: 308
     minute: -1
     max_mobs: 1
@@ -4264,7 +4264,7 @@ generators:
       - {segment: 0, x: 490, "y": 3902}
       - {segment: 1, x: 480, "y": 3902}
       - {segment: 4, x: 473, "y": 3908}
-    die_actions: ['Servos amaldicoados, me ajudem!', 'Minha ascensao esta proxima, retornarei em breve!', Os meus cavaleiros dominarao este lugar!, VocÃª nÃ£o sobrevivera a prÃ³xima batalha!]
+    die_actions: ['Servos amaldicoados, me ajudem!', 'Minha ascensao esta proxima, retornarei em breve!', Os meus cavaleiros dominarao este lugar!, Você não sobrevivera a próxima batalha!]
   - id: 309
     minute: -1
     max_mobs: 1

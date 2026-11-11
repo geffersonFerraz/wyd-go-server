@@ -98,6 +98,7 @@ type User struct {
 	citizenChatAt time.Time   // last kingdom/citizen chat
 	subSwapAt     time.Time   // last Pedra Misteriosa (5 s delay)
 	lastDelete    time.Time   // Times.LastDeletedItem (logged when < 400 ms)
+	lastInvSort   time.Time   // inventory sort button (invSortCooldown)
 	lastMoveItem  time.Time   // delayMoveItem (stack split, 700 ms)
 	questAccess   int         // QuestAccess: newbie quest entered (1..5)
 	questTime     int         // CheckQuestTime: seconds left in a Lanhouse

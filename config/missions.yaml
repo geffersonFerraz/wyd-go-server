@@ -56,7 +56,7 @@ missions:
       - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
       - {slot: 2, item: 420, amount: 1}
   - id: 4
-    name: CaÃ§ada Infernal.
+    name: Caçada Infernal.
     classes: [1]
     level: [100, 200]
     mobs:
@@ -73,7 +73,7 @@ missions:
       - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
       - {slot: 2, item: 420, amount: 1}
   - id: 5
-    name: AlcatÃ©ia e Orcs.
+    name: Alcatéia e Orcs.
     classes: [1]
     level: [100, 200]
     mobs:
@@ -90,7 +90,7 @@ missions:
       - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
       - {slot: 2, item: 420, amount: 1}
   - id: 6
-    name: O DragÃ£o perdido.
+    name: O Dragão perdido.
     classes: [1]
     level: [115, 230]
     mobs:
@@ -107,7 +107,7 @@ missions:
       - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
       - {slot: 2, item: 420, amount: 1}
   - id: 7
-    name: A invasÃ£o dos trolls - I
+    name: A invasão dos trolls - I
     classes: [1]
     level: [110, 230]
     mobs:
@@ -123,7 +123,7 @@ missions:
       - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
       - {slot: 2, item: 420, amount: 1}
   - id: 8
-    name: A invasÃ£o dos trolls - II
+    name: A invasão dos trolls - II
     classes: [1]
     level: [115, 230]
     mobs:
@@ -140,7 +140,7 @@ missions:
       - {slot: 1, item: 3323, amount: 1, effects: [[61, 120]]}
       - {slot: 2, item: 420, amount: 1}
   - id: 9
-    name: A caÃ§ada.
+    name: A caçada.
     classes: [1]
     level: [115, 230]
     mobs:
@@ -212,7 +212,7 @@ missions:
       - {slot: 2, item: 413, amount: 1}
       - {slot: 3, item: 412, amount: 1}
   - id: 13
-    name: O lado negro da forÃ§a!
+    name: O lado negro da força!
     classes: [1]
     level: [250, 400]
     mobs:
@@ -288,7 +288,7 @@ missions:
       - {slot: 2, item: 413, amount: 1}
       - {slot: 3, item: 412, amount: 1}
   - id: 17
-    name: Areia movediÃ§a.
+    name: Areia movediça.
     classes: [1]
     level: [250, 400]
     mobs:
@@ -306,7 +306,7 @@ missions:
       - {slot: 2, item: 413, amount: 1}
       - {slot: 3, item: 412, amount: 1}
   - id: 18
-    name: DragÃ£o Esqueleto.
+    name: Dragão Esqueleto.
     classes: [1]
     level: [250, 400]
     mobs:
@@ -324,7 +324,7 @@ missions:
       - {slot: 2, item: 413, amount: 1}
       - {slot: 3, item: 412, amount: 1}
   - id: 19
-    name: A caÃ§ada pelo Rei.
+    name: A caçada pelo Rei.
     classes: [1]
     level: [250, 400]
     mobs:
@@ -361,7 +361,7 @@ missions:
       - {slot: 2, item: 413, amount: 1}
       - {slot: 3, item: 412, amount: 1}
   - id: 21
-    name: O coelho da pÃ¡scoa?
+    name: O coelho da páscoa?
     classes: [1]
     level: [100, 200]
     mobs:
@@ -380,7 +380,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
   - id: 22
-    name: Chamas da EscuridÃ£o.
+    name: Chamas da Escuridão.
     classes: [1]
     level: [100, 250]
     mobs:
@@ -454,7 +454,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
   - id: 26
-    name: Ã�rvores tem coraÃ§Ã£o?
+    name: Árvores tem coração?
     classes: [1]
     level: [200, 400]
     mobs:
@@ -490,7 +490,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
   - id: 28
-    name: PrÃªmios do Deserto - II
+    name: Prêmios do Deserto - II
     classes: [1]
     level: [230, 400]
     mobs:
@@ -508,7 +508,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
   - id: 29
-    name: A grande caÃ§ada - I
+    name: A grande caçada - I
     classes: [1]
     level: [300, 400]
     mobs:
@@ -527,7 +527,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
   - id: 30
-    name: A grande caÃ§ada - II
+    name: A grande caçada - II
     classes: [1]
     level: [300, 400]
     mobs:
@@ -546,7 +546,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 2]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 2]]}
   - id: 31
-    name: A grande caÃ§ada - II
+    name: A grande caçada - II
     classes: [1]
     level: [300, 400]
     mobs:
@@ -677,7 +677,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
   - id: 38
-    name: DragÃµes Gigantes - I
+    name: Dragões Gigantes - I
     classes: [1]
     level: [115, 230]
     mobs:
@@ -695,7 +695,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 4]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 4]]}
   - id: 39
-    name: DragÃµes Gigantes - II
+    name: Dragões Gigantes - II
     classes: [1]
     level: [115, 230]
     mobs:
@@ -957,7 +957,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
   - id: 53
-    name: O poderoso chefÃ£o.
+    name: O poderoso chefão.
     classes: [2, 3, 4]
     level: [0, 400]
     mobs:
@@ -1031,7 +1031,7 @@ missions:
       - {slot: 2, item: 413, amount: 1, effects: [[61, 15]]}
       - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
   - id: 57
-    name: Coelho da pÃ¡scoa?
+    name: Coelho da páscoa?
     classes: [2, 3, 4]
     level: [0, 400]
     mobs:
@@ -1301,7 +1301,7 @@ missions:
       - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
       - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
   - id: 68
-    name: ValquÃ­rias - I
+    name: Valquírias - I
     classes: [2, 3, 4]
     level: [0, 400]
     mobs:
@@ -1320,7 +1320,7 @@ missions:
       - {slot: 3, item: 412, amount: 1, effects: [[61, 15]]}
       - {slot: 4, item: 3140, amount: 1, effects: [[61, 5]]}
   - id: 69
-    name: ValquÃ­rias - II
+    name: Valquírias - II
     classes: [2, 3, 4]
     level: [0, 400]
     mobs:

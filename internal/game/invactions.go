@@ -2,6 +2,7 @@ package game
 
 import (
 	"sort"
+	"time"
 
 	"dbsrv/internal/protocol"
 	"dbsrv/internal/wire"
@@ -11,7 +12,11 @@ import (
 // equivalent). The client sends a MSG_STANDARDPARM; the server changes the
 // inventory and resends it whole (0x185).
 
-const opCliInvAction = 0xF40
+const (
+	opCliInvAction = 0xF40
+	// invSortCooldown: time between two sorts (the client waits the same).
+	invSortCooldown = 5 * time.Second
+)
 
 const (
 	invActionDestroyAll = 1
@@ -38,6 +43,11 @@ func (g *Game) requestInvAction(u *User, pkt protocol.Packet) {
 		}
 		g.destroyAllItems(u)
 	case invActionSortAsc, invActionSortDesc:
+		if wait := invSortCooldown - time.Since(u.lastInvSort); wait > 0 {
+			g.clientMessage(u, "Aguarde %d segundos para organizar novamente.", int(wait.Seconds()+0.999))
+			return
+		}
+		u.lastInvSort = time.Now()
 		g.sortInventory(u, p.Value == invActionSortDesc)
 	case invActionDropAll:
 		if u.accessLevel == 0 && g.locked(u, lockTrade, "Bloqueio de troca ativo!") {

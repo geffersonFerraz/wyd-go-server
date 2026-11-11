@@ -2,6 +2,7 @@ package game
 
 import (
 	"testing"
+	"time"
 
 	"dbsrv/internal/wire"
 )
@@ -30,6 +31,13 @@ func TestInvActionSort(t *testing.T) {
 		}
 	}
 
+	// A second sort within the cooldown does nothing.
+	invAction(g, u, invActionSortDesc)
+	if pl.Inventory[0].Index != 412 {
+		t.Fatalf("sorted again within the cooldown: %v", pl.Inventory[0])
+	}
+
+	u.lastInvSort = time.Now().Add(-invSortCooldown)
 	invAction(g, u, invActionSortDesc)
 	if pl.Inventory[0].Index != 1103 || pl.Inventory[2].Index != 413 || pl.Inventory[3].Index != 412 {
 		t.Fatalf("desc: %v %v %v %v", pl.Inventory[0], pl.Inventory[1], pl.Inventory[2], pl.Inventory[3])
