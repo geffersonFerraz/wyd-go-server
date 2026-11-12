@@ -337,6 +337,17 @@ func (g *Game) handleEvent(ev event) {
 			g.log.Error("game data reload refused, keeping the current tables", "err", err)
 			return
 		}
+		// The reload brings the guards' generators back from the database:
+		// a dead Kefra keeps them off.
+		if g.kefra.dead {
+			for i := genKefraGuard; i < genKefraGuard+kefraGuards && i < len(g.data.Geners); i++ {
+				g.data.Geners[i].MinuteGenerate = -1
+			}
+		}
+		// New generators get a counter; the living NPCs keep theirs.
+		for len(g.genCount) < len(g.data.Geners) {
+			g.genCount = append(g.genCount, 0)
+		}
 		g.data.ApplyCityOwners(g.cfg.Channel, ev.gd.CityOwners)
 		changed := false
 		for _, c := range ev.gd.CityOwners {
@@ -349,7 +360,8 @@ func (g *Game) handleEvent(ev event) {
 		if changed {
 			g.reportCityOwners()
 		}
-		g.log.Info("game data reloaded", "items", len(ev.gd.Items), "skills", len(ev.gd.Skills), "drop_mobs", len(ev.gd.Drops), "teleports", len(ev.gd.Teleports))
+		g.log.Info("game data reloaded", "items", len(ev.gd.Items), "skills", len(ev.gd.Skills), "drop_mobs", len(ev.gd.Drops), "teleports", len(ev.gd.Teleports),
+			"generators", len(ev.gd.Generators))
 	}
 }
 

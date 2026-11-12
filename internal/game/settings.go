@@ -300,13 +300,16 @@ func missingKeys(t reflect.Type, tree map[string]any, prefix string) []string {
 	var out []string
 	for i := range t.NumField() {
 		f := t.Field(i)
-		key := strings.Split(f.Tag.Get("yaml"), ",")[0]
+		tag := strings.Split(f.Tag.Get("yaml"), ",")
+		key := tag[0]
 		if key == "" || key == "-" {
 			continue
 		}
 		v, ok := tree[key]
 		if !ok {
-			out = append(out, prefix+key)
+			if !slices.Contains(tag[1:], "omitempty") { // omitempty marks an optional key.
+				out = append(out, prefix+key)
+			}
 			continue
 		}
 		if f.Type.Kind() == reflect.Struct {

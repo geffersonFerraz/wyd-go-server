@@ -28,12 +28,13 @@ network:
 serverlist:
   # Grupo (mundo) no cliente, 1..10: o número do grupo no sn.bin.
   group: 1
-  # IP público que os jogadores usam para chegar aos canais. Tem de ser um
-  # IPv4: o cliente não resolve nomes.
-  public_ip: 192.168.77.191
-  # Contagem de online por canal (servNN.htm, servido pela porta pública do
-  # painel admin). Até 63 caracteres.
-  status_url: http://192.168.77.191/serv00.htm
+  # Endereço público do site (porta 80 do painel admin): serv00.htm com o
+  # online por canal, e é daqui que o launcher baixa o serverlist.bin e o
+  # itemlist.bin. Até 63 caracteres.
+  status_url: http://wyd.gefferson.com/serv00.htm
+  # public_ip (opcional): endereço (IPv4 ou nome) dos canais que não têm
+  # "host" próprio. Aqui todos têm, então não é preciso.
+  # public_ip: 192.168.77.26
 
 # Canais: um TMSRV (um container no docker-compose) por canal. Cada TMSRV
 # escolhe o seu com -channel N (ou TMSRV_CHANNEL). Substitui o serverip.txt
@@ -45,13 +46,18 @@ serverlist:
 #           No docker-compose, é o IP fixo do container na rede wyd.
 #   port:   porta em que a TMSRV escuta e em que os jogadores conectam (o
 #           docker-compose publica a mesma porta no host). Na porta 8281 o
-#           serverlist.bin leva só o IP (cliente original); nas outras leva
-#           "ip:porta", o que exige o cliente com suporte a porta.
+#           serverlist.bin leva só o host (cliente original); nas outras leva
+#           "host:porta", o que exige o cliente com suporte a porta.
+#   host:   (opcional) nome DNS ou IPv4 que os jogadores usam para chegar a
+#           este canal: é o que vai no serverlist.bin. Sem ele vale o
+#           serverlist.public_ip. O nome tem de apontar para o endereço
+#           público e a porta do canal; o cliente resolve o nome com o DNS
+#           da máquina do jogador (exige o cliente com suporte a nomes).
 channels:
-  - { number: 1, ip: 172.30.87.21, port: 8281 }
-  - { number: 2, ip: 172.30.87.22, port: 8282 }
-  - { number: 3, ip: 172.30.87.23, port: 8283 }
-  - { number: 4, ip: 172.30.87.24, port: 8284 }
+  - { number: 1, ip: 172.30.87.21, port: 8281, host: wyd-srv1.gefferson.com }
+  - { number: 2, ip: 172.30.87.22, port: 8282, host: wyd-srv2.gefferson.com }
+  - { number: 3, ip: 172.30.87.23, port: 8283, host: wyd-srv3.gefferson.com }
+  - { number: 4, ip: 172.30.87.24, port: 8284, host: wyd-srv4.gefferson.com }
 
 # Troca de canal dentro do jogo (lista de canais no jogo / comando "srv507").
 change_channel:

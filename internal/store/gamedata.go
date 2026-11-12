@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -19,6 +20,14 @@ type GameData struct {
 	// CityOwners are the cities the admin panel gave to a guild (cities
 	// without a row keep the owner of tmsrv.yaml).
 	CityOwners []CityOwner
+	// ExpRule is the experience rule of the panel (nil: none saved, the C++
+	// calculation applies).
+	ExpRule *ExpRule
+	// Generators are the NPC generators, by id.
+	Generators []Generator
+	// NPCTemplates are the template images of kind npc and npc_base, by kind
+	// and name. They are exported with the world files, not with the tables.
+	NPCTemplates map[string]map[string][]byte `json:"-"`
 }
 
 type EffectName struct {
@@ -185,8 +194,20 @@ func importGameTables(ctx context.Context, tx pgx.Tx, gd *GameData, by string) e
 		}); err != nil {
 			return err
 		}
-		return logChange(ctx, tx, by, "import", "all", fmt.Sprintf("%d itens, %d skills, %d drops, %d teleportes",
-			len(gd.Items), len(gd.Skills), len(gd.Drops), len(gd.Teleports)))
+		if gd.ExpRule != nil {
+			if err := saveExpRule(ctx, tx, gd.ExpRule); err != nil {
+				return err
+			}
+		}
+		// A file without generators (an older export, a partial import) keeps
+		// the ones of the database.
+		if len(gd.Generators) > 0 {
+			if err := replaceGenerators(ctx, tx, gd.Generators); err != nil {
+				return err
+			}
+		}
+		return logChange(ctx, tx, by, "import", "all", fmt.Sprintf("%d itens, %d skills, %d drops, %d teleportes, %d geradores",
+			len(gd.Items), len(gd.Skills), len(gd.Drops), len(gd.Teleports), len(gd.Generators)))
 	}
 }
 
@@ -310,6 +331,27 @@ func (s *Store) LoadGameData(ctx context.Context) (*GameData, error) {
 		}
 		if len(owners) > 0 {
 			gd.CityOwners = owners
+		}
+
+		if gd.ExpRule, err = loadExpRule(ctx, tx); err != nil {
+			return err
+		}
+		gens, err := loadGenerators(ctx, tx)
+		if err != nil {
+			return fmt.Errorf("npc_generators: %w", err)
+		}
+		if len(gens) > 0 {
+			gd.Generators = gens
+		}
+		rows, _ = tx.Query(ctx, `SELECT kind, name, content FROM gamedata.mob_templates WHERE kind = ANY($1)`, []string{TemplateNPC, TemplateNPCBase})
+		gd.NPCTemplates = map[string]map[string][]byte{TemplateNPC: {}, TemplateNPCBase: {}}
+		var kind, name string
+		var content []byte
+		if _, err := pgx.ForEachRow(rows, []any{&kind, &name, &content}, func() error {
+			gd.NPCTemplates[kind][name] = slices.Clone(content)
+			return nil
+		}); err != nil {
+			return fmt.Errorf("mob_templates: %w", err)
 		}
 		return nil
 	})

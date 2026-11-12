@@ -1,0 +1,62 @@
+{{define "content"}}
+<h1>Rastreio de itens</h1>
+<section class="card">
+  <p class="muted small">Só os itens que não empilham são rastreados: drops de monstros, compras e recompensas de NPC e prêmios de evento. Informe uma conta para ver os itens que passaram por ela, um item para ver por quais contas ele passou, ou os dois.</p>
+  <form method="get" action="/tracks" class="gd-form">
+    <div class="fields">
+      <label>Conta <input name="account" value="{{.Account}}" maxlength="32" placeholder="Login da conta" autocomplete="off"></label>
+      <label>Item <input name="item" value="{{.Item}}" maxlength="64" placeholder="Número ou parte do nome" autocomplete="off"></label>
+    </div>
+    <p><button class="primary">Buscar</button> {{if .Searched}}<a href="/tracks">Limpar</a>{{end}}</p>
+  </form>
+</section>
+
+{{if .Account}}
+<section class="card">
+  <h2>Itens que passaram pela conta <a href="/accounts/{{pathescape .Account}}">{{.Account}}</a>{{if .Item}} · item “{{.Item}}”{{end}}</h2>
+  {{if .Passages}}
+  <p class="muted small">{{len .Tracks}} {{if eq (len .Tracks) 1}}item rastreado{{else}}itens rastreados{{end}}, {{.Holding}} ainda na conta.{{if .Truncated}} A busca mostra só os {{.Limit}} que mudaram por último.{{end}}</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Item</th><th>Entrou</th><th>Como entrou</th><th>Saiu</th><th>Como saiu</th><th>Hoje</th><th></th></tr></thead>
+    <tbody>
+    {{range .Passages}}<tr>
+      <td><a href="/gamedata/items/{{.Track.CurrentItem}}">{{.Track.Label}}</a></td>
+      {{with .In}}<td>{{datetime .At}}</td><td>{{.Text}}{{template "trackacct" .Other}}</td>{{else}}<td class="muted">—</td><td class="muted">sem registro</td>{{end}}
+      {{if .Out}}{{with .Out}}<td>{{datetime .At}}</td><td>{{.Text}}{{template "trackacct" .Other}}</td>{{end}}
+      {{else if .Holding}}<td class="muted">—</td><td><span class="pill ok">ainda na conta</span></td>
+      {{else}}<td class="muted">—</td><td class="muted">sem registro</td>{{end}}
+      <td><span class="pill {{.Track.Tone}}">{{.Track.Status}}</span></td>
+      <td><a href="/tracks/{{.Track.ID}}">Histórico</a></td>
+    </tr>{{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}<p class="muted">Nenhum item rastreado passou por esta conta{{if .Item}} com esse filtro de item{{end}}.</p>{{end}}
+</section>
+{{else}}
+<section class="card">
+  <h2>{{if .Item}}Por onde passou o item “{{.Item}}”{{else}}Últimas movimentações{{end}}</h2>
+  {{if .Tracks}}
+  <p class="muted small">{{if .Item}}{{len .Tracks}} {{if eq (len .Tracks) 1}}unidade rastreada{{else}}unidades rastreadas{{end}}; cada linha é uma unidade do item.{{end}}{{if .Truncated}} A lista mostra só as {{.Limit}} que mudaram por último.{{end}}</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Item</th><th>Origem</th><th>Contas por onde passou</th><th>Hoje</th><th>Última mudança</th><th></th></tr></thead>
+    <tbody>
+    {{range .Tracks}}<tr>
+      <td><a href="/gamedata/items/{{.CurrentItem}}">{{.Label}}</a></td>
+      <td>{{.Origin}}</td>
+      <td>{{range $i, $s := .Chain}}{{if $i}} → {{end}}<a href="/tracks?account={{$s.Account}}" title="{{$s.Char}}">{{$s.Account}}</a>{{end}}</td>
+      <td><span class="pill {{.Tone}}">{{.Status}}</span></td>
+      <td>{{datetime .UpdatedAt}}</td>
+      <td><a href="/tracks/{{.ID}}">Histórico</a></td>
+    </tr>{{end}}
+    </tbody>
+  </table>
+  </div>
+  {{else}}<p class="muted">{{if .Item}}Nenhum item rastreado com esse número ou nome.{{else}}Nenhum item rastreado ainda.{{end}}</p>{{end}}
+</section>
+{{end}}
+{{end}}
+
+{{define "trackacct"}}{{if .Account}} <a href="/tracks?account={{.Account}}">{{.Account}}</a>{{if .Char}} <small class="muted">({{.Char}})</small>{{end}}{{end}}{{end}}

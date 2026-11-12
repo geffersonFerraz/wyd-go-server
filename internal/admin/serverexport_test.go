@@ -199,6 +199,51 @@ func TestServerImportRefusesBadFiles(t *testing.T) {
 	}
 }
 
+// A version 2 file carries the generators as npc_generators.yaml: they go to
+// the database and the file is not written to the config folder.
+func TestServerImportVersion2Generators(t *testing.T) {
+	h := newPanel(t)
+	csrf := h.login()
+	dir := t.TempDir()
+	raw, _ := os.ReadFile("../../tmsrv.yaml")
+	settings := filepath.Join(dir, "tmsrv.yaml")
+	os.WriteFile(settings, raw, 0o644)
+	h.panel.cfg.ConfigDir, h.panel.cfg.SettingsPath, h.panel.cfg.StateDir = dir, settings, dir
+	files := copyConfigFiles(t, dir)
+	if err := h.st.UpsertWorldAssets(h.ctx, testWorld()); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.st.ImportGameData(h.ctx, testGameData(), "t"); err != nil {
+		t.Fatal(err)
+	}
+	gd := testGameData()
+	gd.Generators = nil
+	yaml := "generators:\n  - {id: 0, minute: -1, max_mobs: 0, min_group: 0, max_group: 0, formation: 0, route: 0}\n" +
+		"  - {id: 1, minute: 9, max_mobs: 2, min_group: 0, max_group: 0, formation: 0, route: 2, leader: Lobo, segments: [{segment: 0, x: 2000, \"y\": 2001}]}\n"
+	e := &ServerExport{Format: exportFormat, Version: exportVersionYAML, TmsrvYAML: string(raw), GameData: gd, World: testWorld(),
+		Files: append(slices.Clone(files), ExportFile{Path: game.GeneratorsFile, Content: []byte(yaml)})}
+	code, body := uploadExport(t, h, csrf, e)
+	if code != http.StatusOK || !strings.Contains(body, "Geradores de NPC") {
+		t.Fatalf("version 2 preview: %d %s", code, body)
+	}
+	if code, _, _ := h.post("/server/import/apply", url.Values{"csrf": {csrf}, "token": {h.panel.pending.token}}); code != http.StatusSeeOther {
+		t.Fatalf("apply: %d", code)
+	}
+	gens, err := h.st.Generators(h.ctx)
+	if err != nil || len(gens) != 2 || gens[1].Minute != 9 || gens[1].Leader != "Lobo" || gens[1].Segments[0].Y != 2001 {
+		t.Fatalf("generators after the import: %+v %v", gens, err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, game.GeneratorsFile)); !os.IsNotExist(err) {
+		t.Fatalf("the generators file was written to the config folder: %v", err)
+	}
+	// A file without generators at all is refused.
+	e = &ServerExport{Format: exportFormat, Version: exportVersion, TmsrvYAML: string(raw), GameData: gd, World: testWorld(), Files: slices.Clone(files)}
+	gd.Generators = nil
+	if code, body := uploadExport(t, h, csrf, e); code != http.StatusUnprocessableEntity || !strings.Contains(body, "geradores") {
+		t.Fatalf("no generators: %d", code)
+	}
+}
+
 // testGameData is the smallest configuration the import accepts.
 func testGameData() *store.GameData {
 	gd := &store.GameData{
@@ -207,6 +252,8 @@ func testGameData() *store.GameData {
 		Drops: []store.Drop{{Name: "Lobo", MaxDrops: 1, Items: []store.DropItem{{Kills: 2, Item: 412}},
 			Rate: []store.RateDrop{{Slot: 3, Item: 412, Chance: 9}}}},
 		Teleports: []store.Teleport{{ID: 0, SrcX: 1, SrcY: 2, DstX: 3, DstY: 4}},
+		Generators: []store.Generator{{ID: 1, Minute: 4, MaxMobs: 3, Leader: "Lobo", Follower: "Lobo",
+			Segments: []store.GeneratorSegment{{Segment: 0, X: 2100, Y: 2100, Range: 2, Wait: 5}}, FightActions: []string{}, DieActions: []string{}}},
 	}
 	for i := range 64 {
 		gd.DropSlots = append(gd.DropSlots, store.DropSlot{Slot: i, Base: 10, Rate: 100})

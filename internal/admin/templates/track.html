@@ -1,0 +1,40 @@
+{{define "content"}}
+<p class="crumbs"><a href="/tracks?item={{.Track.CurrentItem}}">← Rastreio deste item</a></p>
+<h1 class="title">{{.Track.Label}} <span class="pill {{.Track.Tone}}">{{.Track.Status}}</span></h1>
+<section class="card">
+  <h2>Origem</h2>
+  <dl class="facts">
+    <div><dt>Rastreio</dt><dd>{{.Track.ID}}</dd></div>
+    <div><dt>Origem</dt><dd>{{.Track.Origin}}</dd></div>
+    {{if .Track.KillerAccount}}<div><dt>Conta de quem matou</dt><dd><a href="/tracks?account={{.Track.KillerAccount}}">{{.Track.KillerAccount}}</a></dd></div>{{end}}
+    <div><dt>Canal</dt><dd>{{.Track.Channel}}</dd></div>
+    <div><dt>Posição</dt><dd>{{.Track.DropX}}, {{.Track.DropY}}</dd></div>
+    <div><dt>Surgiu</dt><dd>{{datetime .Track.DroppedAt}}</dd></div>
+    <div><dt>Primeiro dono</dt><dd>{{datetime .Track.PickedAt}}</dd></div>
+    {{if .Track.Was}}<div><dt>Era</dt><dd>{{.Track.Was}}</dd></div>{{end}}
+    <div><dt>Hoje</dt><dd>{{if .Track.HolderAccount}}<a href="/accounts/{{pathescape .Track.HolderAccount}}">{{.Track.HolderAccount}}</a>{{if .Track.HolderChar}} ({{.Track.HolderChar}}){{end}}{{else}}{{.Track.Status}}{{end}}</dd></div>
+  </dl>
+</section>
+<section class="card">
+  <h2>Contas por onde passou</h2>
+  <p>{{range $i, $s := .Track.Chain}}{{if $i}} → {{end}}<a href="/tracks?account={{$s.Account}}">{{$s.Account}}</a>{{if $s.Char}} <small class="muted">({{$s.Char}})</small>{{end}}{{end}}</p>
+</section>
+<section class="card">
+  <h2>Histórico</h2>
+  <p class="muted small">A coluna Item mostra o item com os efeitos que tinha em cada momento; quando mudou, aparece como estava antes → depois. As mudanças na mão do mesmo dono são vistas a cada save do personagem (ou quando o item troca de conta).</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Quando</th><th class="num">Canal</th><th>Evento</th><th>De</th><th>Para</th><th class="num">Preço</th><th>Item</th></tr></thead>
+    <tbody>
+    {{range .Events}}<tr>
+      <td>{{datetime .At}}</td><td class="num">{{.Channel}}</td><td>{{.Label}}</td>
+      <td>{{if .FromAccount}}<a href="/tracks?account={{.FromAccount}}">{{.FromAccount}}</a>{{if .FromChar}} <small class="muted">({{.FromChar}})</small>{{end}}{{else}}<span class="muted">—</span>{{end}}</td>
+      <td>{{if .ToAccount}}<a href="/tracks?account={{.ToAccount}}">{{.ToAccount}}</a>{{if .ToChar}} <small class="muted">({{.ToChar}})</small>{{end}}{{else}}<span class="muted">—</span>{{end}}</td>
+      <td class="num">{{if .Price}}{{.Price}}{{end}}</td>
+      <td>{{if .Before}}<span class="muted">{{.Before}}</span> → {{end}}{{.ItemLabel}}</td>
+    </tr>{{end}}
+    </tbody>
+  </table>
+  </div>
+</section>
+{{end}}

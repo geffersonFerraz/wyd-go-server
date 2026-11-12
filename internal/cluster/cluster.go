@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,6 +40,12 @@ type Channel struct {
 	// Port is the TCP port the TMSRV listens on and the port players
 	// connect to (published on the host with the same number).
 	Port int `yaml:"port"`
+	// Host is the name or IPv4 address players use to reach this channel
+	// (what serverlist.bin holds for it). Optional: without it the channel
+	// uses serverlist.public_ip. The client resolves names with the DNS of
+	// the player's machine, so a name must point at the public address of
+	// this channel's port.
+	Host string `yaml:"host,omitempty"`
 }
 
 // ServerList is what goes into the client's serverlist.bin.
@@ -45,9 +53,10 @@ type ServerList struct {
 	// Group is the server group of this world in the client (1..10, the
 	// group number of sn.bin): serverlist.bin entry [Group-1].
 	Group int `yaml:"group"`
-	// PublicIP is the address players connect to (inet_addr in the client:
-	// an IPv4 address, not a host name).
-	PublicIP string `yaml:"public_ip"`
+	// PublicIP is the address players connect to when a channel has no host
+	// of its own (an IPv4 address or a host name). Optional if every channel
+	// sets host.
+	PublicIP string `yaml:"public_ip,omitempty"`
 	// StatusURL is the servNN.htm served by the admin panel's public
 	// listener (serverlist.bin entry [Group-1][0]).
 	StatusURL string `yaml:"status_url"`
@@ -106,8 +115,8 @@ func (c *Config) Validate() error {
 	if sl.Group < 1 || sl.Group > MaxGroups {
 		return fmt.Errorf("serverlist.group must be 1..%d, got %d", MaxGroups, sl.Group)
 	}
-	if ip := net.ParseIP(sl.PublicIP); ip == nil || ip.To4() == nil {
-		return fmt.Errorf("serverlist.public_ip must be an IPv4 address (the client does not resolve names), got %q", sl.PublicIP)
+	if sl.PublicIP != "" && !ValidHost(sl.PublicIP) {
+		return fmt.Errorf("serverlist.public_ip must be an IPv4 address or a host name, got %q", sl.PublicIP)
 	}
 	if sl.StatusURL == "" || len(sl.StatusURL) > entrySize-1 {
 		return fmt.Errorf("serverlist.status_url must be 1..%d characters, got %q", entrySize-1, sl.StatusURL)
@@ -135,9 +144,15 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("channel %d: ip %s is already channel %d (DBSRV identifies the channel by its IP)", ch.Number, ch.IP, o)
 		}
 		if o, dup := ports[ch.Port]; dup {
-			return fmt.Errorf("channel %d: port %d is already channel %d (players reach every channel on the same public IP)", ch.Number, ch.Port, o)
+			return fmt.Errorf("channel %d: port %d is already channel %d (players reach every channel through its port on the public address)", ch.Number, ch.Port, o)
 		}
 		ips[ip.String()], ports[ch.Port] = ch.Number, ch.Number
+		switch {
+		case ch.Host != "" && !ValidHost(ch.Host):
+			return fmt.Errorf("channel %d: host must be an IPv4 address or a host name, got %q", ch.Number, ch.Host)
+		case ch.Host == "" && sl.PublicIP == "":
+			return fmt.Errorf("channel %d: set host (or serverlist.public_ip) so players know where to connect", ch.Number)
+		}
 		if len(c.Address(ch.Number)) > entrySize-1 {
 			return fmt.Errorf("channel %d: address %q is too long for serverlist.bin", ch.Number, c.Address(ch.Number))
 		}
@@ -162,15 +177,46 @@ func (c *Config) ChannelIPs() []string {
 	return ips
 }
 
-// Address is what serverlist.bin holds for channel n: "ip" on the client's
-// default port, "ip:port" otherwise (needs the patched client).
+var hostLabel = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$`)
+
+// ValidHost reports whether s is an IPv4 address or a DNS host name (letters,
+// digits and hyphens in dot-separated labels). No port, scheme or IPv6.
+func ValidHost(s string) bool {
+	if ip := net.ParseIP(s); ip != nil {
+		return ip.To4() != nil && !strings.Contains(s, ":")
+	}
+	if s == "" || len(s) > 253 || strings.Trim(s, "0123456789.") == "" {
+		return false // Only digits and dots must be a valid IPv4, which 300.1.1.1 is not.
+	}
+	for _, label := range strings.Split(s, ".") {
+		if !hostLabel.MatchString(label) {
+			return false
+		}
+	}
+	return true
+}
+
+// Host is the name or address players use for channel n.
+func (c *Config) Host(n int) string {
+	ch, ok := c.Channel(n)
+	if !ok {
+		return ""
+	}
+	if ch.Host != "" {
+		return ch.Host
+	}
+	return c.ServerList.PublicIP
+}
+
+// Address is what serverlist.bin holds for channel n: the host alone on the
+// client's default port, "host:port" otherwise (needs the patched client).
 func (c *Config) Address(n int) string {
 	ch, ok := c.Channel(n)
 	if !ok {
 		return ""
 	}
 	if ch.Port == ClientDefaultPort {
-		return c.ServerList.PublicIP
+		return c.Host(n)
 	}
-	return net.JoinHostPort(c.ServerList.PublicIP, strconv.Itoa(ch.Port))
+	return net.JoinHostPort(c.Host(n), strconv.Itoa(ch.Port))
 }

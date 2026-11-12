@@ -1,0 +1,67 @@
+{{define "itemrows"}}
+<div class="table-wrap"><table>
+  <thead><tr><th class="num">Slot</th><th class="num">Item</th><th>Nome</th><th class="num">Ef. 1</th><th class="num">Val. 1</th><th class="num">Ef. 2</th><th class="num">Val. 2</th><th class="num">Ef. 3</th><th class="num">Val. 3</th></tr></thead>
+  <tbody>
+  {{range .Rows}}{{$p := printf "%s%d" $.Prefix .Slot}}
+    <tr><td class="num">{{.Slot}}</td>
+      <td class="num"><input name="{{$p}}_0" type="number" min="0" max="65535" value="{{if .Item.Index}}{{.Item.Index}}{{end}}" aria-label="Item do slot {{.Slot}}"></td>
+      <td>{{if .Item.Index}}<a href="/gamedata/items/{{.Item.Index}}">{{if .ItemName}}{{.ItemName}}{{else}}(item inexistente){{end}}</a>{{end}}</td>
+      {{$it := .Item}}{{range $k := slice3}}<td class="num"><input name="{{$p}}_{{add1 (mul2 $k)}}" type="number" min="0" max="255" value="{{effidx $it $k}}" aria-label="Efeito {{add1 $k}}"></td>
+      <td class="num"><input name="{{$p}}_{{add1 (add1 (mul2 $k))}}" type="number" min="0" max="255" value="{{effval $it $k}}" aria-label="Valor {{add1 $k}}"></td>{{end}}</tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{end}}
+
+{{define "content"}}
+{{template "gdnav" "npcs"}}
+<div class="grid">
+  <section class="card">
+    <h2>{{.Name}} <span class="muted">· {{if eq .Kind "npc"}}monstro / NPC{{else}}montaria / evocação{{end}}</span></h2>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <form method="post" action="/gamedata/npc" class="gd-form">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="hidden" name="kind" value="{{.Kind}}">
+      <input type="hidden" name="name" value="{{.Name}}">
+      <div class="fields">
+        <label>Nome no jogo <input name="game_name" value="{{.GameName}}" maxlength="15" required><small>_ e @ viram espaço; os drops são procurados por este nome</small></label>
+      </div>
+      {{range .Groups}}
+      <h3>{{.Title}}</h3>
+      {{if .Help}}<p class="muted">{{.Help}}</p>{{end}}
+      <div class="fields">
+        {{range .Fields}}<label>{{.Label}} <input name="{{.Key}}" type="number" min="{{.Lo}}" max="{{.Hi}}" value="{{.Value}}">{{if .Help}}<small>{{.Help}}</small>{{end}}</label>{{end}}
+      </div>
+      {{end}}
+      <h3>Equipamento</h3>
+      <p class="muted">O slot 0 é a aparência (face). Os valores dos efeitos vão de 0 a 255 nos modelos.</p>
+      {{template "itemrows" dict "Rows" .Equip "Prefix" "eq"}}
+      <h3>Inventário</h3>
+      {{if .Merchant}}<p class="muted">Num mercador o inventário é a loja: cada slot é um item à venda.</p>
+      {{else}}<p class="muted">Os drops dos monstros não saem mais daqui: ficam em <a href="{{dropurl .DropName}}">Drops</a>.</p>{{end}}
+      <details{{if .Merchant}} open{{end}}>
+        <summary>64 slots</summary>
+        {{template "itemrows" dict "Rows" .Inventory "Prefix" "inv"}}
+      </details>
+      <button class="primary">Salvar</button>
+    </form>
+    <form method="post" action="/gamedata/npc/delete" onsubmit="return confirm('Remover o modelo {{.Name}}?')">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="hidden" name="kind" value="{{.Kind}}">
+      <input type="hidden" name="name" value="{{.Name}}">
+      <button class="link danger">Remover modelo</button>
+    </form>
+  </section>
+  <aside>
+    {{if eq .Kind "npc"}}
+    <section class="card">
+      <h2>Geradores</h2>
+      {{if .Used}}<p>{{range .Used}}<a href="/gamedata/generators/{{.}}">{{.}}</a> {{end}}</p>
+      {{else}}<p class="muted">Nenhum gerador usa este modelo: ele não nasce no mapa.</p>{{end}}
+    </section>
+    {{end}}
+    <section class="card"><h2>Histórico</h2>{{template "changes" .Changes}}</section>
+  </aside>
+</div>
+{{end}}

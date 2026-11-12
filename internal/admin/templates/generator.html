@@ -1,0 +1,51 @@
+{{define "content"}}
+{{template "gdnav" "generators"}}
+<div class="grid">
+  <section class="card">
+    <h2>Gerador {{.Gen.ID}}{{if .New}} <span class="pill wait">novo</span>{{end}}</h2>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    {{range .Warnings}}<p class="alert bad">{{.}}</p>{{end}}
+    {{if .Note}}<p class="muted">{{.Note}}</p>{{end}}
+    <form method="post" action="/gamedata/generators/{{.Gen.ID}}" class="gd-form">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <div class="fields">
+        <label>Líder <input name="leader" value="{{.Gen.Leader}}" maxlength="15"><small>nome do modelo{{if .Gen.Leader}} · <a href="/gamedata/npc?kind=npc&amp;name={{.Gen.Leader}}">abrir</a>{{end}}</small></label>
+        <label>Seguidor <input name="follower" value="{{.Gen.Follower}}" maxlength="15"><small>modelo do grupo{{if .Gen.Follower}} · <a href="/gamedata/npc?kind=npc&amp;name={{.Gen.Follower}}">abrir</a>{{end}}</small></label>
+        <label>Intervalo <input name="minute" type="number" min="-1" value="{{.Gen.Minute}}"><small>tenta nascer a cada N ciclos de 12 s; -1 ou 0 nunca; 500+ sorteia outro gerador</small></label>
+        <label>Máximo de NPCs <input name="max_mobs" type="number" min="0" value="{{.Gen.MaxMobs}}"><small>vivos ao mesmo tempo, grupo incluído</small></label>
+        <label>Grupo mínimo <input name="min_group" type="number" min="0" max="12" value="{{.Gen.MinGroup}}"><small>seguidores por nascimento</small></label>
+        <label>Grupo máximo <input name="max_group" type="number" min="0" max="12" value="{{.Gen.MaxGroup}}"></label>
+        <label>Formação <input name="formation" type="number" min="0" max="255" value="{{.Gen.Formation}}"></label>
+        <label>Rota <input name="route" type="number" min="0" max="255" value="{{.Gen.Route}}"><small>como percorre os pontos</small></label>
+      </div>
+      <h3>Pontos da rota</h3>
+      {{if .Random}}<p class="muted">Gerador sorteado: no ponto 0, X é o primeiro gerador da faixa e Y o último + 1.</p>
+      {{else}}<p class="muted">O ponto 0 é onde nasce e o 4 o destino; um ponto com X 0 não é usado. O raio espalha o nascimento em volta do ponto.</p>{{end}}
+      <div class="table-wrap"><table>
+        <thead><tr><th class="num">Ponto</th><th class="num">X</th><th class="num">Y</th><th class="num">Raio</th><th class="num">Espera (s)</th><th>Fala ao chegar</th></tr></thead>
+        <tbody>{{range .Segments}}<tr><td class="num">{{.Segment}}</td>
+          <td class="num"><input name="seg_x{{.Segment}}" type="number" min="0" max="8191" value="{{.X}}" aria-label="X do ponto {{.Segment}}"></td>
+          <td class="num"><input name="seg_y{{.Segment}}" type="number" min="0" max="8191" value="{{.Y}}" aria-label="Y do ponto {{.Segment}}"></td>
+          <td class="num"><input name="seg_range{{.Segment}}" type="number" min="0" value="{{.Range}}" aria-label="Raio do ponto {{.Segment}}"></td>
+          <td class="num"><input name="seg_wait{{.Segment}}" type="number" min="0" value="{{.Wait}}" aria-label="Espera do ponto {{.Segment}}"></td>
+          <td><input name="seg_action{{.Segment}}" value="{{.Action}}" maxlength="79" aria-label="Fala do ponto {{.Segment}}"></td></tr>{{end}}</tbody>
+      </table></div>
+      <h3>Falas</h3>
+      <p class="muted">Guardadas com o gerador; o servidor ainda não usa as falas de luta e de morte.</p>
+      <div class="fields">
+        {{range $i, $v := .Fight}}<label>Luta {{add1 $i}} <input name="fight{{$i}}" value="{{$v}}" maxlength="79"></label>{{end}}
+        {{range $i, $v := .Die}}<label>Morte {{add1 $i}} <input name="die{{$i}}" value="{{$v}}" maxlength="79"></label>{{end}}
+      </div>
+      <button class="primary">Salvar</button>
+    </form>
+    {{if not .New}}
+    <form method="post" action="/gamedata/generators/{{.Gen.ID}}/delete" onsubmit="return confirm('Esvaziar o gerador {{.Gen.ID}}? O id continua reservado.')">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <button class="link danger">Esvaziar gerador {{.Gen.ID}}</button>
+    </form>
+    {{end}}
+  </section>
+  <aside><section class="card"><h2>Histórico</h2>{{template "changes" .Changes}}</section></aside>
+</div>
+{{end}}

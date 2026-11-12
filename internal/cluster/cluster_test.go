@@ -48,7 +48,9 @@ func TestLoadRejects(t *testing.T) {
 		"gap":          {"number: 2, ip", "number: 3, ip", "number must be 2"},
 		"same ip":      {"172.30.87.22", "172.30.87.21", "already channel 1"},
 		"same port":    {"port: 8282", "port: 8281", "already channel 1"},
-		"host name":    {"public_ip: 203.0.113.10", "public_ip: example.com", "IPv4"},
+		"bad public":   {"public_ip: 203.0.113.10", "public_ip: http://x.com", "public_ip"},
+		"bad host":     {"port: 8282 }", "port: 8282, host: 'a_b.com' }", "channel 2: host"},
+		"no address":   {"  public_ip: 203.0.113.10\n", "", "set host"},
 		"typo":         {"port: 8282 }", "port: 8282, prot: 1 }", "prot"},
 		"bad group":    {"group: 1", "group: 11", "group"},
 		"missing list": {"channels:", "chanels:", "missing keys"},
@@ -59,6 +61,57 @@ func TestLoadRejects(t *testing.T) {
 				t.Errorf("err %v, want %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestChannelHostsAreDNSNames(t *testing.T) {
+	c, err := Load(write(t, `
+serverlist:
+  group: 1
+  status_url: http://wyd.example.com/serv00.htm
+channels:
+  - { number: 1, ip: 172.30.87.21, port: 8281, host: wyd-srv1.example.com }
+  - { number: 2, ip: 172.30.87.22, port: 8282, host: wyd-srv2.example.com }
+  - { number: 3, ip: 172.30.87.23, port: 8283, host: 203.0.113.7 }
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for n, want := range map[int]string{1: "wyd-srv1.example.com", 2: "wyd-srv2.example.com:8282", 3: "203.0.113.7:8283"} {
+		if got := c.Address(n); got != want {
+			t.Errorf("channel %d: %q, want %q", n, got, want)
+		}
+	}
+	b, err := EncodeServerList(c.Table())
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, err := DecodeServerList(b)
+	if err != nil || back[0][0] != "http://wyd.example.com/serv00.htm" || back[0][2] != "wyd-srv2.example.com:8282" {
+		t.Errorf("%v, %q", err, back[0])
+	}
+}
+
+func TestChannelHostOverridesPublicIP(t *testing.T) {
+	c, err := Load(write(t, strings.Replace(sample, "port: 8282 }", "port: 8282, host: srv2.example.com }", 1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a, b := c.Address(1), c.Address(2); a != "203.0.113.10" || b != "srv2.example.com:8282" {
+		t.Errorf("%q, %q", a, b)
+	}
+}
+
+func TestValidHost(t *testing.T) {
+	for _, ok := range []string{"1.2.3.4", "wyd.gefferson.com", "wyd-srv1.gefferson.com", "localhost"} {
+		if !ValidHost(ok) {
+			t.Errorf("%q rejected", ok)
+		}
+	}
+	for _, bad := range []string{"", "::1", "a:80", "-a.com", "a..com", "a_b.com", "300.1.1.1", "http://a.com", "a.com/x", "1.2.3.4:80"} {
+		if ValidHost(bad) {
+			t.Errorf("%q accepted", bad)
+		}
 	}
 }
 

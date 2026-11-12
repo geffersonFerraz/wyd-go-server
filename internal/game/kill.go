@@ -1,6 +1,9 @@
 package game
 
-import "dbsrv/internal/wire"
+import (
+	"dbsrv/internal/store"
+	"dbsrv/internal/wire"
+)
 
 // Mob death, experience and level up (Basedef.cpp MobKilled, GetFunc.cpp
 // GetExpApply/GetExpApply_2, CMob.cpp CheckGetLevel).
@@ -13,6 +16,9 @@ func (g *Game) expApply(exp int64, attacker, target int) int64 {
 	ev := int64(evolution(a))
 	if (ev <= evoArch && al >= maxLevel) || (ev >= evoCelestial && al >= maxLevelCelestial) {
 		return 0
+	}
+	if r := &g.data.ExpRule; r.Enabled {
+		return g.ruleExp(r, exp, attacker, int(al), int(tl), int(ev))
 	}
 	if al >= 400 || tl >= 400 || al < 0 || tl < 0 {
 		return exp
@@ -48,6 +54,29 @@ func (g *Game) expApply(exp int64, attacker, target int) int64 {
 	return exp
 }
 
+// ruleExp is expApply with the rule of the admin panel (gamedata.exp_rule)
+// in place of the level table of the C++: base experience, level
+// difference, evolution and the global multiplier. What the server adds on
+// its own stays: the Nightmare rooms, the attacker's bonus (items), the dead
+// Kefra and +bonusexp.
+func (g *Game) ruleExp(r *store.ExpRule, exp int64, attacker, level, mobLevel, ev int) int64 {
+	exp = r.Apply(exp, level+1, mobLevel+1, ev) // the levels the game shows
+	if exp <= 0 {
+		return 0
+	}
+	exp = g.nightmareExp(exp, attacker)
+	if b := g.mobs[attacker].combat.expBonus; b != 0 {
+		exp += exp * int64(b) / 100
+	}
+	if g.kefra.dead {
+		exp += exp / 100 * 50
+	}
+	if g.expRate != 0 {
+		exp += exp * int64(g.expRate) / 100
+	}
+	return exp
+}
+
 // expApply2 is GetExpApply_2: level caps and blocked levels (the killer's
 // too), the zone/evolution table (expbonus.go), the killer's experience
 // chest (affect 39, x2, only with box) and the killer's fairy bonus.
@@ -62,7 +91,10 @@ func (g *Game) expApply2(exp int64, receiver, attacker int, box bool) int64 {
 	}
 	// Fixed: a reduction above 100% (e.g. "Deserto Arch = 120", or Água
 	// above 50) made the C++ take experience away on every kill.
-	exp = max(g.zoneExp(exp, receiver), 0)
+	// The rule of the panel replaces the zone table unless it asks for it.
+	if r := &g.data.ExpRule; !r.Enabled || r.ZoneTable {
+		exp = max(g.zoneExp(exp, receiver), 0)
+	}
 	a := &g.mobs[attacker].info
 	if box && hasAffect(a, 39) {
 		exp *= 2
@@ -387,7 +419,9 @@ func (g *Game) shareExp(baseFor func(id int) int64, killer int, at wire.Position
 	if count <= 0 || count > 13 || levels <= 0 {
 		return // the C++ sent "Error 1" here
 	}
-	mult := partyBonus[count]
+	// Fixed: a full party (leader and 12 members) read past PARTYBONUS in the
+	// C++ and would panic here.
+	mult := partyBonus[min(count, int64(len(partyBonus)-1))]
 	if count > 1 {
 		mult += MaxPlayer - 100 // static g_EmptyMob = MAX_PLAYER
 	}

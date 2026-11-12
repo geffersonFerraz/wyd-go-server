@@ -84,7 +84,7 @@ func (s *Server) handleItemTrackSync(ctx context.Context, ch *channel, pkt proto
 		places = append(places, store.ItemTrackPlace{TrackID: pl.TrackID, CharSlot: int(pl.CharSlot), Type: int(pl.Type),
 			Slot: int(pl.Slot), Item: int(pl.Item.Index), Effects: storeEffects(pl.Item)})
 	}
-	if err := s.st.SyncItemTracks(ctx, account, wire.GameString(p.Char[:]), places); err != nil {
+	if err := s.st.SyncItemTracks(ctx, ch.idx+1, account, wire.GameString(p.Char[:]), places); err != nil {
 		ch.log.Error("item track places NOT stored", "account", account, "count", n, "err", err)
 	}
 }

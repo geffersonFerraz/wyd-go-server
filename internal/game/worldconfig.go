@@ -16,12 +16,12 @@ import (
 )
 
 // The world tables that used to be text files of the C++ TMSRV. The small
-// ones are sections of tmsrv.yaml; the three big ones live in the config
-// folder (ConfigFiles). Text is UTF-8 in the YAML; the fields the game sends
+// ones are sections of tmsrv.yaml; the two big ones live in the config
+// folder (ConfigFiles). The NPC generators are in the database. Text is UTF-8 in the YAML; the fields the game sends
 // as they are keep the client's Windows-1252 in memory.
 
 // ConfigFiles are the files of the config folder (-config-dir).
-var ConfigFiles = []string{"language.yaml", "missions.yaml", "npc_generators.yaml"}
+var ConfigFiles = []string{"language.yaml", "missions.yaml"}
 
 // CitySettings is one city (formerly a row of guild_zone.txt).
 type CitySettings struct {
@@ -163,8 +163,8 @@ type missionsFile struct {
 	Missions []MissionDef `yaml:"missions"`
 }
 
-// GeneratorSettings is one NPC generator (formerly a block of NPCGener.txt);
-// its position in the list is its id, which id repeats for whoever edits.
+// GeneratorSettings is one NPC generator in the old YAML file (formerly a
+// block of NPCGener.txt); its position in the list is its id.
 type GeneratorSettings struct {
 	ID           int                `yaml:"id"`
 	Minute       int                `yaml:"minute"`
@@ -397,15 +397,67 @@ func (d *Data) loadMissions(dir string) error {
 	return nil
 }
 
-// loadGeners reads config/npc_generators.yaml. A leader or follower with no
-// template leaves the generator without it, as in the C++.
-func (d *Data) loadGeners(dir string) error {
+// GeneratorsFile is the file the generators lived in before they went to the
+// database (gamedata.npc_generators). It is only read to fill an empty table.
+const GeneratorsFile = "npc_generators.yaml"
+
+// ReadGeneratorsFile reads a generators YAML (the old config file, or the one
+// inside a version 2 server export).
+func ReadGeneratorsFile(path string) ([]store.Generator, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGenerators(raw)
+}
+
+// ParseGenerators decodes the generators YAML.
+func ParseGenerators(raw []byte) ([]store.Generator, error) {
 	var f generatorsFile
-	if err := loadConfigFile(dir, "npc_generators.yaml", &f); err != nil {
+	dec := yaml.NewDecoder(bytes.NewReader(raw))
+	dec.KnownFields(true)
+	if err := dec.Decode(&f); err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("%s: %w", GeneratorsFile, err)
+	}
+	out := make([]store.Generator, len(f.Generators))
+	for i, s := range f.Generators {
+		if s.ID != i {
+			return nil, fmt.Errorf("%s: generators[%d] has id %d", GeneratorsFile, i, s.ID)
+		}
+		g := store.Generator{ID: s.ID, Minute: s.Minute, MaxMobs: s.MaxMobs, MinGroup: s.MinGroup, MaxGroup: s.MaxGroup,
+			Formation: s.Formation, Route: s.Route, Leader: s.Leader, Follower: s.Follower,
+			FightActions: s.FightActions, DieActions: s.DieActions}
+		for _, seg := range s.Segments {
+			g.Segments = append(g.Segments, store.GeneratorSegment{Segment: seg.Segment, X: seg.X, Y: seg.Y, Range: seg.Range, Wait: seg.Wait, Action: seg.Action})
+		}
+		if err := g.Check(); err != nil {
+			return nil, fmt.Errorf("%s: %w", GeneratorsFile, err)
+		}
+		out[i] = g
+	}
+	return out, nil
+}
+
+// ApplyGenerators builds the generator list from the database rows: the id
+// is the position, and an id without a row is an empty generator. A leader
+// or follower with no template leaves the generator without it, as in the
+// C++.
+func (d *Data) ApplyGenerators(rows []store.Generator) error {
+	geners, err := d.buildGenerators(rows)
+	if err != nil {
 		return err
 	}
-	if len(f.Generators) > maxNPCGenerator {
-		return fmt.Errorf("npc_generators.yaml: %d generators, at most %d", len(f.Generators), maxNPCGenerator)
+	d.Geners = geners
+	return nil
+}
+
+func (d *Data) buildGenerators(rows []store.Generator) ([]Generator, error) {
+	size := 0
+	for i := range rows {
+		if err := rows[i].Check(); err != nil {
+			return nil, err
+		}
+		size = max(size, rows[i].ID+1)
 	}
 	mobs := map[string]*wire.Mob{}
 	load := func(name string) (wire.Mob, bool) {
@@ -422,22 +474,13 @@ func (d *Data) loadGeners(dir string) error {
 		}
 		return *m, true
 	}
-	d.Geners = make([]Generator, len(f.Generators))
-	for i, s := range f.Generators {
-		if s.ID != i {
-			return fmt.Errorf("npc_generators.yaml: generators[%d] has id %d", i, s.ID)
-		}
-		if len(s.FightActions) > 4 || len(s.DieActions) > 4 {
-			return fmt.Errorf("npc_generators.yaml: generator %d: at most 4 fight and die actions", i)
-		}
-		g := &d.Geners[i]
+	geners := make([]Generator, size)
+	for _, s := range rows {
+		g := &geners[s.ID]
 		g.MinuteGenerate, g.MaxNumMob, g.MinGroup, g.MaxGroup, g.Formation, g.RouteType = s.Minute, s.MaxMobs, s.MinGroup, s.MaxGroup, s.Formation, s.Route
 		g.Leader, g.HasLeader = load(s.Leader)
 		g.Follower, g.HasFollower = load(s.Follower)
 		for _, seg := range s.Segments {
-			if seg.Segment < 0 || seg.Segment >= len(g.SegmentX) {
-				return fmt.Errorf("npc_generators.yaml: generator %d: segment must be 0..4, got %d", i, seg.Segment)
-			}
 			n := seg.Segment
 			g.SegmentX[n], g.SegmentY[n], g.SegmentRange[n], g.SegmentWait[n], g.SegmentAction[n] = seg.X, seg.Y, seg.Range, seg.Wait, wire.EncodeGame(seg.Action)
 		}
@@ -448,7 +491,7 @@ func (d *Data) loadGeners(dir string) error {
 			g.DieAction[a] = wire.EncodeGame(v)
 		}
 	}
-	return nil
+	return geners, nil
 }
 
 // setWorldAssets keeps the binary world files that came from the database.
@@ -463,11 +506,20 @@ func (d *Data) setWorldAssets(w *store.WorldAssets) error {
 	}
 	// Gates and doors write into the height map: each Data has its own copy.
 	d.Height, d.Attribute = slices.Clone(height), slices.Clone(attribute)
-	d.npcFiles = w.TemplatesOf(store.TemplateNPC)
-	if len(d.npcFiles) == 0 {
+	if len(w.TemplatesOf(store.TemplateNPC)) == 0 {
 		return errors.New("the database has no NPC templates: import a server export in the panel, or run: admin world-import")
 	}
+	d.setNPCTemplates(w.TemplatesOf(store.TemplateNPC), w.TemplatesOf(store.TemplateNPCBase))
 	return nil
+}
+
+// setNPCTemplates installs the template images: the generators' monsters and
+// merchants (npc) and the mounts and summons (npc_base).
+func (d *Data) setNPCTemplates(npc, base map[string][]byte) {
+	d.npcFiles = npc
+	d.NPCBase = [50]wire.Mob{}
+	d.loadNPCBase(base)
+	d.StoreBase, d.Thorn = d.npcTemplate("Base"), d.npcTemplate("Vinha")
 }
 
 // CheckClassTemplates checks the images DBSRV starts new characters from.

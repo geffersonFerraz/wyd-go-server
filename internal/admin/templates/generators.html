@@ -1,0 +1,34 @@
+{{define "content"}}
+{{template "gdnav" "generators"}}
+<div class="grid">
+  <section class="card">
+    <h2>Geradores de NPC</h2>
+    <p class="muted">Cada gerador faz nascer um líder e o seu grupo num ponto do mapa. O id não muda: o servidor conhece alguns pelo número (reis, torres, Kefra, chefes).</p>
+    <form method="get" action="/gamedata/generators" class="search">
+      <input name="q" value="{{.Q}}" placeholder="Id ou nome do modelo" aria-label="Buscar gerador">
+      <button>Buscar</button>
+    </form>
+    {{if .Generators}}
+    <p class="muted">{{if gt .Total (len .Generators)}}Mostrando {{len .Generators}} de {{.Total}}: refine a busca.{{else}}{{.Total}} gerador(es).{{end}}</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="num">Id</th><th>Líder</th><th>Seguidor</th><th class="num">Intervalo</th><th class="num">Máx.</th><th class="num">Grupo</th><th>Nasce em</th></tr></thead>
+      <tbody>{{range .Generators}}<tr>
+        <td class="num"><a href="/gamedata/generators/{{.ID}}">{{.ID}}</a></td>
+        <td>{{if .Leader}}<a href="/gamedata/npc?kind=npc&amp;name={{.Leader}}">{{.Leader}}</a>{{else}}<span class="muted">vazio</span>{{end}}</td>
+        <td>{{if .Follower}}<a href="/gamedata/npc?kind=npc&amp;name={{.Follower}}">{{.Follower}}</a>{{end}}</td>
+        <td class="num">{{.Minute}}</td><td class="num">{{.MaxMobs}}</td><td class="num">{{.MinGroup}}–{{.MaxGroup}}</td>
+        <td>{{if ge .Minute 500}}geradores {{.X}} a {{.Y}}{{else}}{{.X}} x {{.Y}}{{end}}</td>
+      </tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<p class="muted">Nenhum gerador encontrado.</p>{{end}}
+  </section>
+  <aside>
+    <section class="card">
+      <h2>Novo gerador</h2>
+      {{if .CanCreate}}<p><a href="/gamedata/generators/{{.Next}}">Criar o gerador {{.Next}}</a></p>
+      {{else}}<p class="muted">A lista está cheia (8192 geradores).</p>{{end}}
+    </section>
+    <section class="card"><h2>Últimas alterações</h2>{{template "changes" .Changes}}</section>
+  </aside>
+</div>
+{{end}}

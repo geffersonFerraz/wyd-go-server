@@ -176,13 +176,21 @@ func run(log *slog.Logger, o options) error {
 		}
 	}
 
-	// Drops by chance: the first start copies the monsters' inventories.
+	// NPC generators: the first start after they moved to the database
+	// copies config/npc_generators.yaml, which is not read again.
 	if o.configDir != "" {
-		if n, err := admin.SeedRateDrops(ctx, st, o.configDir); err != nil {
-			log.Warn("drops by chance not imported", "err", err)
+		if n, err := admin.SeedGenerators(ctx, st, o.configDir); err != nil {
+			log.Warn("NPC generators not imported", "err", err)
 		} else if n > 0 {
-			log.Info("drops by chance imported", "lines", n)
+			log.Info("NPC generators imported from the config folder", "generators", n)
 		}
+	}
+
+	// Drops by chance: the first start copies the monsters' inventories.
+	if n, err := admin.SeedRateDrops(ctx, st); err != nil {
+		log.Warn("drops by chance not imported", "err", err)
+	} else if n > 0 {
+		log.Info("drops by chance imported", "lines", n)
 	}
 
 	if o.markDir != "" {

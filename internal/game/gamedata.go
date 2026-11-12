@@ -75,6 +75,37 @@ func (d *Data) ApplyGameData(gd *store.GameData) error {
 		teleports[t.ID] = Teleport{SrcX: t.SrcX, SrcY: t.SrcY, DestX: t.DstX, DestY: t.DstY, Price: int32(t.Price)}
 	}
 
+	if len(gd.Generators) == 0 {
+		return fmt.Errorf("gamedata.npc_generators is empty: start the admin panel once (it copies config/%s), or import a server export", GeneratorsFile)
+	}
+	rule := store.DefaultExpRule()
+	if gd.ExpRule != nil {
+		rule = *gd.ExpRule
+	}
+	if err := rule.Check(); err != nil {
+		return err
+	}
+	// Templates first: the generators copy their leader and follower.
+	npc, base := d.npcFiles, map[string][]byte(nil)
+	if gd.NPCTemplates != nil {
+		npc, base = gd.NPCTemplates[store.TemplateNPC], gd.NPCTemplates[store.TemplateNPCBase]
+		if len(npc) == 0 {
+			return fmt.Errorf("the database has no NPC templates")
+		}
+	}
+	old := d.npcFiles
+	d.npcFiles = npc
+	geners, err := d.buildGenerators(gd.Generators)
+	d.npcFiles = old
+	if err != nil {
+		return err
+	}
+	if gd.NPCTemplates != nil {
+		d.setNPCTemplates(npc, base)
+	}
+	d.Geners = geners
+	d.ExpRule = rule
+
 	d.Items, d.Skills, d.Drops, d.Teleports = items, skills, drops, teleports
 	d.DropSlots = [64]store.DropSlot{}
 	for _, s := range gd.DropSlots {
@@ -99,11 +130,10 @@ func (d *Data) ApplyCityOwners(channel int, owners []store.CityOwner) {
 }
 
 // ReadRateDrops reads the monsters' inventories from the templates of the
-// generators (dir is the config folder): the first import of the drops by
-// chance.
-func ReadRateDrops(dir string, w *store.WorldAssets) ([]store.Drop, error) {
+// generators: the first import of the drops by chance.
+func ReadRateDrops(gens []store.Generator, w *store.WorldAssets) ([]store.Drop, error) {
 	tmp := &Data{npcFiles: w.TemplatesOf(store.TemplateNPC)}
-	if err := tmp.loadGeners(dir); err != nil {
+	if err := tmp.ApplyGenerators(gens); err != nil {
 		return nil, err
 	}
 	seen := map[string]bool{}

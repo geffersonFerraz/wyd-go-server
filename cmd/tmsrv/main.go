@@ -7,10 +7,11 @@
 // DBSRV from that IP (DBSRV identifies the channel by it). With a single
 // channel in the file, -channel may be left out.
 //
-// Items, skills, drops, teleports, the maps and the NPC templates come from
-// Postgres (schema gamedata, filled by the admin panel; -dsn or DATABASE_URL).
-// Its options and the small world tables come from -config (tmsrv.yaml), and
-// the big tables (generators, missions, messages) from -config-dir.
+// Items, skills, drops, teleports, the maps, the NPC templates and the NPC
+// generators come from Postgres (schema gamedata, filled by the admin panel;
+// -dsn or DATABASE_URL). Its options and the small world tables come from
+// -config (tmsrv.yaml), and the big tables (missions, messages) from
+// -config-dir.
 package main
 
 import (
@@ -21,6 +22,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -31,7 +33,7 @@ import (
 )
 
 func main() {
-	dir := flag.String("config-dir", "config", "folder with the big YAML tables (language, missions, NPC generators)")
+	dir := flag.String("config-dir", "config", "folder with the big YAML tables (language, missions)")
 	listen := flag.String("listen", "", "override network.listen_ip/listen_port of the settings (host:port)")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres with the gamedata tables (or DATABASE_URL)")
 	config := flag.String("config", "tmsrv.yaml", "server settings (YAML, required: every option comes from it)")
@@ -100,10 +102,19 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 		return fmt.Errorf("data: %w", err)
 	}
 	data.ApplyCityOwners(cfg.Channel, gd.CityOwners)
+	if len(gd.Generators) == 0 {
+		// The panel fills the table on its first start after the update; a
+		// channel that starts before it uses the old file meanwhile.
+		path := filepath.Join(dir, game.GeneratorsFile)
+		if gens, err := game.ReadGeneratorsFile(path); err == nil && len(gens) > 0 {
+			gd.Generators = gens
+			log.Warn("gamedata.npc_generators is empty: generators read from the old file", "path", path, "generators", len(gens))
+		}
+	}
 	if err := data.ApplyGameData(gd); err != nil {
 		return fmt.Errorf("game data: %w", err)
 	}
-	log.Info("game data loaded from database", "items", len(gd.Items), "skills", len(gd.Skills), "drop_mobs", len(gd.Drops), "teleports", len(gd.Teleports))
+	log.Info("game data loaded from database", "items", len(gd.Items), "skills", len(gd.Skills), "drop_mobs", len(gd.Drops), "teleports", len(gd.Teleports), "generators", len(gd.Generators))
 	if listen == "" {
 		listen = net.JoinHostPort(cfg.ListenIP, fmt.Sprint(cfg.ListenPort))
 	}

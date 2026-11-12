@@ -1,0 +1,45 @@
+{{define "content"}}
+{{template "gdnav" "npcs"}}
+<div class="grid">
+  <section class="card">
+    <h2>NPCs</h2>
+    <p class="muted">Os modelos de que os NPCs nascem: status, experiência, equipamento e, nos mercadores, a loja. Quem os coloca no mapa são os <a href="/gamedata/generators">geradores</a>.</p>
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    <nav class="subnav" aria-label="Tipo de modelo">
+      {{range .Kinds}}<a href="/gamedata/npcs?kind={{.Kind}}"{{if eq .Kind $.Kind}} aria-current="page"{{end}}>{{.Label}}</a>{{end}}
+    </nav>
+    <form method="get" action="/gamedata/npcs" class="search">
+      <input type="hidden" name="kind" value="{{.Kind}}">
+      <input name="q" value="{{.Q}}" placeholder="Parte do nome do modelo" aria-label="Buscar NPC">
+      <button>Buscar</button>
+    </form>
+    {{if .NPCs}}
+    <p class="muted">{{if gt .Total (len .NPCs)}}Mostrando {{len .NPCs}} de {{.Total}}: refine a busca.{{else}}{{.Total}} modelo(s).{{end}}</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Modelo</th><th>Nome no jogo</th><th class="num">Nível</th><th class="num">HP</th><th class="num">Experiência</th><th>Tipo</th></tr></thead>
+      <tbody>{{range .NPCs}}<tr>
+        <td><a href="/gamedata/npc?kind={{.Kind}}&amp;name={{.Name}}">{{.Name}}</a></td>
+        {{if .Bad}}<td colspan="5"><span class="pill bad">imagem inválida</span></td>
+        {{else}}<td>{{.GameName}}</td><td class="num">{{.Level}}</td><td class="num">{{.HP}}</td><td class="num">{{.Exp}}</td>
+        <td>{{if .Merchant}}<span class="pill info">NPC {{.Merchant}}</span>{{else}}monstro{{end}}</td>{{end}}
+      </tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<p class="muted">Nenhum modelo encontrado.</p>{{end}}
+  </section>
+  <aside>
+    {{if eq .Kind "npc"}}
+    <section class="card">
+      <h2>Novo modelo</h2>
+      <form method="post" action="/gamedata/npcs">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="kind" value="{{.Kind}}">
+        <label>Nome do modelo <input name="name" maxlength="15" pattern="[A-Za-z0-9_@.\-]{1,15}" required><small>até 15 letras, números ou _ (o _ vira espaço no jogo)</small></label>
+        <label>Copiar de <input name="from" maxlength="15" placeholder="ex.: Orc_Guerreiro"><small>vazio cria um modelo zerado</small></label>
+        <button class="primary">Criar</button>
+      </form>
+    </section>
+    {{end}}
+    <section class="card"><h2>Últimas alterações</h2>{{template "changes" .Changes}}</section>
+  </aside>
+</div>
+{{end}}

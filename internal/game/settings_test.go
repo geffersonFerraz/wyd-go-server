@@ -59,7 +59,7 @@ func TestSettingsRejectsTyposAndBadValues(t *testing.T) {
 		"chance":   strings.Replace(base, "min_attack_chance: 0", "min_attack_chance: 150", 1),
 		"port":     strings.Replace(base, "port: 8281", "port: 0", 1),
 		"ip":       strings.Replace(base, "  ip: 127.0.0.1", "  ip: localhost", 1),
-		"public":   strings.Replace(base, "public_ip: 127.0.0.1", "public_ip: example.com", 1),
+		"public":   strings.Replace(base, "public_ip: 127.0.0.1", "public_ip: a_b.com", 1),
 		"dbport":   strings.Replace(base, "dbsrv_port: 7514", "dbsrv_port: 0", 1),
 		"cooldown": strings.Replace(base, "cooldown_seconds: 10", "cooldown_seconds: -1", 1),
 	} {

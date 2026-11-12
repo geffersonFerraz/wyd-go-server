@@ -30,7 +30,19 @@ func GameDataFixture(t *testing.T) *store.GameData {
 	if err := json.NewDecoder(z).Decode(gd); err != nil {
 		t.Fatal(err)
 	}
+	gd.Generators = GeneratorsFixture(t)
 	return gd
+}
+
+// GeneratorsFixture is the generators of the old config file, which also
+// fills an empty gamedata.npc_generators.
+func GeneratorsFixture(t *testing.T) []store.Generator {
+	t.Helper()
+	gens, err := ReadGeneratorsFile(ConfigDir + "/" + GeneratorsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return gens
 }
 
 // ConfigDir is the real config folder, seen from this package's tests.
@@ -82,6 +94,9 @@ func LoadRealData(t *testing.T) *Data {
 	t.Helper()
 	d, err := LoadData(ConfigDir, RealSettings(t), WorldFixture(t))
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.ApplyGenerators(GeneratorsFixture(t)); err != nil {
 		t.Fatal(err)
 	}
 	return d

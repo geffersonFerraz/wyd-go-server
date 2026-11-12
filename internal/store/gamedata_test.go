@@ -33,6 +33,7 @@ func TestGameDataRoundTrip(t *testing.T) {
 		t.Fatalf("drop settings: %d slots, %d blocked", len(back.DropSlots), len(back.BlockedDrops))
 	}
 	back.DropSlots, back.BlockedDrops = nil, nil // set by the migration, not by the import
+	back.NPCTemplates = nil                      // read from gamedata.mob_templates
 	if !reflect.DeepEqual(back, gd) {
 		t.Fatalf("round trip:\n got %+v\nwant %+v", back, gd)
 	}

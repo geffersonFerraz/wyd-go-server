@@ -72,7 +72,7 @@ func (s *Store) SearchItems(ctx context.Context, q string, limit int) ([]ItemSum
 
 // ItemNames maps ids to names for the given ids.
 func (s *Store) ItemNames(ctx context.Context, ids []int) (map[int]string, error) {
-	rows, _ := s.pool.Query(ctx, `SELECT id, name FROM gamedata.items WHERE id = ANY($1)`, ids)
+	rows, _ := s.pool.Query(ctx, `SELECT id, name FROM gamedata.items WHERE id = ANY($1::int[])`, ids)
 	out := map[int]string{}
 	var id int
 	var name string
@@ -82,7 +82,7 @@ func (s *Store) ItemNames(ctx context.Context, ids []int) (map[int]string, error
 
 // ItemPositions returns the equipment position bits of the items.
 func (s *Store) ItemPositions(ctx context.Context, ids []int) (map[int]int, error) {
-	rows, _ := s.pool.Query(ctx, `SELECT id, pos FROM gamedata.items WHERE id = ANY($1)`, ids)
+	rows, _ := s.pool.Query(ctx, `SELECT id, pos FROM gamedata.items WHERE id = ANY($1::int[])`, ids)
 	out := map[int]int{}
 	var id, pos int
 	_, err := pgx.ForEachRow(rows, []any{&id, &pos}, func() error { out[id] = pos; return nil })

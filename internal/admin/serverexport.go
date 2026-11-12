@@ -33,11 +33,14 @@ import (
 // configuration is saved in the panel's state folder.
 
 const (
-	exportFormat    = "wyd-server-export"
-	exportVersion   = 2 // 2: world assets in the database, YAML config files
-	exportMaxUpload = 128 << 20
-	importTTL       = 15 * time.Minute
-	snapshotsKept   = 10
+	exportFormat  = "wyd-server-export"
+	exportVersion = 3 // 3: NPC generators in the database (gamedata), no longer a config file
+	// exportVersionYAML is the version whose generators came as the file
+	// npc_generators.yaml; it is still read.
+	exportVersionYAML = 2
+	exportMaxUpload   = 128 << 20
+	importTTL         = 15 * time.Minute
+	snapshotsKept     = 10
 )
 
 // ExportFile is one file of the config folder (game.ConfigFiles).
@@ -175,11 +178,36 @@ func (s *Server) checkExport(e *ServerExport) ([][8]byte, error) {
 	if e.Format != exportFormat {
 		return nil, errors.New("não é um arquivo de exportação do servidor")
 	}
-	if e.Version != exportVersion {
-		return nil, fmt.Errorf("versão %d do arquivo; este painel lê a versão %d", e.Version, exportVersion)
+	if e.Version != exportVersion && e.Version != exportVersionYAML {
+		return nil, fmt.Errorf("versão %d do arquivo; este painel lê as versões %d e %d", e.Version, exportVersionYAML, exportVersion)
 	}
 	if e.GameData == nil || len(e.GameData.Items) == 0 {
 		return nil, errors.New("o arquivo não tem a lista de itens")
+	}
+	// Version 2 brought the generators as a config file: they go to the
+	// database with the rest, and the file is not written to the folder.
+	if i := slices.IndexFunc(e.Files, func(f ExportFile) bool { return f.Path == game.GeneratorsFile }); i >= 0 {
+		if len(e.GameData.Generators) == 0 {
+			gens, err := game.ParseGenerators(e.Files[i].Content)
+			if err != nil {
+				return nil, err
+			}
+			e.GameData.Generators = gens
+		}
+		e.Files = slices.Delete(e.Files, i, i+1)
+	}
+	if len(e.GameData.Generators) == 0 {
+		return nil, errors.New("o arquivo não tem os geradores de NPC")
+	}
+	// The generators are checked against the templates of the file itself.
+	if e.World != nil {
+		e.GameData.NPCTemplates = map[string]map[string][]byte{
+			store.TemplateNPC: e.World.TemplatesOf(store.TemplateNPC), store.TemplateNPCBase: e.World.TemplatesOf(store.TemplateNPCBase)}
+	}
+	if e.GameData.ExpRule != nil {
+		if err := e.GameData.ExpRule.Check(); err != nil {
+			return nil, fmt.Errorf("regra de experiência: %w", err)
+		}
 	}
 	if err := (&game.Data{}).ApplyGameData(e.GameData); err != nil {
 		return nil, fmt.Errorf("dados do jogo: %w", err)
@@ -321,6 +349,7 @@ func (s *Server) summarizeImport(ctx context.Context, e *ServerExport, macs [][8
 		{"Drops por chance", cc, nc},
 		{"Itens bloqueados", len(cur.GameData.BlockedDrops), len(e.GameData.BlockedDrops)},
 		{"Teleportes", len(cur.GameData.Teleports), len(e.GameData.Teleports)},
+		{"Geradores de NPC", len(cur.GameData.Generators), len(e.GameData.Generators)},
 		{"Donos de cidade", len(cur.GameData.CityOwners), len(e.GameData.CityOwners)},
 		{"Computadores banidos", len(cur.MacBans), len(e.MacBans)},
 		{"Arquivos de configuração", len(cur.Files), len(e.Files)},

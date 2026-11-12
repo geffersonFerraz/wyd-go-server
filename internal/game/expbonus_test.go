@@ -1,6 +1,7 @@
 package game
 
 import (
+	"dbsrv/internal/store"
 	"testing"
 
 	"dbsrv/internal/wire"
@@ -172,5 +173,88 @@ func TestPartyWindowLines(t *testing.T) {
 	}
 	if !self {
 		t.Fatal("the second member does not see itself in the party window")
+	}
+}
+
+// A full party (the leader and 12 members) read past PARTYBONUS in the C++;
+// here it would panic the game loop.
+func TestShareExpFullParty(t *testing.T) {
+	g := worldGame(t)
+	placePlayer(g, 2100, 2100, 0)
+	at := g.mobs[1].target
+	for id := 2; id <= 13; id++ {
+		g.users[id].status = userPlay
+		m := &g.mobs[id]
+		m.mode, m.target = 1, at
+		m.info.Player.Status.CurHP, m.info.Player.Status.Level = 100, 10
+		m.info.Player.Equip[0].Effect[1].Value = evoMortal
+		m.npc.leader = 1
+		g.mobs[1].npc.followers[id-2] = id
+	}
+	if n := len(g.partyMembers(1)); n != 13 {
+		t.Fatalf("party of %d", n)
+	}
+	g.shareExp(func(int) int64 { return 5000 }, 1, at)
+	for id := 1; id <= 13; id++ {
+		if g.mobs[id].info.Player.Exp <= 0 {
+			t.Fatalf("member %d got no experience", id)
+		}
+	}
+}
+
+// The rule of the admin panel replaces the level table and the zone table of
+// the C++.
+func TestExpRuleOfThePanel(t *testing.T) {
+	g := worldGame(t)
+	placePlayer(g, 2100, 2100, 0) // outside the hunting zones: the C++ gives a mortal 1000
+	pl := &g.mobs[1].info.Player
+	pl.Status.Level, pl.BStatus.Level = 99, 99 // level 100 on screen
+	const npc = MaxPlayer + 50
+	mob := &g.mobs[npc].info.Player
+	mob.Status.Level, mob.Exp = 99, 4000
+
+	legacy := g.expApply(mob.Exp, 1, npc)
+	if got := g.expApply2(legacy, 1, 1, false); got != 1000 {
+		t.Fatalf("C++ calculation outside the zones: %d", got)
+	}
+
+	r := store.DefaultExpRule()
+	r.Enabled = true
+	g.data.ExpRule = r
+	if got := g.expApply(mob.Exp, 1, npc); got != 4000 {
+		t.Fatalf("same level: %d", got)
+	}
+	if got := g.expApply2(4000, 1, 1, false); got != 4000 {
+		t.Fatalf("the zone table still applies: %d", got)
+	}
+	mob.Status.Level = 109 // the character is 10 levels below: +5%% for each of the 8 beyond the range
+	if got := g.expApply(mob.Exp, 1, npc); got != 5600 {
+		t.Fatalf("below the monster: %d", got)
+	}
+	mob.Status.Level = 79
+	if got := g.expApply(mob.Exp, 1, npc); got != 400 {
+		t.Fatalf("above the monster: %d", got)
+	}
+	mob.Status.Level = 99
+	pl.Equip[0].Effect[1].Value = evoArch
+	if got := g.expApply(mob.Exp, 1, npc); got != 2800 {
+		t.Fatalf("arch keeps 70%%: %d", got)
+	}
+	g.data.ExpRule.GlobalPercent = 200
+	g.expRate = 50 // +bonusexp still adds
+	if got := g.expApply(mob.Exp, 1, npc); got != 5600+2800 {
+		t.Fatalf("event + bonusexp: %d", got)
+	}
+	g.expRate = 0
+	// The level cap still gives nothing.
+	pl.Status.Level = maxLevel
+	if got := g.expApply(mob.Exp, 1, npc); got != 0 {
+		t.Fatalf("capped: %d", got)
+	}
+	// Asked for, the zone table comes back on top of the rule.
+	g.data.ExpRule.ZoneTable = true
+	pl.Status.Level = 99
+	if got := g.expApply2(4000, 1, 1, false); got != 20 {
+		t.Fatalf("zone table on: %d", got)
 	}
 }

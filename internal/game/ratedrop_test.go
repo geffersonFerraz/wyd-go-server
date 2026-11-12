@@ -83,7 +83,7 @@ func TestChanceDivisorUsesSlotRate(t *testing.T) {
 
 // The first import reads the real generators and leaves shops alone.
 func TestReadRateDropsFromFiles(t *testing.T) {
-	list, err := ReadRateDrops(ConfigDir, WorldFixture(t))
+	list, err := ReadRateDrops(GeneratorsFixture(t), WorldFixture(t))
 	if err != nil || len(list) < 100 {
 		t.Fatalf("%d monsters, err %v", len(list), err)
 	}

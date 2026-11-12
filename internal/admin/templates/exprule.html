@@ -1,0 +1,69 @@
+{{define "content"}}
+{{template "gdnav" "exp"}}
+<div class="grid">
+  <section class="card">
+    <h2>Experiência {{if .Rule.Enabled}}<span class="pill ok">regra ativa</span>{{else}}<span class="pill wait">cálculo original</span>{{end}}</h2>
+    <p class="muted">Experiência de uma morte = <strong>base do monstro × nível × evolução × multiplicador global</strong>. Os bônus do próprio personagem (itens, baú de experiência, fada), o Pesadelo e o Kefra morto continuam somando por cima.</p>
+    {{if .Msg}}<p class="alert ok">{{.Msg}}</p>{{end}}
+    {{if .Error}}<p class="alert bad">{{.Error}}</p>{{end}}
+    {{if not .Rule.Enabled}}<p class="alert bad">A regra está desligada: os canais usam o cálculo original do servidor (tabela de nível fixa e experiência fixa fora das zonas de caça). Os valores abaixo só valem depois de marcar “Usar esta regra”.</p>{{end}}
+    <form method="post" action="/gamedata/exp" class="gd-form">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label><input type="checkbox" name="enabled" value="1"{{if .Rule.Enabled}} checked{{end}}> Usar esta regra</label>
+
+      <h3>Multiplicador global</h3>
+      <div class="fields">
+        <label>Global (%) <input name="global" type="number" min="0" max="100000" value="{{.Rule.GlobalPercent}}"><small>100 = normal, 200 = evento de experiência em dobro, 0 = ninguém ganha</small></label>
+      </div>
+
+      <h3>Experiência base do monstro</h3>
+      <div class="fields">
+        <label>Origem
+          <select name="base_mode">
+            <option value="template"{{if not .ByLevel}} selected{{end}}>Do modelo do NPC</option>
+            <option value="level"{{if .ByLevel}} selected{{end}}>Calculada pelo nível</option>
+          </select>
+          <small>no modelo, cada monstro tem a sua em <a href="/gamedata/npcs">NPCs</a></small></label>
+        <label>Base fixa <input name="base_fixed" type="number" min="0" value="{{.Rule.BaseFixed}}"><small>só na base calculada</small></label>
+        <label>Por nível do monstro <input name="base_per_level" type="number" min="0" value="{{.Rule.BasePerLevel}}"><small>base = fixa + este valor × nível</small></label>
+      </div>
+
+      <h3>Diferença de nível</h3>
+      <p class="muted">Compara o nível do personagem com o do monstro. Dentro da faixa conta como nível igual; fora dela cada nível a mais de diferença soma ou tira o percentual indicado.</p>
+      <div class="fields">
+        <label>Faixa de nível igual <input name="equal_range" type="number" min="0" max="400" value="{{.Rule.EqualRange}}"><small>± níveis tratados como igual</small></label>
+        <label>Nível igual (%) <input name="equal" type="number" min="0" max="10000" value="{{.Rule.EqualPercent}}"></label>
+        <label>Abaixo do monstro: por nível (%) <input name="lower_per_level" type="number" min="0" max="10000" value="{{.Rule.LowerPerLevel}}"><small>bônus por nível de diferença</small></label>
+        <label>Abaixo do monstro: teto (%) <input name="lower_max" type="number" min="0" max="100000" value="{{.Rule.LowerMaxPercent}}"></label>
+        <label>Acima do monstro: por nível (%) <input name="higher_per_level" type="number" min="0" max="10000" value="{{.Rule.HigherPerLevel}}"><small>redução por nível de diferença</small></label>
+        <label>Acima do monstro: piso (%) <input name="higher_min" type="number" min="0" max="10000" value="{{.Rule.HigherMinPercent}}"></label>
+      </div>
+
+      <h3>Evolução do personagem</h3>
+      <p class="muted">Quanto da experiência cada evolução recebe. O ajuste de nível é somado ao nível do personagem antes da comparação com o monstro (um Celestial recomeça no nível 1).</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Evolução</th><th class="num">Recebe (%)</th><th class="num">Ajuste de nível</th></tr></thead>
+        <tbody>{{range .Evolutions}}<tr><td>{{.Label}}</td>
+          <td class="num"><input name="evo{{.Ev}}" type="number" min="0" max="10000" value="{{.Percent}}" aria-label="Percentual de {{.Label}}"></td>
+          <td class="num"><input name="offset{{.Ev}}" type="number" min="0" max="1000" value="{{.LevelOffset}}" aria-label="Ajuste de nível de {{.Label}}"></td></tr>{{end}}</tbody>
+      </table></div>
+
+      <h3>Zonas</h3>
+      <label><input type="checkbox" name="zone_table" value="1"{{if .Rule.ZoneTable}} checked{{end}}> Aplicar também a tabela de zonas do servidor original</label>
+      <p class="muted">Com ela, fora do Deserto, da Água e do Pesadelo o Mortal recebe sempre 1000 e as outras evoluções 20, qualquer que seja o resultado acima (seção <code>exp_bonus</code> do <code>tmsrv.yaml</code>).</p>
+      <button class="primary">Salvar</button>
+    </form>
+  </section>
+  <aside>
+    <section class="card">
+      <h2>Simulação</h2>
+      <p class="muted">Com os valores salvos: monstro de nível 200 e base {{.PreviewBase}}{{if not .ByLevel}} no modelo{{end}}. A coluna é a diferença (nível do monstro − nível do personagem).</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Evolução</th>{{range .Diffs}}<th class="num">{{if gt . 0}}+{{end}}{{.}}</th>{{end}}</tr></thead>
+        <tbody>{{range .Preview}}<tr><td>{{.Label}}</td>{{range .Cells}}<td class="num">{{.}}</td>{{end}}</tr>{{end}}</tbody>
+      </table></div>
+    </section>
+    <section class="card"><h2>Histórico</h2>{{template "changes" .Changes}}</section>
+  </aside>
+</div>
+{{end}}

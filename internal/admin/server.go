@@ -106,6 +106,7 @@ func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
 	}
 	s.tmpl = map[string]*template.Template{}
 	funcs["add1"] = func(i int) int { return i + 1 }
+	funcs["mul2"] = func(i int) int { return i * 2 }
 	funcs["alertkind"] = alertKindLabel
 	funcs["dict"] = func(kv ...any) map[string]any {
 		m := map[string]any{}
@@ -125,11 +126,11 @@ func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
 		}
 		return "especial"
 	}
-	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts", "notice", "gm", "messages", "stores", "droprates", "server"} {
+	for _, page := range []string{"login", "accounts", "account", "items", "item", "skills", "skill", "drops", "drop", "teleports", "character", "storage", "guilds", "alerts", "notice", "gm", "messages", "stores", "droprates", "server", "npcs", "npc", "generators", "generator", "exprule", "tracks", "track"} {
 		files := []string{"templates/layout.html", "templates/" + page + ".html"}
 		if page == "character" || page == "storage" {
 			files = append(files, "templates/editparts.html")
-		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" && page != "notice" && page != "gm" && page != "messages" && page != "stores" && page != "server" {
+		} else if page != "login" && page != "accounts" && page != "account" && page != "guilds" && page != "alerts" && page != "notice" && page != "gm" && page != "messages" && page != "stores" && page != "server" && page != "tracks" && page != "track" {
 			files = append(files, "templates/gamedata_common.html")
 		}
 		t, err := template.New("layout.html").Funcs(funcs).ParseFS(assets, files...)
@@ -162,6 +163,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /accounts/{user}/lock/password", s.auth(s.resetLockPassword))
 	mux.HandleFunc("GET /api/deliveries/{id}", s.auth(s.deliveryStatus))
 	s.gamedataRoutes(mux)
+	s.npcRoutes(mux)
+	s.expRuleRoutes(mux)
+	s.trackRoutes(mux)
 	s.editRoutes(mux)
 	s.guildRoutes(mux)
 	s.alertRoutes(mux)

@@ -97,6 +97,10 @@ func newChainN(t *testing.T, n int) *chain {
 	if err := st.ImportGameData(ctx, gd, "test"); err != nil {
 		t.Fatal(err)
 	}
+	// The NPC templates are read from the database with the tables.
+	if err := st.UpsertWorldAssets(ctx, &store.WorldAssets{Templates: game.WorldFixture(t).Templates}); err != nil {
+		t.Fatal(err)
+	}
 	back, err := st.LoadGameData(ctx)
 	if err != nil {
 		t.Fatal(err)

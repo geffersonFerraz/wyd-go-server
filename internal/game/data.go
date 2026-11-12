@@ -59,7 +59,7 @@ type Data struct {
 	Height       []byte // gamedata.assets HeightMap.dat, [y*4096+x]; 127 = blocked
 	Attribute    []byte // gamedata.assets AttributeMap.dat, 1024x1024 cells of 4x4 tiles
 	Teleports    []Teleport
-	Geners       []Generator           // config/npc_generators.yaml, index = generator id
+	Geners       []Generator           // gamedata.npc_generators, index = generator id
 	Lang         map[int]string        // config/language.yaml
 	Skills       []SkillData           // skilldata.csv, 256 entries
 	Drops        map[string]*MobDrop   // drop table by mob name (LoadDrops)
@@ -76,6 +76,7 @@ type Data struct {
 	Missions    []Mission                   // config/missions.yaml
 	Roulette    [maxRouletteBox]RouletteBox // roulette of tmsrv.yaml
 	ExpBonus    ExpBonus                    // exp_bonus of tmsrv.yaml
+	ExpRule     store.ExpRule               // gamedata.exp_rule (the panel); disabled = the C++ calculation
 }
 
 // Config is what the game loop runs with: tmsrv.yaml (see ApplySettings).
@@ -167,8 +168,8 @@ func (c *Config) fillDefaults() {
 
 // LoadData builds the static data: the world tables of tmsrv.yaml (s), the
 // big tables of the config folder (dir) and the binary files of the database
-// (w). Items, skills, drops and teleports come from the database too:
-// ApplyGameData.
+// (w). Items, skills, drops, teleports and NPC generators come from the
+// database too: ApplyGameData.
 func LoadData(dir string, s Settings, w *store.WorldAssets) (*Data, error) {
 	d := &Data{Items: make([]ItemData, MaxItemList), Skills: make([]SkillData, maxSkill)} // Skills: filled by ApplyGameData
 	if err := d.setWorldAssets(w); err != nil {
@@ -178,14 +179,9 @@ func LoadData(dir string, s Settings, w *store.WorldAssets) (*Data, error) {
 	if err := d.loadLanguage(dir); err != nil {
 		return nil, err
 	}
-	d.loadNPCBase(w.TemplatesOf(store.TemplateNPCBase))
-	if err := d.loadGeners(dir); err != nil {
-		return nil, err
-	}
 	if err := d.loadMissions(dir); err != nil {
 		return nil, err
 	}
-	d.StoreBase, d.Thorn = d.npcTemplate("Base"), d.npcTemplate("Vinha")
 	return d, nil
 }
 

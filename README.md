@@ -23,9 +23,23 @@ jogo precisam do cliente com o patch de canais (`wyd-client`).
 | Onde | Conteúdo | Quem lê |
 |---|---|---|
 | `tmsrv.yaml` | opções e tabelas pequenas: cidades, portões, NPCs de troca, recompensa diária, roleta, bônus de experiência | TMSRV (e DBSRV e painel, em parte) |
-| `config/` | `language.yaml`, `missions.yaml`, `npc_generators.yaml` | TMSRV e painel |
-| Banco, schema `gamedata` | itens, skills, drops, teleportes, mapas (`HeightMap.dat`, `AttributeMap.dat`), `ItemList.bin` do cliente e modelos de NPC e de classe | TMSRV, DBSRV e painel |
+| `config/` | `language.yaml`, `missions.yaml` | TMSRV e painel |
+| Banco, schema `gamedata` | itens, skills, drops, teleportes, geradores de NPC, regra de experiência, mapas (`HeightMap.dat`, `AttributeMap.dat`), `ItemList.bin` do cliente e modelos de NPC e de classe | TMSRV, DBSRV e painel |
 | Banco, tabela `account_locks` | bloqueio de conta | TMSRV e painel |
+
+Os NPCs são editados no painel, em **Dados do jogo**: *NPCs* (o modelo de cada
+monstro, mercador, montaria e evocação: status, experiência, equipamento e
+loja) e *Geradores* (onde, quando e em que grupo nascem). Valem nos canais em
+cerca de um segundo, sem reiniciar; os NPCs já nascidos continuam como estão
+até renascerem. O `config/npc_generators.yaml` só é lido uma vez, pelo painel,
+para preencher a tabela de geradores quando ela está vazia.
+
+A experiência das mortes segue a regra de **Dados do jogo > Experiência**:
+base do monstro (do modelo do NPC ou calculada pelo nível) × diferença de
+nível (abaixo, igual ou acima do monstro) × evolução do personagem ×
+multiplicador global (eventos). A tela simula o resultado e vale nos canais em
+cerca de um segundo. Enquanto "Usar esta regra" estiver desmarcado, vale o
+cálculo original do servidor C++ (com a tabela de zonas do `exp_bonus`).
 
 A recompensa diária de cada conta é salva junto com a conta. A pasta de
 `config/` pode ser trocada pela flag `-config-dir` (tmsrv e admin).
@@ -38,8 +52,8 @@ go run ./cmd/admin world-import -itemlist ItemList.bin
 go run ./cmd/admin world-import -heightmap HeightMap.dat -attributemap AttributeMap.dat -npc npc -npc-base npc_base -class classes
 ```
 
-O `ItemList.bin` vale em alguns segundos. Mapas e modelos valem quando a TMSRV
-(e, para as classes, o DBSRV) reiniciar.
+O `ItemList.bin` e os modelos de NPC valem em alguns segundos. Os mapas valem
+quando a TMSRV reiniciar, e os modelos de classe quando o DBSRV reiniciar.
 
 Só o `xml-import`, que migra uma vez as contas do DBsrv C++ (arquivos com
 dados de jogadores), ainda aponta para a pasta antiga `../Release Servidor/DBSRV`.
@@ -56,7 +70,8 @@ servidor senha-admin
 Um servidor novo começa com o banco vazio: o DBSRV e os canais não sobem até
 receberem os dados. Abra o painel, que sobe sozinho, e importe um arquivo
 gerado em **Exportar** no painel de outro servidor (menu Exportar > Importar).
-Exportações feitas antes da mudança para YAML (versão 1) não são aceitas.
+Exportações feitas antes da mudança para YAML (versão 1) não são aceitas; as
+da versão 2 (geradores ainda em arquivo) são.
 
 ## Configuração
 
