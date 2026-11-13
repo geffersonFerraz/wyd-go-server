@@ -12,13 +12,18 @@
 #   172.30.87.10 postgres   172.30.87.11 dbsrv   172.30.87.13 admin   172.30.87.14 backup
 #   172.30.87.21..30 tmsrv1..tmsrv10 (um container por canal)
 #
-# Canais: a fonte é a lista "channels" do tmsrv.yaml. Cada canal é um serviço
+# Canais: a fonte é a lista "servers" do tmsrv.yaml. Cada canal é um serviço
 # tmsrvN abaixo (copie um bloco para adicionar), com o IP, a porta e o
 # "-channel N" iguais aos do yaml. O DBSRV reconhece o canal pelo IP de
 # origem, e o serverlist.bin (http://<host>/serverlist.bin) leva a porta de
 # cada um. O teste internal/cluster TestComposeMatchesSettings confere que
 # este arquivo e o tmsrv.yaml batem. Ao renomear/remover canais:
 #   docker compose up -d --remove-orphans
+#
+# Mais de um servidor (mundo): todos usam este PostgreSQL e este admin; cada
+# servidor tem o seu dbsrv e os seus tmsrv, com "-server <group>". Os dos
+# outros servidores rodam em outra máquina com docker-compose.server.yaml.
+# O passo a passo está em "Servidores" no README.
 #
 # Portas publicadas no host:
 #   8281, 8282... tmsrvN (jogadores, abertas)   80 admin público: servNN.htm, serverlist.bin, itemlist.bin, manifest.json e marcas de guilda (aberta)
@@ -67,7 +72,9 @@ services:
       wyd: { ipv4_address: 172.30.87.10 }
     ports:
       # Só local: testes e ferramentas rodando no host.
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      # POSTGRES_BIND: o IP privado desta máquina, quando o dbsrv de outro
+      # servidor conecta de outra VM (nunca um IP público).
+      - "${POSTGRES_BIND:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -83,7 +90,8 @@ services:
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     restart: unless-stopped
     # Só a TMSRV conecta no DBSRV, pela rede wyd: a porta não é publicada.
-    command: ["-listen", "172.30.87.11:7514", "-config", "tmsrv.yaml"]
+    # Escuta no endereço "dbsrv" do servidor no tmsrv.yaml (este IP).
+    command: ["-config", "tmsrv.yaml"]
     networks:
       wyd: { ipv4_address: 172.30.87.11 }
     environment:

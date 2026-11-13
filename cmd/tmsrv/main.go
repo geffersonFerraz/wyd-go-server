@@ -1,11 +1,14 @@
 // Command tmsrv is the Go port of the C++ TMSRV (game server).
 //
-//	tmsrv -config-dir config -dsn postgres://... -channel 2
+//	tmsrv -config-dir config -dsn postgres://... -server 1 -channel 2
 //
-// tmsrv.yaml lists every channel; -channel (or TMSRV_CHANNEL) says which one
-// this process is: it listens on that channel's ip:port and connects to
-// DBSRV from that IP (DBSRV identifies the channel by it). With a single
-// channel in the file, -channel may be left out.
+// tmsrv.yaml lists every server and its channels; -server (or WYD_SERVER, the
+// server's group) and -channel (or TMSRV_CHANNEL) say which one this process
+// is: it listens on that channel's ip:port and connects to the DBSRV of its
+// server from that IP (DBSRV identifies the channel by it). With a single
+// server or a single channel in the file, the flag may be left out. -dsn is
+// the database every server shares; the guilds, ranking and city owners read
+// from it are the ones of this TMSRV's server.
 //
 // Items, skills, drops, teleports, the maps, the NPC templates and the NPC
 // generators come from Postgres (schema gamedata, filled by the admin panel;
@@ -38,6 +41,7 @@ func main() {
 	listen := flag.String("listen", "", "override network.listen_ip/listen_port of the settings (host:port)")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres with the gamedata tables (or DATABASE_URL)")
 	config := flag.String("config", "tmsrv.yaml", "server settings (YAML, required: every option comes from it)")
+	server := flag.Int("server", envInt("WYD_SERVER"), "server (group) of this TMSRV in the settings (or WYD_SERVER; 0 = the only one)")
 	channel := flag.Int("channel", envInt("TMSRV_CHANNEL"), "channel of this TMSRV in the settings (or TMSRV_CHANNEL; 0 = the only one)")
 	debug := flag.Bool("debug", false, "debug logging")
 	logDir := flag.String("log-dir", envOr("LOG_DIR", "logs"), `folder of the daily log files (or LOG_DIR; "" = console only)`)
@@ -52,12 +56,16 @@ func main() {
 	if *channel > 0 {
 		name = fmt.Sprintf("tmsrv%d", *channel)
 	}
+	if *server > 0 {
+		// Servers may share the log folder.
+		name = fmt.Sprintf("srv%d-%s", *server, name)
+	}
 	log, closeLog, err := logfile.Logger(*logDir, name, *logDays, level)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := run(log, *dir, *listen, *config, *dsn, *channel); err != nil {
+	if err := run(log, *dir, *listen, *config, *dsn, *server, *channel); err != nil {
 		log.Error("fatal", "err", err)
 		closeLog()
 		os.Exit(1)
@@ -77,7 +85,7 @@ func envInt(k string) int {
 	return n
 }
 
-func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) error {
+func run(log *slog.Logger, dir, listen, configPath, dsn string, server, channel int) error {
 	cfg, err := game.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
@@ -86,7 +94,7 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 	if err != nil {
 		return fmt.Errorf("settings: %w", err)
 	}
-	if err := cfg.ApplySettings(settings, channel); err != nil {
+	if err := cfg.ApplySettings(settings, server, channel); err != nil {
 		return fmt.Errorf("settings: %w", err)
 	}
 	// The client link is always encrypted: without the key the channel
@@ -95,9 +103,9 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 		return fmt.Errorf("TMSRV_TRANSPORT_KEY: %w (create it with: admin transport-key -env .env)", err)
 	}
 	log.Info("settings", "path", configPath, "listen", net.JoinHostPort(cfg.ListenIP, fmt.Sprint(cfg.ListenPort)),
-		"dbsrv", net.JoinHostPort(cfg.DBIP, fmt.Sprint(cfg.DBPort)), "channel", cfg.Channel,
+		"dbsrv", net.JoinHostPort(cfg.DBIP, fmt.Sprint(cfg.DBPort)), "server", cfg.Cluster.Group, "channel", cfg.Channel,
 		"newbie_zone", cfg.NewbieZone, "mob_ai", fmt.Sprintf("%+v", cfg.MobAI))
-	st, gd, world, err := loadGameData(dsn)
+	st, gd, world, err := loadGameData(dsn, cfg.Cluster.Group)
 	if err != nil {
 		return fmt.Errorf("game data: %w", err)
 	}
@@ -155,7 +163,7 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 			log.Error("listener", "err", err)
 		}
 	}()
-	log.Info("tmsrv listening", "addr", ln.Addr().String(), "channel", cfg.Channel,
+	log.Info("tmsrv listening", "addr", ln.Addr().String(), "server", cfg.Cluster.Group, "channel", cfg.Channel,
 		"dbsrv", net.JoinHostPort(cfg.DBIP, fmt.Sprint(cfg.DBPort)))
 	g.Run(ctx)
 	log.Info("stopped")
@@ -216,13 +224,13 @@ func loadGuilds(ctx context.Context, st *store.Store, g *game.Game, log *slog.Lo
 
 // loadGameData opens the database and loads the gamedata tables and the
 // binary world files; the store stays open for live reloads and account locks.
-func loadGameData(dsn string) (*store.Store, *store.GameData, *store.WorldAssets, error) {
+func loadGameData(dsn string, server int) (*store.Store, *store.GameData, *store.WorldAssets, error) {
 	if dsn == "" {
 		return nil, nil, nil, fmt.Errorf("no -dsn or DATABASE_URL")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	st, err := store.OpenUnprivileged(ctx, dsn, time.Local)
+	st, err := store.OpenServerUnprivileged(ctx, dsn, time.Local, server)
 	if err != nil {
 		return nil, nil, nil, err
 	}

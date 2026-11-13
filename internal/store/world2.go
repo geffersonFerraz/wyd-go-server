@@ -117,7 +117,7 @@ type Delivery struct {
 func (s *Store) PendingDeliveries(ctx context.Context, limit int) ([]Delivery, error) {
 	rows, _ := s.pool.Query(ctx, `
 		SELECT id, kind, username, payload, attempts FROM deliveries
-		WHERE processed_at IS NULL ORDER BY id LIMIT $1`, limit)
+		WHERE processed_at IS NULL AND server = $2 ORDER BY id LIMIT $1`, limit, s.server)
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Delivery, error) {
 		var d Delivery
 		err := r.Scan(&d.ID, &d.Kind, &d.Username, &d.Payload, &d.Attempts)
@@ -144,15 +144,27 @@ func (s *Store) DeferDelivery(ctx context.Context, id int64, reason string) erro
 
 // Enqueue adds a delivery for DBSRV to process. requestedBy is recorded for audit.
 func (s *Store) Enqueue(ctx context.Context, kind, username string, payload any, requestedBy string) (int64, error) {
+	return s.EnqueueTo(ctx, s.server, kind, username, payload, requestedBy)
+}
+
+// EnqueueTo queues a delivery for the DBSRV of a given server.
+func (s *Store) EnqueueTo(ctx context.Context, server int, kind, username string, payload any, requestedBy string) (int64, error) {
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		return 0, err
 	}
 	var id int64
 	err = s.pool.QueryRow(ctx, `
-		INSERT INTO deliveries (kind, username, payload, requested_by) VALUES ($1, $2, $3, $4) RETURNING id`,
-		kind, strings.ToUpper(username), raw, requestedBy).Scan(&id)
+		INSERT INTO deliveries (kind, username, payload, requested_by, server) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+		kind, strings.ToUpper(username), raw, requestedBy, server).Scan(&id)
 	return id, err
+}
+
+// MoveDelivery hands a pending delivery to the DBSRV of another server (the
+// one where the account is playing).
+func (s *Store) MoveDelivery(ctx context.Context, id int64, server int, reason string) error {
+	_, err := s.pool.Exec(ctx, `UPDATE deliveries SET server = $2, result = $3 WHERE id = $1 AND processed_at IS NULL`, id, server, reason)
+	return err
 }
 
 // DeliveryResult returns processed_at != NULL and the result text.
@@ -171,8 +183,8 @@ func (s *Store) DeliveryResult(ctx context.Context, id int64) (bool, string, err
 func (s *Store) CreateAccount(ctx context.Context, username, passwordHash string, numericHash *string, access int) (bool, error) {
 	// data: CharSlot -1 like a fresh C++ account file.
 	tag, err := s.pool.Exec(ctx, `
-		INSERT INTO accounts (username, password_hash, numeric_pass_hash, access_level, data)
-		VALUES ($1, $2, $3, $4, '{"CharSlot": -1}')
+		INSERT INTO accounts (username, password_hash, numeric_pass_hash, access_level)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (username) DO NOTHING`, strings.ToUpper(username), passwordHash, numericHash, access)
 	return tag.RowsAffected() == 1, err
 }
@@ -181,8 +193,8 @@ func (s *Store) CreateAccount(ctx context.Context, username, passwordHash string
 // at access level 0. A nil email leaves the account without one.
 func (s *Store) CreateAccountWithEmail(ctx context.Context, username, passwordHash string, numericHash, email *string) (bool, error) {
 	tag, err := s.pool.Exec(ctx, `
-		INSERT INTO accounts (username, password_hash, numeric_pass_hash, email, data)
-		VALUES ($1, $2, $3, $4, '{"CharSlot": -1}')
+		INSERT INTO accounts (username, password_hash, numeric_pass_hash, email)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (username) DO NOTHING`, strings.ToUpper(username), passwordHash, numericHash, email)
 	return tag.RowsAffected() == 1, err
 }

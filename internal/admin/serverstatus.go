@@ -34,17 +34,42 @@ type channelStatusSource interface {
 	ChannelStatus(ctx context.Context) ([]int, time.Duration, error)
 }
 
-// ServerStatusHandler serves servNN.htm for the game client. It shows
-// every channel offline when dbsrv has stopped heartbeating.
-func ServerStatusHandler(st *store.Store, log *slog.Logger) http.Handler {
-	return serverStatusHandler(st, log)
+// StatusSource is the servNN.htm of one server: File is the name in its
+// status_url (serverlist.bin points each server group at its own file).
+type StatusSource struct {
+	File  string
+	Store *store.Store
 }
 
-func serverStatusHandler(st channelStatusSource, log *slog.Logger) http.Handler {
+// ServerStatusHandler serves the servNN.htm of each server for the game
+// client. It shows every channel offline when that server's dbsrv has
+// stopped heartbeating. With a single server any servNN.htm is its status.
+func ServerStatusHandler(log *slog.Logger, sources ...StatusSource) http.Handler {
+	byFile := map[string]channelStatusSource{}
+	for _, s := range sources {
+		byFile[strings.ToLower(s.File)] = s.Store
+	}
+	var only channelStatusSource
+	if len(sources) == 1 {
+		only = sources[0].Store
+	}
+	return serverStatusHandler(byFile, only, log)
+}
+
+func serverStatusHandler(byFile map[string]channelStatusSource, only channelStatusSource, log *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{file}", func(w http.ResponseWriter, r *http.Request) {
-		if !statusFileRe.MatchString(r.PathValue("file")) {
+		file := strings.ToLower(r.PathValue("file"))
+		if !statusFileRe.MatchString(file) {
 			http.NotFound(w, r)
+			return
+		}
+		st := byFile[file]
+		if st == nil {
+			st = only
+		}
+		if st == nil {
+			http.NotFound(w, r) // not the status file of any server
 			return
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)

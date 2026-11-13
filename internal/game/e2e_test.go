@@ -89,7 +89,7 @@ func newChainN(t *testing.T, n int) *chain {
 	if err != nil {
 		t.Fatal(err)
 	}
-	layout := cluster.Config{ServerList: cluster.ServerList{Group: 1, PublicIP: "127.0.0.1", StatusURL: "http://127.0.0.1/serv00.htm"}}
+	layout := cluster.Server{Group: 1, PublicIP: "127.0.0.1", StatusURL: "http://127.0.0.1/serv00.htm"}
 	for i := 1; i <= n; i++ {
 		layout.Channels = append(layout.Channels, cluster.Channel{Number: i, IP: fmt.Sprintf("127.0.0.%d", i), Port: 8280 + i})
 	}

@@ -95,7 +95,7 @@ type Config struct {
 	DBIP        string
 	DBPort      int
 	Channel     int            // 1-based
-	Cluster     cluster.Config // every channel (in-game channel change)
+	Cluster     cluster.Server // this server and its channels (in-game channel change)
 	// ChangeChannelCooldown: minimum time between channel changes.
 	ChangeChannelCooldown time.Duration
 	NewbieZone            int
@@ -112,10 +112,15 @@ type Config struct {
 	TransportKey *ecdh.PrivateKey
 }
 
-// ApplySettings copies tmsrv.yaml values into the config, for channel
-// (1-based; 0 = the only channel of the file).
-func (c *Config) ApplySettings(s Settings, channel int) error {
-	cl := s.Cluster()
+// ApplySettings copies tmsrv.yaml values into the config, for a channel
+// (1-based; 0 = the only channel) of a server (its group; 0 = the only
+// server of the file).
+func (c *Config) ApplySettings(s Settings, server, channel int) error {
+	layout := s.Cluster()
+	cl, err := layout.Server(server)
+	if err != nil {
+		return err
+	}
 	if channel == 0 {
 		if len(cl.Channels) != 1 {
 			return fmt.Errorf("%d channels configured: choose one with -channel (or TMSRV_CHANNEL)", len(cl.Channels))
@@ -124,13 +129,13 @@ func (c *Config) ApplySettings(s Settings, channel int) error {
 	}
 	ch, ok := cl.Channel(channel)
 	if !ok {
-		return fmt.Errorf("channel %d is not in the settings (channels 1..%d)", channel, len(cl.Channels))
+		return fmt.Errorf("channel %d is not in the settings (server %d has channels 1..%d)", channel, cl.Group, len(cl.Channels))
 	}
 	c.ListenIP, c.ListenPort = ch.IP, ch.Port
 	c.Limits = s.Limits
 	c.Channel, c.Cluster = channel, cl
 	c.ChangeChannelCooldown = time.Duration(s.ChangeChannel.CooldownSeconds) * time.Second
-	c.DBIP, c.DBPort = s.Network.DBSRVIP, s.Network.DBSRVPort
+	c.DBIP, c.DBPort = cl.DBSRV.IP, cl.DBSRV.Port
 	c.NewbieZone, c.MobAI = s.NewbieZone, s.MobAI
 	c.StatSapphire = s.StatSapphire
 	c.DropToInventory = s.DropToInventory
@@ -146,7 +151,7 @@ func (c *Config) ApplySettings(s Settings, channel int) error {
 // applies tmsrv.yaml on top with ApplySettings).
 func LoadConfig() (Config, error) {
 	var c Config
-	err := c.ApplySettings(CppSettings(), 1)
+	err := c.ApplySettings(CppSettings(), 1, 1)
 	return c, err
 }
 

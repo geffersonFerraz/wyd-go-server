@@ -1,6 +1,7 @@
 package game
 
 import (
+	"dbsrv/internal/cluster"
 	"strings"
 	"time"
 
@@ -630,7 +631,8 @@ func (g *Game) guildCommand(u *User, cmd, value string) bool {
 }
 
 // createGuild is "/criar nome": 100,000,000 gold or a guild ticket (4614).
-// The guild id is the first free one; DBSRV saves it and tells the other
+// The guild id is the first free one of this server's range (guild numbers
+// do not repeat between servers); DBSRV saves it and tells the other
 // channels.
 func (g *Game) createGuild(u *User, name string) {
 	pl := &g.mobs[u.id].info.Player
@@ -640,7 +642,8 @@ func (g *Game) createGuild(u *User, name string) {
 		return
 	}
 	id := -1
-	for i := 1; i < maxGuild; i++ {
+	first, last := cluster.GuildRange(g.cfg.Cluster.Group)
+	for i := first; i <= last; i++ {
 		if g.guild(i).Name == "" {
 			id = i
 			break

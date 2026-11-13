@@ -8,11 +8,11 @@ import (
 )
 
 // ServerListPath is where the public listener serves the client's
-// serverlist.bin, built from the channels of tmsrv.yaml.
+// serverlist.bin, built from the servers of tmsrv.yaml (all of them).
 const ServerListPath = "/serverlist.bin"
 
 // ServerListHandler serves serverlist.bin. The settings file is read on
-// every request, so a channel added to it shows up without a restart.
+// every request, so a server or channel added to it shows up without a restart.
 func ServerListHandler(configPath string, log *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, err := BuildServerList(configPath)

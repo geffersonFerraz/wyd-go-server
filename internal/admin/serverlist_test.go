@@ -30,9 +30,11 @@ func TestServerListHandlerServesShippedSettings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g := want.ServerList.Group - 1
-	if got[g][0] != want.ServerList.StatusURL || got[g][1] != want.Address(1) {
-		t.Errorf("group %d: %q", g+1, got[g][:3])
+	for _, s := range want.Servers {
+		g := s.Group - 1
+		if got[g][0] != s.StatusURL || got[g][1] != s.Address(1) {
+			t.Errorf("group %d: %q", g+1, got[g][:3])
+		}
 	}
 
 	bad := httptest.NewServer(ServerListHandler("missing.yaml", slog.New(slog.DiscardHandler)))

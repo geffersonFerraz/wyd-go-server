@@ -10,8 +10,10 @@ fala com o cliente x64 do repositório `wyd-client`.
 - [Como rodar](#como-rodar)
 - [Dados do jogo](#dados-do-jogo)
 - [Canais](#canais)
+- [Servidores](#servidores)
 - [Arquivos para o cliente e o launcher](#arquivos-para-o-cliente-e-o-launcher)
 - [Testes](#testes)
+- [Release](#release)
 - [Documentação](#documentação)
 
 ## Visão geral
@@ -19,7 +21,7 @@ fala com o cliente x64 do repositório `wyd-client`.
 | Programa | O que faz | Substitui |
 |---|---|---|
 | `cmd/dbsrv` | Banco do jogo (contas, personagens, guildas), porta 7514 | `DBsrv.exe` (C++, arquivos XML) |
-| `cmd/tmsrv` | Servidor do jogo: um processo por canal (`-channel N`), portas 8281, 8282… | `TMsrv.exe` (C++) |
+| `cmd/tmsrv` | Servidor do jogo: um processo por canal (`-server G -channel N`), portas 8281, 8282… | `TMsrv.exe` (C++) |
 | `cmd/admin` | Painel web da equipe e porta pública para o cliente e o launcher | ferramenta NP do C++ |
 | `cmd/xml-import` | Importa uma vez as contas XML do DBsrv C++ | — |
 
@@ -183,9 +185,10 @@ Portas no host:
 
 Configuração:
 
-- `tmsrv.yaml` — toda a configuração da TMSRV. A lista `channels` também é
-  lida pelo DBSRV (reconhece cada canal pelo IP) e pelo painel (gera o
-  `serverlist.bin`).
+- `tmsrv.yaml` — toda a configuração da TMSRV, igual para todos os servidores.
+  A lista `servers` (grupo, endereço do DBSRV e canais de cada servidor)
+  também é lida pelo DBSRV (reconhece cada canal pelo IP) e pelo painel (gera
+  o `serverlist.bin` com todos os servidores). Ver [Servidores](#servidores).
 - `.env` — banco, usuário e senha do painel, chave do Resend e a chave privada
   do transporte (`TMSRV_TRANSPORT_KEY`, obrigatória). Fora do Git, assim como
   `.admin-state/`.
@@ -220,8 +223,8 @@ reiniciar, e modelos de classe quando o DBSRV reiniciar.
 
 ## Canais
 
-Cada canal é uma TMSRV com IP e porta próprios em `channels` do `tmsrv.yaml`
-(1..N, no máximo 10). Para adicionar:
+Cada canal é uma TMSRV com IP e porta próprios em `channels` do seu servidor
+no `tmsrv.yaml` (1..N, no máximo 10). Para adicionar:
 
 1. acrescente `{ number: 5, ip: 172.30.87.25, port: 8285 }` em `channels`;
 2. copie o bloco `tmsrv4` do `docker-compose.yaml` como `tmsrv5`, com o mesmo
@@ -247,6 +250,91 @@ sequenceDiagram
     B-->>C: entra no mapa, na mesma posição
 ```
 
+## Servidores
+
+Um servidor (mundo) é um grupo na lista do cliente, com o seu DBSRV e os seus
+canais. Todos usam o mesmo PostgreSQL e o mesmo painel:
+
+```mermaid
+flowchart LR
+    subgraph VM1["VM 1 (principal)"]
+        A[admin<br/>painel + launcher + serverlist.bin]
+        D1[dbsrv -server 1] --- T1[tmsrv 1..N]
+        PG[(PostgreSQL)]
+    end
+    subgraph VM2["VM 2"]
+        D2[dbsrv -server 2] --- T2[tmsrv 1..N]
+    end
+    A --> PG
+    D1 --> PG
+    D2 -- rede privada --> PG
+    T1 & T2 -. dados do jogo .-> PG
+```
+
+| É de todos os servidores | É de cada servidor |
+|---|---|
+| conta: login, senha, senha numérica, ban, nível de acesso, **cash** e honra | personagens e nomes de personagem |
+| bloqueio de conta e ban por MAC | itens, baú e gold do baú |
+| dados do jogo (itens, skills, drops, NPCs, experiência, `ItemList.bin`) | guildas, alianças, guerras e donos de cidade |
+| `tmsrv.yaml` e `config/` (limites, arena, guerras, loja de cash) | ranking, selos, lojinhas, rastreio de itens |
+| chave do transporte (o cliente tem uma chave pública só) | mensagens `/gm`, alertas, estado dos canais |
+
+No banco, o que é de todos fica nos schemas `public` e `gamedata`; o mundo de
+cada servidor fica no schema `s<group>` (`s1`, `s2`…), criado pelo DBSRV dele
+ao subir. Cada programa conecta com `search_path = s<group>, public`, então
+só alcança o mundo do próprio servidor. No `psql`, qualifique:
+`SELECT * FROM s2.characters`.
+
+Regras que o servidor garante:
+
+- **Uma conta joga em um servidor por vez.** O cash e o ban são da conta, e
+  cada save da TMSRV regrava a conta: com ela aberta em dois servidores, um
+  desfaria o que o outro gastou. Quem tenta entrar no segundo servidor recebe
+  o mesmo aviso de "conta em uso" (e pode derrubar a outra sessão, como entre
+  canais). Se um DBSRV cair, as contas dele são liberadas em 30 segundos.
+- **Um DBSRV por servidor.** Um segundo DBSRV com o mesmo `-server` não sobe.
+- **Entregas do painel** (cash, ban, senha, expulsar) vão para o servidor onde
+  o jogador está. Itens e edições de personagem são do servidor escolhido no
+  painel; a edição espera se o jogador estiver jogando em outro servidor.
+
+O `tmsrv.yaml` é um arquivo só, igual em todas as máquinas, com todos os
+servidores em `servers`. O DBSRV e a TMSRV escolhem o seu com
+`-server <group>` (ou `WYD_SERVER`); com um servidor só no arquivo a opção é
+dispensável. O painel não tem essa opção: ele cuida de todos, com um seletor
+de servidor no topo, e serve um `serverlist.bin` com todos os grupos e o
+`servNN.htm` de cada um.
+
+### Criar o servidor 2 em outra VM
+
+1. **Rede**: a VM 2 precisa alcançar o PostgreSQL da VM 1. Use uma rede
+   privada ou VPN entre as VMs, publique o banco só nela
+   (`POSTGRES_BIND=<IP privado da VM 1>` no `.env` da VM 1), libere a porta
+   5432 no firewall apenas para a VM 2 e use uma `POSTGRES_PASSWORD` forte. O
+   banco não deve ficar aberto para a internet.
+2. **`tmsrv.yaml`**: descomente e ajuste o grupo 2 em `servers` (nomes DNS e
+   portas dos canais) e copie o arquivo para as duas VMs. O `status_url` do
+   grupo 2 aponta para o painel da VM 1, com outro arquivo (`serv01.htm`).
+3. **VM 2**: copie o repositório, crie o `.env` com `WYD_SERVER=2`,
+   `DATABASE_URL=postgres://dbsrv:<senha>@<IP privado da VM 1>:5432/dbsrv` e
+   a mesma `TMSRV_TRANSPORT_KEY` da VM 1, e suba só o DBSRV e os canais:
+   `docker compose -f docker-compose.server.yaml up -d --build`. O DBSRV cria
+   o schema `s2` na primeira vez.
+4. **VM 1**: `docker compose up -d` de novo, para o painel ler o
+   `tmsrv.yaml` novo. O servidor 2 aparece no seletor do painel e no
+   `serverlist.bin`, que chega aos jogadores pelo launcher.
+5. **Cliente**: o nome do grupo 2 vem do `sn.bin` do cliente.
+
+No `docker-compose.yaml` da VM 1, com mais de um servidor no `tmsrv.yaml`,
+ponha `-server 1` no `command` de `dbsrv` e de cada `tmsrvN` (ou
+`WYD_SERVER=1` no ambiente deles). `go test ./internal/cluster` confere que
+o compose tem um `tmsrv` por canal dos servidores que ele roda, com os IPs e
+portas do yaml.
+
+As marcas de guilda são uma pasta só (`guildmarks/`) para todos os servidores:
+o número de guilda não se repete entre eles. Cada servidor cria guildas na
+sua faixa (6553 números por grupo: 1–6553 no grupo 1, 6554–13106 no grupo
+2…), e o DBSRV recusa uma criação fora dela.
+
 ## Arquivos para o cliente e o launcher
 
 A porta pública do painel (`-public-listen`) serve:
@@ -254,7 +342,7 @@ A porta pública do painel (`-public-listen`) serve:
 | Rota | Conteúdo |
 |---|---|
 | `/manifest.json` | nome, tamanho e SHA-256 dos arquivos abaixo |
-| `/serverlist.bin` | lista de canais, gerada do `tmsrv.yaml` |
+| `/serverlist.bin` | lista de servidores e canais, gerada do `tmsrv.yaml` |
 | `/itemlist.bin` | `ItemList.bin`, gerado do banco |
 | `/servNN.htm` | jogadores online por canal |
 | `/launcher/` | página mostrada dentro do launcher |
@@ -285,7 +373,28 @@ go test ./... -p 1
 ```
 
 O banco `dbsrv_test` é **apagado** a cada execução; `-p 1` é necessário porque
-os pacotes compartilham esse banco.
+os pacotes compartilham esse banco. O workflow `test` do GitHub Actions roda
+o mesmo com um Postgres de serviço em cada push na `main` e em pull requests.
+
+## Release
+
+Uma tag `v*` dispara o workflow `release`:
+
+```sh
+git tag v1.2.3 && git push origin v1.2.3
+```
+
+Depois dos testes, ele publica:
+
+- as imagens `ghcr.io/<dono>/wyd-dbsrv`, `wyd-tmsrv` e `wyd-admin` (linux/amd64),
+  com as tags `1.2.3`, `1.2` e `latest`;
+- a release no GitHub com `wyd-server-v1.2.3-linux-amd64.tar.gz` (dbsrv, tmsrv,
+  admin e xml-import, com `config/` e `tmsrv.yaml`) e o `.sha256`.
+
+Uma tag com hífen (`v1.2.3-rc1`) vira pre-release e não move a `latest`. As
+imagens nascem privadas no GHCR; para baixá-las numa VM, faça
+`docker login ghcr.io` com um token que tenha `read:packages`, ou torne o
+pacote público nas configurações dele.
 
 ## Documentação
 

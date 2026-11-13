@@ -1,7 +1,13 @@
 // Command dbsrv is the Go + PostgreSQL replacement for the C++ DBSRV.
 //
 //	dbsrv -dsn postgres://dbsrv:dbsrv@localhost:5432/dbsrv \
-//	      -config tmsrv.yaml
+//	      -config tmsrv.yaml -server 1
+//
+// tmsrv.yaml lists every server; -server (or WYD_SERVER, the server's group)
+// says which one this DBSRV is: it listens on that server's dbsrv address and
+// only accepts its channels. With a single server in the file, -server may be
+// left out. Every server uses the same database (-dsn): the accounts are
+// shared and each server has its world in its own schema (s<group>).
 //
 // Environment: DATABASE_URL (instead of -dsn), DBSRV_MASTER_PASSWORD_HASH
 // (optional argon2id hash enabling the staff master password).
@@ -15,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 	_ "time/tzdata"
@@ -27,9 +34,10 @@ import (
 )
 
 func main() {
-	listen := flag.String("listen", ":7514", "address TMSRV connects to")
+	listen := flag.String("listen", "", "address TMSRV connects to (default: the dbsrv ip:port of this server in the settings)")
 	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "Postgres connection string (or DATABASE_URL)")
-	config := flag.String("config", "tmsrv.yaml", "TMSRV settings: their channels section lists the channel IPs (formerly serverlist.txt)")
+	config := flag.String("config", "tmsrv.yaml", "TMSRV settings: their servers section lists the channel IPs (formerly serverlist.txt)")
+	serverGroup := flag.Int("server", envInt("WYD_SERVER"), "server (group) of this DBSRV in the settings (or WYD_SERVER; 0 = the only one)")
 	tz := flag.String("tz", "America/Sao_Paulo", "game time zone")
 	statusFile := flag.String("status-file", "", "write online counts here every 30s (C++: C:\\xampp\\htdocs\\servNN.htm)")
 	debug := flag.Bool("debug", false, "debug logging")
@@ -41,12 +49,17 @@ func main() {
 	if *debug {
 		level = slog.LevelDebug
 	}
-	log, closeLog, err := logfile.Logger(*logDir, "dbsrv", *logDays, level)
+	name := "dbsrv"
+	if *serverGroup > 0 {
+		// Servers may share the log folder.
+		name = fmt.Sprintf("srv%d-dbsrv", *serverGroup)
+	}
+	log, closeLog, err := logfile.Logger(*logDir, name, *logDays, level)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := run(log, *listen, *dsn, *config, *tz, *statusFile); err != nil {
+	if err := run(log, *listen, *dsn, *config, *tz, *statusFile, *serverGroup); err != nil {
 		log.Error("fatal", "err", err)
 		closeLog()
 		os.Exit(1)
@@ -61,7 +74,12 @@ func envOr(k, def string) string {
 	return def
 }
 
-func run(log *slog.Logger, listen, dsn, configPath, tz, statusFile string) error {
+func envInt(k string) int {
+	n, _ := strconv.Atoi(os.Getenv(k))
+	return n
+}
+
+func run(log *slog.Logger, listen, dsn, configPath, tz, statusFile string, group int) error {
 	if dsn == "" {
 		return fmt.Errorf("no -dsn or DATABASE_URL")
 	}
@@ -73,12 +91,22 @@ func run(log *slog.Logger, listen, dsn, configPath, tz, statusFile string) error
 	if err != nil {
 		return err
 	}
-	channels := layout.ChannelIPs()
+	this, err := layout.Server(group)
+	if err != nil {
+		return err
+	}
+	channels := this.ChannelIPs()
+	if listen == "" {
+		listen = this.DBSRV.Addr()
+	}
+	log.Info("settings", "path", configPath, "server", this.Group, "listen", listen)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	st, err := store.Open(ctx, dsn, loc)
+	// Every server uses the same database; this DBSRV works on the world of
+	// its own (schema s<group>) and on the shared accounts.
+	st, err := store.OpenServer(ctx, dsn, loc, this.Group)
 	if err != nil {
 		return fmt.Errorf("database: %w", err)
 	}
@@ -86,6 +114,11 @@ func run(log *slog.Logger, listen, dsn, configPath, tz, statusFile string) error
 	if err := st.Migrate(ctx); err != nil {
 		return fmt.Errorf("migrate: %w", err)
 	}
+	unlock, err := st.LockServer(ctx, func(err error) { log.Error("server lock lost", "server", this.Group, "err", err) })
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	classes, err := st.ClassTemplates(ctx)
 	if err != nil {
 		return fmt.Errorf("class templates: %w", err)
@@ -101,6 +134,7 @@ func run(log *slog.Logger, listen, dsn, configPath, tz, statusFile string) error
 
 	cfg := server.Config{
 		Listen:             listen,
+		Group:              this.Group,
 		ChannelIPs:         channels,
 		MasterPasswordHash: os.Getenv("DBSRV_MASTER_PASSWORD_HASH"),
 		Loc:                loc,

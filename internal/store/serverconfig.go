@@ -27,7 +27,7 @@ func (s *Store) ImportServerConfig(ctx context.Context, gd *GameData, world *Wor
 			return err
 		}
 		for _, q := range []string{`DELETE FROM gamedata.drop_slots`, `DELETE FROM gamedata.blocked_drop_items`,
-			`DELETE FROM gamedata.city_owners`, `DELETE FROM mac_bans`} {
+			`DELETE FROM city_owners`, `DELETE FROM mac_bans`} {
 			if _, err := tx.Exec(ctx, q); err != nil {
 				return err
 			}
@@ -43,7 +43,7 @@ func (s *Store) ImportServerConfig(ctx context.Context, gd *GameData, world *Wor
 			}
 		}
 		for _, c := range gd.CityOwners {
-			if _, err := tx.Exec(ctx, `INSERT INTO gamedata.city_owners (channel, city, guild_id, changed_by, changed_at) VALUES ($1, $2, $3, $4, $5)`,
+			if _, err := tx.Exec(ctx, `INSERT INTO city_owners (channel, city, guild_id, changed_by, changed_at) VALUES ($1, $2, $3, $4, $5)`,
 				c.Channel, c.City, c.GuildID, c.ChangedBy, c.ChangedAt); err != nil {
 				return fmt.Errorf("city %d channel %d: %w", c.City, c.Channel, err)
 			}

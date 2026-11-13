@@ -83,7 +83,7 @@
       <h2>No jogo</h2>
       {{if .KickError}}<p class="alert bad">{{.KickError}}</p>{{end}}
       {{if .Online}}
-        <p><span class="pill info">online</span> no canal {{.Online.Channel}} desde {{datetime .Online.Since}}</p>
+        <p><span class="pill info">online</span> no servidor {{.Online.Server}}, canal {{.Online.Channel}} desde {{datetime .Online.Since}}</p>
         <p class="muted small">Enquanto o jogador está online, o TMSRV guarda a conta em memória e regrava tudo a cada save: alterações diretas no banco são bloqueadas. Desconecte para editar (o TMSRV salva antes de sair).</p>
         <form method="post" action="/accounts/{{pathescape .Username}}/kick">
           <input type="hidden" name="csrf" value="{{.CSRF}}">

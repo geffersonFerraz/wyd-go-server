@@ -102,43 +102,70 @@ func (s *Store) AccountDetail(ctx context.Context, username string) (AccountSumm
 // Bump it whenever dbsrv learns a payload the admin panel starts sending.
 const DeliveryProtocol = 8
 
-// OnlineInfo says where an account is logged in.
+// OnlineInfo is where an account is playing.
 type OnlineInfo struct {
+	Server  int // the server (group) whose DBSRV holds the account
 	Channel int
 	Client  int
 	Since   time.Time
 }
 
-// SetOnline records a login (replacing any stale row for the account).
-func (s *Store) SetOnline(ctx context.Context, username string, channel, client int) error {
-	_, err := s.pool.Exec(ctx, `
-		INSERT INTO online_accounts (account_id, username, channel, client)
-		SELECT id, username, $2, $3 FROM accounts WHERE username = $1
-		ON CONFLICT (account_id) DO UPDATE SET channel = EXCLUDED.channel, client = EXCLUDED.client, since = now()`,
-		strings.ToUpper(username), channel, client)
-	return err
+// leaseStale is how long without a heartbeat until the accounts a DBSRV
+// holds are considered free (it crashed without clearing them).
+const leaseStale = "30 seconds"
+
+// ClaimOnline marks an account online on this server, on a channel and
+// client slot. The row is the lease of the account: an account is held by one
+// server at a time, because its cash, ban and password are shared and every
+// TMSRV save rewrites them. It reports false, and the server that holds the
+// account, when another server whose DBSRV is alive has it (0 = the account
+// does not exist). A negative channel is a DBSRV writing the stored account
+// (a delivery), not a player.
+func (s *Store) ClaimOnline(ctx context.Context, username string, channel, client int) (ok bool, heldBy int, err error) {
+	username = strings.ToUpper(username)
+	tag, err := s.pool.Exec(ctx, `
+		INSERT INTO online_accounts (account_id, username, server, channel, client)
+		SELECT id, username, $2, $3, $4 FROM accounts WHERE username = $1
+		ON CONFLICT (account_id) DO UPDATE
+			SET server = EXCLUDED.server, channel = EXCLUDED.channel, client = EXCLUDED.client, since = now()
+			WHERE online_accounts.server = EXCLUDED.server
+			   OR NOT EXISTS (SELECT 1 FROM server_status st WHERE st.server = online_accounts.server
+			                  AND st.dbsrv_seen_at > now() - interval '`+leaseStale+`')`,
+		username, s.server, channel, client)
+	if err != nil {
+		return false, 0, err
+	}
+	if tag.RowsAffected() == 1 {
+		return true, s.server, nil
+	}
+	err = s.pool.QueryRow(ctx, `SELECT server FROM online_accounts WHERE username = $1`, username).Scan(&heldBy)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, 0, nil
+	}
+	return false, heldBy, err
 }
 
-// SetOffline removes the row only if it is still this channel/client's
-// login, so a late logout cannot erase a newer login elsewhere.
+// SetOffline removes the mark, if it still belongs to that slot of this
+// server.
 func (s *Store) SetOffline(ctx context.Context, username string, channel, client int) error {
-	_, err := s.pool.Exec(ctx, `DELETE FROM online_accounts WHERE username = $1 AND channel = $2 AND client = $3`,
-		strings.ToUpper(username), channel, client)
+	_, err := s.pool.Exec(ctx, `DELETE FROM online_accounts WHERE username = $1 AND server = $2 AND channel = $3 AND client = $4`,
+		strings.ToUpper(username), s.server, channel, client)
 	return err
 }
 
-// ClearOnline removes every row for a channel, or all rows when channel < 0
-// (dbsrv startup: nobody can be online yet).
+// ClearOnline forgets the accounts this server holds on a channel (index);
+// a negative channel clears all of them (DBSRV startup: nobody can be online
+// before a TMSRV connects). The accounts of other servers are not touched.
 func (s *Store) ClearOnline(ctx context.Context, channel int) error {
-	_, err := s.pool.Exec(ctx, `DELETE FROM online_accounts WHERE $1 < 0 OR channel = $1`, channel)
+	_, err := s.pool.Exec(ctx, `DELETE FROM online_accounts WHERE server = $2 AND ($1 < 0 OR channel = $1)`, channel, s.server)
 	return err
 }
 
-// Online returns where username is logged in, or nil.
+// Online reports where an account is playing (any server), or nil.
 func (s *Store) Online(ctx context.Context, username string) (*OnlineInfo, error) {
 	var o OnlineInfo
-	err := s.pool.QueryRow(ctx, `SELECT channel, client, since FROM online_accounts WHERE username = $1`,
-		strings.ToUpper(username)).Scan(&o.Channel, &o.Client, &o.Since)
+	err := s.pool.QueryRow(ctx, `SELECT server, channel, client, since FROM online_accounts WHERE username = $1 AND channel >= 0`,
+		strings.ToUpper(username)).Scan(&o.Server, &o.Channel, &o.Client, &o.Since)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -148,31 +175,40 @@ func (s *Store) Online(ctx context.Context, username string) (*OnlineInfo, error
 	return &o, nil
 }
 
-// Heartbeat records that dbsrv is alive and which payload version it speaks.
+// Heartbeat records that the DBSRV of this server is alive and which
+// delivery protocol it speaks. The admin panel refuses to queue deliveries
+// when it is stale or the protocol is older than the panel needs.
 func (s *Store) Heartbeat(ctx context.Context, protocol int) error {
-	_, err := s.pool.Exec(ctx, `UPDATE server_state SET dbsrv_protocol = $1, dbsrv_seen_at = now() WHERE id = 1`, protocol)
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO server_status (server, dbsrv_protocol, dbsrv_seen_at) VALUES ($2, $1, now())
+		ON CONFLICT (server) DO UPDATE SET dbsrv_protocol = EXCLUDED.dbsrv_protocol, dbsrv_seen_at = now()`, protocol, s.server)
 	return err
 }
 
-// ReportChannels records the online count of each channel (-1 when its
-// TMSRV is not connected), sent by dbsrv with its heartbeat.
+// ReportChannels stores how many accounts are online on each channel of
+// this server (index = channel-1; -1 = that TMSRV is not connected).
 func (s *Store) ReportChannels(ctx context.Context, online []int) error {
 	counts := make([]int32, len(online))
 	for i, n := range online {
 		counts[i] = int32(n)
 	}
-	_, err := s.pool.Exec(ctx, `UPDATE server_state SET channel_online = $1 WHERE id = 1`, counts)
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO server_status (server, channel_online) VALUES ($2, $1)
+		ON CONFLICT (server) DO UPDATE SET channel_online = EXCLUDED.channel_online`, counts, s.server)
 	return err
 }
 
-// ChannelStatus returns the last ReportChannels counts and the age of
-// dbsrv's heartbeat (-1 when it never beat), measured by the database clock.
+// ChannelStatus returns the online counts of this server's channels and how
+// long ago its DBSRV last heartbeated (negative = never).
 func (s *Store) ChannelStatus(ctx context.Context) (online []int, age time.Duration, err error) {
 	var counts []int32
 	var ageSec *float64
 	err = s.pool.QueryRow(ctx, `
 		SELECT channel_online, EXTRACT(EPOCH FROM now() - dbsrv_seen_at)::float8
-		FROM server_state WHERE id = 1`).Scan(&counts, &ageSec)
+		FROM server_status WHERE server = $1`, s.server).Scan(&counts, &ageSec)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, -1, nil // its DBSRV never started
+	}
 	if err != nil {
 		return nil, 0, err
 	}
@@ -187,13 +223,15 @@ func (s *Store) ChannelStatus(ctx context.Context) (online []int, age time.Durat
 	return online, age, nil
 }
 
-// DBSRVStatus returns dbsrv's last heartbeat (seenAt nil if never) and
-// how long ago it was, measured by the database clock.
+// DBSRVStatus returns the last heartbeat of this server's DBSRV.
 func (s *Store) DBSRVStatus(ctx context.Context) (protocol int, seenAt *time.Time, age time.Duration, err error) {
 	var ageSec *float64
 	err = s.pool.QueryRow(ctx, `
 		SELECT dbsrv_protocol, dbsrv_seen_at, EXTRACT(EPOCH FROM now() - dbsrv_seen_at)::float8
-		FROM server_state WHERE id = 1`).Scan(&protocol, &seenAt, &ageSec)
+		FROM server_status WHERE server = $1`, s.server).Scan(&protocol, &seenAt, &ageSec)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil, 0, nil
+	}
 	if ageSec != nil {
 		age = time.Duration(*ageSec * float64(time.Second))
 	}
@@ -211,6 +249,7 @@ func (s *Store) AccountExists(ctx context.Context, username string) (bool, error
 // returned: it can hold a new password.
 type DeliveryInfo struct {
 	ID          int64
+	Server      int // the server whose DBSRV processes it
 	Kind        string
 	Username    string
 	RequestedBy string
@@ -237,13 +276,13 @@ const deliveryCols = `id, kind, username, requested_by, created_at, processed_at
 	CASE WHEN kind = 'item' AND payload->>'item_id' ~ '^[0-9]{1,5}$'
 		THEN COALESCE((SELECT name FROM gamedata.items i WHERE i.id = (payload->>'item_id')::int), '') ELSE '' END,
 	CASE WHEN kind = 'item' THEN payload->'effects' END,
-	CASE WHEN kind IN ('edit', 'cash', 'ban', 'notice') THEN payload END`
+	CASE WHEN kind IN ('edit', 'cash', 'ban', 'notice') THEN payload END, server`
 
 func scanDelivery(r pgx.CollectableRow) (DeliveryInfo, error) {
 	var d DeliveryInfo
 	var effects, edit []byte
 	err := r.Scan(&d.ID, &d.Kind, &d.Username, &d.RequestedBy, &d.CreatedAt, &d.ProcessedAt, &d.Result, &d.Attempts,
-		&d.ItemID, &d.ItemName, &effects, &edit)
+		&d.ItemID, &d.ItemName, &effects, &edit, &d.Server)
 	if err == nil && len(effects) > 0 {
 		_ = json.Unmarshal(effects, &d.Effects) // display only
 	}

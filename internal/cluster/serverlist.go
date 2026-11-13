@@ -28,13 +28,16 @@ var serverListKey = [entrySize]byte{
 // ServerListTable is the plain table: [group][0] status URL, [group][n] channel n.
 type ServerListTable [MaxGroups][entriesPerGrp]string
 
-// Table is the serverlist of this configuration: only its group is filled.
+// Table is the serverlist of this configuration: one group per server.
 func (c *Config) Table() ServerListTable {
 	var t ServerListTable
-	g := c.ServerList.Group - 1
-	t[g][0] = c.ServerList.StatusURL
-	for _, ch := range c.Channels {
-		t[g][ch.Number] = c.Address(ch.Number)
+	for i := range c.Servers {
+		s := &c.Servers[i]
+		g := s.Group - 1
+		t[g][0] = s.StatusURL
+		for _, ch := range s.Channels {
+			t[g][ch.Number] = s.Address(ch.Number)
+		}
 	}
 	return t
 }
