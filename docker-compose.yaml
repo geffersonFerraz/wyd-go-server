@@ -21,7 +21,7 @@
 #   docker compose up -d --remove-orphans
 #
 # Portas publicadas no host:
-#   8281, 8282... tmsrvN (jogadores, abertas)   80 admin público: servNN.htm, serverlist.bin, itemlist.bin e marcas de guilda (aberta)
+#   8281, 8282... tmsrvN (jogadores, abertas)   80 admin público: servNN.htm, serverlist.bin, itemlist.bin, manifest.json e marcas de guilda (aberta)
 #   8080 painel admin (127.0.0.1)               5432 postgres (127.0.0.1)       7514 dbsrv: não publicada
 #
 # Connection strings from the host (defaults; override in .env, see .env.example):
@@ -42,6 +42,9 @@ x-tmsrv: &tmsrv
     # Horários do jogo (Arena, recompensa diária) seguem o relógio local.
     TZ: America/Sao_Paulo
     DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
+    # Chave privada do transporte seguro com o cliente, igual em todos os
+    # canais. Crie com: go run ./cmd/admin transport-key -env .env -pub <pasta do jogo>/serverkey.txt
+    TMSRV_TRANSPORT_KEY: ${TMSRV_TRANSPORT_KEY:?crie a chave com "go run ./cmd/admin transport-key -env .env" (ver docs/transporte-seguro.md)}
   volumes:
     - ./config:/app/config:ro
     - ./logs:/app/logs

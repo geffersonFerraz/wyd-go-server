@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"crypto/ecdh"
 	"errors"
 	"fmt"
 	"io"
@@ -25,8 +26,11 @@ type clientConn struct {
 	closeOnce sync.Once
 }
 
-func newClientConn(nc net.Conn, clock func() uint32) *clientConn {
+func newClientConn(nc net.Conn, clock func() uint32, key *ecdh.PrivateKey) *clientConn {
 	pc := protocol.NewConn(nc)
+	if key != nil {
+		pc = protocol.NewSecureConn(nc, key)
+	}
 	pc.Clock = clock
 	pc.MaxSize = protocol.MaxClientMessageSize
 	ip, _, _ := net.SplitHostPort(nc.RemoteAddr().String())
@@ -93,7 +97,7 @@ func (g *Game) ServeClients(ctx context.Context, ln net.Listener) error {
 			}
 			continue
 		}
-		g.post(event{kind: evAccept, conn: newClientConn(nc, g.now)})
+		g.post(event{kind: evAccept, conn: newClientConn(nc, g.now, g.cfg.TransportKey)})
 	}
 }
 

@@ -29,6 +29,7 @@ import (
 
 	"dbsrv/internal/game"
 	"dbsrv/internal/logfile"
+	"dbsrv/internal/protocol"
 	"dbsrv/internal/store"
 )
 
@@ -87,6 +88,11 @@ func run(log *slog.Logger, dir, listen, configPath, dsn string, channel int) err
 	}
 	if err := cfg.ApplySettings(settings, channel); err != nil {
 		return fmt.Errorf("settings: %w", err)
+	}
+	// The client link is always encrypted: without the key the channel
+	// would accept logins anyone on the network could read.
+	if cfg.TransportKey, err = protocol.ParseTransportKey(os.Getenv("TMSRV_TRANSPORT_KEY")); err != nil {
+		return fmt.Errorf("TMSRV_TRANSPORT_KEY: %w (create it with: admin transport-key -env .env)", err)
 	}
 	log.Info("settings", "path", configPath, "listen", net.JoinHostPort(cfg.ListenIP, fmt.Sprint(cfg.ListenPort)),
 		"dbsrv", net.JoinHostPort(cfg.DBIP, fmt.Sprint(cfg.DBPort)), "channel", cfg.Channel,

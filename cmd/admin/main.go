@@ -76,6 +76,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "transport-key" {
+		if err := transportKey(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "serverlist" {
 		if err := writeServerList(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -208,13 +215,20 @@ func run(log *slog.Logger, o options) error {
 	if o.publicListen != "" {
 		mux := http.NewServeMux()
 		mux.Handle("/", admin.ServerStatusHandler(st, log))
+		// The launcher reads the manifest first and only downloads the
+		// files whose hash differs from its local copy.
+		var manifest []admin.ManifestSource
 		if o.config != "" {
 			if _, err := admin.BuildServerList(o.config); err != nil {
 				return fmt.Errorf("serverlist.bin: %w", err)
 			}
 			mux.Handle("GET "+admin.ServerListPath, admin.ServerListHandler(o.config, log))
+			manifest = append(manifest, admin.ServerListSource(o.config))
 		}
-		mux.Handle("GET "+admin.ItemListPath, admin.ItemListHandler(st, log))
+		items := admin.NewItemListCache(st, log)
+		mux.Handle("GET "+admin.ItemListPath, items.Handler())
+		manifest = append(manifest, items.Source())
+		mux.Handle("GET "+admin.ManifestPath, admin.ManifestHandler(manifest, log))
 		mux.Handle("GET "+admin.LauncherPath, admin.LauncherHandler())
 		mailer := admin.NewResendMailer(os.Getenv("RESEND_API_KEY"), os.Getenv("RESEND_FROM"))
 		if !mailer.Enabled() {
@@ -237,7 +251,7 @@ func run(log *slog.Logger, o options) error {
 		}()
 		go func() {
 			log.Info("public files", "status", "http://"+o.publicListen+"/serv00.htm", "serverlist", "http://"+o.publicListen+admin.ServerListPath,
-				"itemlist", "http://"+o.publicListen+admin.ItemListPath, "launcher", "http://"+o.publicListen+admin.LauncherPath,
+				"itemlist", "http://"+o.publicListen+admin.ItemListPath, "manifest", "http://"+o.publicListen+admin.ManifestPath, "launcher", "http://"+o.publicListen+admin.LauncherPath,
 				"guild_marks", "http://"+o.publicListen+admin.GuildMarkPath, "dir", o.markDir)
 			if err := public.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				log.Error("public server", "err", err)

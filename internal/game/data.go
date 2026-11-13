@@ -1,6 +1,7 @@
 package game
 
 import (
+	"crypto/ecdh"
 	"fmt"
 	"strconv"
 	"strings"
@@ -105,6 +106,10 @@ type Config struct {
 	Missions              MissionSettings
 	Store                 StoreSettings
 	Locks                 LockStore // account locks; nil keeps them only in memory
+	// TransportKey is the static key of the secure client transport
+	// (protocol/secure.go). The server always has one (TMSRV_TRANSPORT_KEY);
+	// nil keeps the old cipher, for tests that speak it.
+	TransportKey *ecdh.PrivateKey
 }
 
 // ApplySettings copies tmsrv.yaml values into the config, for channel
