@@ -28,7 +28,7 @@ jobs:
     env:
       DBSRV_TEST_DSN: postgres://dbsrv:dbsrv@localhost:5432/dbsrv_test?sslmode=disable
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
