@@ -1,0 +1,22 @@
+# Roda o código desta pasta em vez das imagens publicadas no GHCR:
+#
+#   docker compose -f docker-compose.yaml -f docker-compose.build.yaml up -d --build
+#
+# As imagens ficam com a tag local wyd-<programa>:dev e não sobrescrevem as do GHCR.
+
+x-build: &build
+  context: .
+
+services:
+  dbsrv:
+    build: { <<: *build, args: { CMD: dbsrv } }
+    image: wyd-dbsrv:dev
+  tmsrv1: &tmsrv
+    build: { <<: *build, args: { CMD: tmsrv } }
+    image: wyd-tmsrv:dev
+  tmsrv2: *tmsrv
+  tmsrv3: *tmsrv
+  tmsrv4: *tmsrv
+  admin:
+    build: { <<: *build, args: { CMD: admin } }
+    image: wyd-admin:dev

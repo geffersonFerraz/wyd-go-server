@@ -54,6 +54,12 @@ func ServerListSource(configPath string) ManifestSource {
 		Content: func(context.Context) ([]byte, error) { return BuildServerList(configPath) }}
 }
 
+// ServerNamesSource is the manifest entry of sn.bin.
+func ServerNamesSource(configPath string) ManifestSource {
+	return ManifestSource{Name: "sn.bin", Path: ServerNamesPath,
+		Content: func(context.Context) ([]byte, error) { return BuildServerNames(configPath) }}
+}
+
 // Source is the manifest entry of ItemList.bin.
 func (c *ItemListCache) Source() ManifestSource {
 	return ManifestSource{Name: "ItemList.bin", Path: ItemListPath,

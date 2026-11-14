@@ -248,7 +248,8 @@ func run(log *slog.Logger, o options) error {
 				return fmt.Errorf("serverlist.bin: %w", err)
 			}
 			mux.Handle("GET "+admin.ServerListPath, admin.ServerListHandler(o.config, log))
-			manifest = append(manifest, admin.ServerListSource(o.config))
+			mux.Handle("GET "+admin.ServerNamesPath, admin.ServerNamesHandler(o.config, log))
+			manifest = append(manifest, admin.ServerListSource(o.config), admin.ServerNamesSource(o.config))
 		}
 		items := admin.NewItemListCache(st, log)
 		mux.Handle("GET "+admin.ItemListPath, items.Handler())
@@ -308,7 +309,11 @@ func writeServerList(args []string) error {
 	fs := flag.NewFlagSet("serverlist", flag.ExitOnError)
 	config := fs.String("config", "tmsrv.yaml", "TMSRV settings (servers section)")
 	out := fs.String("o", "serverlist.bin", "output file (the client reads ./serverlist.bin)")
+	sn := fs.String("sn", "", `output file of the server names (default: sn.bin next to -o; "-" = don't write it)`)
 	_ = fs.Parse(args)
+	if *sn == "" {
+		*sn = filepath.Join(filepath.Dir(*out), "sn.bin")
+	}
 	b, err := admin.BuildServerList(*config)
 	if err != nil {
 		return err
@@ -317,6 +322,17 @@ func writeServerList(args []string) error {
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "%s: %d bytes\n", *out, len(b))
+	if *sn == "-" {
+		return nil
+	}
+	names, err := admin.BuildServerNames(*config)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(*sn, names, 0o644); err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "%s: %d bytes\n", *sn, len(names))
 	return nil
 }
 

@@ -43,3 +43,17 @@ func TestServerListHandlerServesShippedSettings(t *testing.T) {
 		t.Errorf("missing settings: %v %v", res.StatusCode, err)
 	}
 }
+
+func TestServerNamesHandlerServesShippedSettings(t *testing.T) {
+	srv := httptest.NewServer(ServerNamesHandler("../../tmsrv.yaml", slog.New(slog.DiscardHandler)))
+	defer srv.Close()
+	res, err := http.Get(srv.URL + ServerNamesPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	b, _ := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK || len(b) != cluster.ServerNamesSize {
+		t.Fatalf("status %d, %d bytes", res.StatusCode, len(b))
+	}
+}

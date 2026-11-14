@@ -5,6 +5,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -65,7 +66,7 @@ func TestComposeMatchesSettings(t *testing.T) {
 	tmsrvs := map[key]string{}
 	dbsrvs := map[int]string{}
 	for name, svc := range compose.Services {
-		switch svc.Image {
+		switch program(svc.Image) {
 		case "wyd-tmsrv":
 			k := key{group(name, svc), flag(svc, "-channel")}
 			if o, dup := tmsrvs[k]; dup {
@@ -127,6 +128,32 @@ func TestComposeMatchesSettings(t *testing.T) {
 	for g, name := range dbsrvs {
 		if _, err := c.Server(g); err != nil {
 			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+// program is the image name without registry and tag:
+// "ghcr.io/x/wyd-tmsrv:${WYD_VERSION:-1.0.1}" and "wyd-tmsrv:dev" are both "wyd-tmsrv".
+func program(image string) string {
+	if i := strings.Index(image, ":${"); i >= 0 {
+		image = image[:i]
+	}
+	image = image[strings.LastIndex(image, "/")+1:]
+	if i := strings.Index(image, ":"); i >= 0 {
+		image = image[:i]
+	}
+	return image
+}
+
+func TestProgram(t *testing.T) {
+	for in, want := range map[string]string{
+		"ghcr.io/geffersonferraz/wyd-tmsrv:${WYD_VERSION:-1.0.1}": "wyd-tmsrv",
+		"wyd-dbsrv:dev":      "wyd-dbsrv",
+		"wyd-admin":          "wyd-admin",
+		"postgres:17-alpine": "postgres",
+	} {
+		if got := program(in); got != want {
+			t.Errorf("program(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

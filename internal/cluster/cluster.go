@@ -95,6 +95,10 @@ type Server struct {
 	// sn.bin): serverlist.bin entry [Group-1]. It is also how each program
 	// picks its server (-server).
 	Group int `yaml:"group"`
+	// Name is how the client lists this server (sn.bin): up to
+	// MaxNameBytes characters, no spaces. The channels show as "Name-N".
+	// Optional: without it the client shows its default text.
+	Name string `yaml:"name,omitempty"`
 	// PublicIP is the address players connect to when a channel has no host
 	// of its own (an IPv4 address or a host name). Optional if every channel
 	// sets host.
@@ -161,6 +165,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("servers: at most %d, got %d", MaxGroups, len(c.Servers))
 	}
 	groups := map[int]bool{}
+	names := map[string]int{}
 	status := map[string]int{}
 	addrs := map[string]string{}
 	for i := range c.Servers {
@@ -172,6 +177,12 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("servers[%d]: group %d is already another server", i, s.Group)
 		}
 		groups[s.Group] = true
+		if s.Name != "" {
+			if o, dup := names[strings.ToLower(s.Name)]; dup {
+				return fmt.Errorf("server %d: name %q is already the one of server %d", s.Group, s.Name, o)
+			}
+			names[strings.ToLower(s.Name)] = s.Group
+		}
 		if err := s.validate(); err != nil {
 			return fmt.Errorf("server %d: %w", s.Group, err)
 		}
@@ -195,6 +206,9 @@ func (c *Config) Validate() error {
 
 // validate checks one server on its own.
 func (s *Server) validate() error {
+	if _, err := EncodeName(s.Name); err != nil {
+		return err
+	}
 	if s.PublicIP != "" && !ValidHost(s.PublicIP) {
 		return fmt.Errorf("public_ip must be an IPv4 address or a host name, got %q", s.PublicIP)
 	}

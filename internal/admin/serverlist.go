@@ -36,3 +36,32 @@ func BuildServerList(configPath string) ([]byte, error) {
 	}
 	return cluster.EncodeServerList(c.Table())
 }
+
+// ServerNamesPath is where the public listener serves the client's sn.bin,
+// the names of the servers in tmsrv.yaml.
+const ServerNamesPath = "/sn.bin"
+
+// ServerNamesHandler serves sn.bin, read from the settings file on every request.
+func ServerNamesHandler(configPath string, log *slog.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := BuildServerNames(configPath)
+		if err != nil {
+			log.Error("sn.bin", "err", err)
+			http.Error(w, "server names unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Disposition", `attachment; filename="sn.bin"`)
+		w.Header().Set("Cache-Control", "no-store")
+		_, _ = w.Write(b)
+	})
+}
+
+// BuildServerNames builds sn.bin from the settings file.
+func BuildServerNames(configPath string) ([]byte, error) {
+	c, err := cluster.Load(configPath)
+	if err != nil {
+		return nil, err
+	}
+	return c.ServerNames()
+}

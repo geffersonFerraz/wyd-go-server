@@ -160,10 +160,17 @@ Requisitos: Docker com compose. Para desenvolver, Go (versão no `go.mod`).
 ```sh
 cp .env.example .env            # defina POSTGRES_PASSWORD
 go run ./cmd/admin transport-key -env .env -pub "../wyd-others/Release Cliente/serverkey.txt"
-docker compose up -d --build    # postgres, dbsrv, canais, painel e backup
+docker compose pull             # imagens do GHCR (versão: WYD_VERSION no .env)
+docker compose up -d            # postgres, dbsrv, canais, painel e backup
 docker compose logs -f tmsrv1
 docker compose down             # para e mantém os dados (down -v APAGA tudo)
 ```
+
+As imagens de `dbsrv`, `tmsrv` e `admin` são as publicadas pelo workflow
+`release` (ver [Release](#release)). Para atualizar, mude `WYD_VERSION` no
+`.env` e rode `docker compose pull && docker compose up -d`. Para rodar o
+código desta pasta em vez das imagens:
+`docker compose -f docker-compose.yaml -f docker-compose.build.yaml up -d --build`.
 
 No Windows, sem Docker para os programas: `servidor`, `servidor restart`,
 `servidor stop`, `servidor senha-admin` (`servidor.bat`).
@@ -316,13 +323,17 @@ de servidor no topo, e serve um `serverlist.bin` com todos os grupos e o
    grupo 2 aponta para o painel da VM 1, com outro arquivo (`serv01.htm`).
 3. **VM 2**: copie o repositório, crie o `.env` com `WYD_SERVER=2`,
    `DATABASE_URL=postgres://dbsrv:<senha>@<IP privado da VM 1>:5432/dbsrv` e
-   a mesma `TMSRV_TRANSPORT_KEY` da VM 1, e suba só o DBSRV e os canais:
-   `docker compose -f docker-compose.server.yaml up -d --build`. O DBSRV cria
+   a mesma `TMSRV_TRANSPORT_KEY` e `WYD_VERSION` da VM 1, e suba só o DBSRV e
+   os canais: `docker compose -f docker-compose.server.yaml pull` e
+   `docker compose -f docker-compose.server.yaml up -d`. O DBSRV cria
    o schema `s2` na primeira vez.
 4. **VM 1**: `docker compose up -d` de novo, para o painel ler o
    `tmsrv.yaml` novo. O servidor 2 aparece no seletor do painel e no
    `serverlist.bin`, que chega aos jogadores pelo launcher.
-5. **Cliente**: o nome do grupo 2 vem do `sn.bin` do cliente.
+5. **Cliente**: o nome do servidor 2 é o `name` dele no `tmsrv.yaml`. Ele vai
+   para o `sn.bin`, que o launcher baixa do painel junto com o
+   `serverlist.bin` (ou `admin serverlist -o <pasta do jogo>/serverlist.bin`,
+   que grava os dois).
 
 No `docker-compose.yaml` da VM 1, com mais de um servidor no `tmsrv.yaml`,
 ponha `-server 1` no `command` de `dbsrv` e de cada `tmsrvN` (ou

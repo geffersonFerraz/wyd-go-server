@@ -40,6 +40,11 @@ limits:
 #
 #   group:      grupo (mundo) no cliente, 1..10: o número do grupo no sn.bin.
 #               Não se repete.
+#   name:       (opcional) nome do servidor na lista do cliente; os canais
+#               aparecem como "nome-1", "nome-2"... Até 15 caracteres, sem
+#               espaços (letras com acento valem). Vai para o sn.bin, que o
+#               launcher baixa do painel junto com o serverlist.bin. Não se
+#               repete. Sem ele o cliente mostra o texto padrão.
 #   status_url: servNN.htm com o online por canal, servido pela porta pública
 #               do painel admin. Um arquivo por servidor (serv00.htm,
 #               serv01.htm...): o nome não se repete. Até 63 caracteres.
@@ -67,24 +72,24 @@ limits:
 #             host+porta não se repete em nenhum servidor.
 servers:
   - group: 1
+    name: Sephec
     # Endereço público do site (porta 80 do painel admin, o mesmo para todos
     # os servidores): é também daqui que o launcher baixa o serverlist.bin e
     # o itemlist.bin.
     status_url: http://wyd.gefferson.com/serv00.htm
     dbsrv: { ip: 172.30.87.11, port: 7514 }
     channels:
-      - { number: 1, ip: 172.30.87.21, port: 8281, host: wyd-srv1.gefferson.com }
-      - { number: 2, ip: 172.30.87.22, port: 8282, host: wyd-srv2.gefferson.com }
-      - { number: 3, ip: 172.30.87.23, port: 8283, host: wyd-srv3.gefferson.com }
-      - { number: 4, ip: 172.30.87.24, port: 8284, host: wyd-srv4.gefferson.com }
+      - { number: 1, ip: 172.30.87.21, port: 28279, host: impairment-precedence.tun.ply.gg }
+      - { number: 2, ip: 172.30.87.22, port: 28280, host: impairment-precedence.tun.ply.gg }
 
   # Segundo servidor, em outra máquina (exemplo; ver "Servidores" no README):
-  # - group: 2
-  #   status_url: http://wyd.gefferson.com/serv01.htm
-  #   dbsrv: { ip: 172.30.87.11, port: 7514 }
-  #   channels:
-  #     - { number: 1, ip: 172.30.87.21, port: 8281, host: wyd2-srv1.gefferson.com }
-  #     - { number: 2, ip: 172.30.87.22, port: 8282, host: wyd2-srv2.gefferson.com }
+  - group: 2
+    name: Malephira
+    status_url: http://wyd.gefferson.com/serv01.htm
+    dbsrv: { ip: 172.30.87.11, port: 7514 }
+    channels:
+      - { number: 1, ip: 172.30.87.21, port: 28281, host: impairment-precedence.tun.ply.gg }
+      - { number: 2, ip: 172.30.87.22, port: 28282, host: impairment-precedence.tun.ply.gg }
 
 # Troca de canal dentro do jogo (lista de canais no jogo / comando "srv507").
 change_channel:

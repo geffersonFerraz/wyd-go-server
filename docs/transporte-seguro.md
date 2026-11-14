@@ -84,7 +84,7 @@ de conectar até recebê-lo.
 ## Implantação
 
 1. `go run ./cmd/admin transport-key -env .env -pub <pasta do jogo>/serverkey.txt`
-2. `docker compose up -d --build` (ou `servidor restart` no Windows)
+2. `docker compose pull && docker compose up -d` (ou `servidor restart` no Windows)
 3. Cliente: `./wyd-linux.sh build` ou `build.ps1 -Deploy`, e distribua a pasta
    com o `WYD.exe` novo e o `serverkey.txt`.
 

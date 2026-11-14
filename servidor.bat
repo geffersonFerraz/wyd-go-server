@@ -10,7 +10,7 @@ rem    servidor stop            fecha DBSRV, TMSRV e admin
 rem    servidor restart         stop + start
 rem    servidor dbsrv|tmsrv|admin   compila e inicia so aquele, nesta janela
 rem    servidor tmsrv 2         idem, o canal 2
-rem    servidor db              sobe so o Postgres (docker compose up -d)
+rem    servidor db              sobe so o Postgres (docker compose up -d postgres)
 rem    servidor senha-admin     mostra a senha gerada do painel
 rem
 rem  Configuracao: variaveis do arquivo .env (copie de .env.example), por
@@ -137,8 +137,8 @@ exit /b 0
 :database
 call :port_open 5432 && exit /b 0
 where docker >nul 2>nul || ( echo Postgres nao responde em 127.0.0.1:5432 e o Docker nao esta instalado. & exit /b 1 )
-echo Subindo o Postgres ^(docker compose up -d^)...
-docker compose up -d || ( echo Nao foi possivel subir o Postgres. O Docker Desktop esta aberto? & exit /b 1 )
+echo Subindo o Postgres ^(docker compose up -d postgres^)...
+docker compose up -d postgres || ( echo Nao foi possivel subir o Postgres. O Docker Desktop esta aberto? & exit /b 1 )
 call :wait_port 5432 "Postgres"
 exit /b %errorlevel%
 
