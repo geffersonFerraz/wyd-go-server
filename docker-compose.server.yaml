@@ -10,7 +10,7 @@
 #   WYD_SERVER=2                  o group deste servidor no tmsrv.yaml
 #   DATABASE_URL=postgres://dbsrv:<senha>@<IP privado da máquina principal>:5432/dbsrv
 #   TMSRV_TRANSPORT_KEY=...       a mesma da máquina principal
-#   WYD_VERSION=1.0.1             a mesma versão da máquina principal
+#   WYD_VERSION=1.0.2             a mesma versão da máquina principal
 #
 # O tmsrv.yaml é o mesmo arquivo da máquina principal. Cada canal do servidor
 # é um serviço tmsrvN abaixo (copie um bloco para adicionar), com o IP, a
@@ -24,7 +24,7 @@ x-env: &env
   DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL com o banco da máquina principal}
 
 x-tmsrv: &tmsrv
-  image: ghcr.io/geffersonferraz/wyd-tmsrv:${WYD_VERSION:-1.0.1}
+  image: ghcr.io/geffersonferraz/wyd-tmsrv:${WYD_VERSION:-1.0.2}
   user: ${HOST_UID:-1000}:${HOST_GID:-1000}
   restart: unless-stopped
   # Tempo para salvar os jogadores no DBSRV ao parar.
@@ -41,7 +41,7 @@ x-tmsrv: &tmsrv
 
 services:
   dbsrv:
-    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.1}
+    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.2}
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     restart: unless-stopped
     # Só a TMSRV conecta no DBSRV, pela rede wyd: a porta não é publicada.

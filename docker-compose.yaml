@@ -43,7 +43,7 @@ name: dbsrv
 
 # Tudo o que os canais têm em comum; cada tmsrvN só muda IP, porta e canal.
 x-tmsrv: &tmsrv
-  image: ghcr.io/geffersonferraz/wyd-tmsrv:${WYD_VERSION:-1.0.1}
+  image: ghcr.io/geffersonferraz/wyd-tmsrv:${WYD_VERSION:-1.0.2}
   user: ${HOST_UID:-1000}:${HOST_GID:-1000}
   restart: unless-stopped
   # Tempo para salvar os jogadores no DBSRV ao parar.
@@ -90,7 +90,7 @@ services:
       retries: 20
 
   dbsrv:
-    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.1}
+    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.2}
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     restart: unless-stopped
     # Só a TMSRV conecta no DBSRV, pela rede wyd: a porta não é publicada.
@@ -109,7 +109,7 @@ services:
 
   # DBSRV do servidor 2, na mesma máquina e no mesmo banco (schema s2).
   dbsrv2:
-    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.1}
+    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.2}
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     restart: unless-stopped
     command: ["-config", "tmsrv.yaml", "-server", "2"]
@@ -210,7 +210,7 @@ services:
   # a página do launcher (/launcher/)
   # e as marcas de guilda.
   admin:
-    image: ghcr.io/geffersonferraz/wyd-admin:${WYD_VERSION:-1.0.1}
+    image: ghcr.io/geffersonferraz/wyd-admin:${WYD_VERSION:-1.0.2}
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     restart: unless-stopped
     command: ["-listen", "172.30.87.13:8081", "-password-file", ".admin-state/.admin-password", "-public-listen", "172.30.87.13:80", "-config", "tmsrv.yaml"]
