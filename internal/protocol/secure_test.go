@@ -131,11 +131,14 @@ func TestServerRefusesLegacyClient(t *testing.T) {
 	defer a.Close()
 	defer b.Close()
 	server := NewSecureConn(a, testKey(t))
+	go func() { _, _ = io.Copy(io.Discard, b) }() // the handshake reply
 	go func() {
 		old := NewDialedConn(b)
 		_ = old.Hello()
 		_ = old.SendRaw(framePacket(0x20D, 0, bytes.Repeat([]byte{1}, 104)))
-		_, _ = io.Copy(io.Discard, b)
+		// The server reads the encrypted bytes as a frame size: when it asks
+		// for more than was sent, only the client hanging up ends the read.
+		b.Close()
 	}()
 	if _, err := server.ReadPacket(); err == nil {
 		t.Fatal("aceitou um cliente do protocolo antigo")
