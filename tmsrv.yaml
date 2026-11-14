@@ -82,14 +82,16 @@ servers:
       - { number: 1, ip: 172.30.87.21, port: 28279, host: impairment-precedence.tun.ply.gg }
       - { number: 2, ip: 172.30.87.22, port: 28280, host: impairment-precedence.tun.ply.gg }
 
-  # Segundo servidor, em outra máquina (exemplo; ver "Servidores" no README):
+  # Segundo servidor, na mesma máquina (dbsrv2, tmsrv3 e tmsrv4 do
+  # docker-compose.yaml): por isso IPs próprios. Em outra máquina, ver
+  # "Servidores" no README.
   - group: 2
     name: Malephira
     status_url: http://wyd.gefferson.com/serv01.htm
-    dbsrv: { ip: 172.30.87.11, port: 7514 }
+    dbsrv: { ip: 172.30.87.12, port: 7514 }
     channels:
-      - { number: 1, ip: 172.30.87.21, port: 28281, host: impairment-precedence.tun.ply.gg }
-      - { number: 2, ip: 172.30.87.22, port: 28282, host: impairment-precedence.tun.ply.gg }
+      - { number: 1, ip: 172.30.87.23, port: 28281, host: impairment-precedence.tun.ply.gg }
+      - { number: 2, ip: 172.30.87.24, port: 28282, host: impairment-precedence.tun.ply.gg }
 
 # Troca de canal dentro do jogo (lista de canais no jogo / comando "srv507").
 change_channel:

@@ -9,8 +9,9 @@
 # por dia em ./logs (dbsrv-, tmsrvN-, admin-AAAA-MM-DD.log; 90 dias).
 #
 # Rede própria "wyd" (172.30.87.0/24), IP fixo por container:
-#   172.30.87.10 postgres   172.30.87.11 dbsrv   172.30.87.13 admin   172.30.87.14 backup
-#   172.30.87.21..30 tmsrv1..tmsrv10 (um container por canal)
+#   172.30.87.10 postgres   172.30.87.11 dbsrv (servidor 1)   172.30.87.12 dbsrv2 (servidor 2)
+#   172.30.87.13 admin      172.30.87.14 backup
+#   172.30.87.21..30 tmsrv1..tmsrv10 (um container por canal, de todos os servidores)
 #
 # Canais: a fonte é a lista "servers" do tmsrv.yaml. Cada canal é um serviço
 # tmsrvN abaixo (copie um bloco para adicionar), com o IP, a porta e o
@@ -94,7 +95,7 @@ services:
     restart: unless-stopped
     # Só a TMSRV conecta no DBSRV, pela rede wyd: a porta não é publicada.
     # Escuta no endereço "dbsrv" do servidor no tmsrv.yaml (este IP).
-    command: ["-config", "tmsrv.yaml"]
+    command: ["-config", "tmsrv.yaml", "-server", "1"]
     networks:
       wyd: { ipv4_address: 172.30.87.11 }
     environment:
@@ -106,9 +107,26 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
+  # DBSRV do servidor 2, na mesma máquina e no mesmo banco (schema s2).
+  dbsrv2:
+    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.1}
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    command: ["-config", "tmsrv.yaml", "-server", "2"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.12 }
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
+      DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
+    volumes:
+      - ./logs:/app/logs
+      - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+
   tmsrv1:
     <<: *tmsrv
-    command: ["-channel", "1"]
+    command: ["-channel", "1", "-server", "1"]
     networks:
       wyd: { ipv4_address: 172.30.87.21 }
     ports:
@@ -116,7 +134,7 @@ services:
 
   tmsrv2:
     <<: *tmsrv
-    command: ["-channel", "2"]
+    command: ["-channel", "2", "-server", "1"]
     networks:
       wyd: { ipv4_address: 172.30.87.22 }
     ports:
@@ -124,7 +142,10 @@ services:
 
   tmsrv3:
     <<: *tmsrv
-    command: ["-channel", "1","-server","2"]
+    command: ["-channel", "1", "-server", "2"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      dbsrv2: { condition: service_started }
     networks:
       wyd: { ipv4_address: 172.30.87.23 }
     ports:
@@ -132,7 +153,10 @@ services:
 
   tmsrv4:
     <<: *tmsrv
-    command: ["-channel", "2","-server","2"]
+    command: ["-channel", "2", "-server", "2"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      dbsrv2: { condition: service_started }
     networks:
       wyd: { ipv4_address: 172.30.87.24 }
     ports:
@@ -142,9 +166,9 @@ services:
   # custom do pg_dump). Confere a cada hora se o backup do dia já existe; o
   # primeiro sai ao subir. Os antigos não são apagados automaticamente.
   # Restaurar (substitui o que estiver no banco):
-  #   docker compose stop dbsrv admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
+  #   docker compose stop dbsrv dbsrv2 admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
   #   docker compose exec -T postgres pg_restore -U dbsrv -d dbsrv --clean --if-exists < backups/dbsrv-AAAA-MM-DD.dump
-  #   docker compose start dbsrv admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
+  #   docker compose start dbsrv dbsrv2 admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
   backup:
     image: postgres:17-alpine
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
