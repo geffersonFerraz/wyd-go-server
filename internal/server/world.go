@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"dbsrv/internal/cluster"
 	"fmt"
 	"sync"
 
@@ -39,7 +40,13 @@ func (s *Server) LoadWorld(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("guilds: %w", err)
 	}
+	first, last := cluster.GuildRange(s.cfg.Group)
 	for i := range guilds {
+		if id := guilds[i].ID; id < first || id > last {
+			// Older than the ranges: its mark may be shown for a guild of
+			// the server that owns this number.
+			s.log.Warn("guild number outside this server's range", "guild", id, "name", guilds[i].Name, "first", first, "last", last)
+		}
 		w.guilds[guilds[i].ID] = &guilds[i]
 	}
 	if w.ally, err = s.st.GuildRelations(ctx, store.RelationAlly); err != nil {
@@ -126,6 +133,12 @@ func (s *Server) handleWorld(ctx context.Context, ch *channel, pkt protocol.Pack
 	case wire.OpCreateGuild:
 		var p wire.CreateGuild
 		if !decode(ch, pkt, &p) || p.GuildID <= 0 || p.GuildID >= maxGuild {
+			return true
+		}
+		// Guild numbers do not repeat between servers (one folder of guild
+		// marks serves all of them): a channel only creates in its range.
+		if first, last := cluster.GuildRange(s.cfg.Group); int(p.GuildID) < first || int(p.GuildID) > last {
+			ch.log.Error("create guild: number outside this server's range", "guild", p.GuildID, "first", first, "last", last)
 			return true
 		}
 		w.mu.Lock()

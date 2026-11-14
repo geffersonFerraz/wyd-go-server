@@ -135,8 +135,33 @@ func (s *Server) handleAccountLogin(ctx context.Context, ch *channel, pkt protoc
 	sess.mu.Lock()
 	defer sess.mu.Unlock()
 
+	// One database serves every server and an account plays on one of them
+	// at a time (its cash, ban and password are shared, and a save rewrites
+	// them): take the account for this server before reading it.
+	held, heldBy, err := s.st.ClaimOnline(ctx, login, key.Channel, int(key.Client))
+	if err != nil || !held {
+		s.sess.remove(sess)
+		if err != nil {
+			log.Error("mark online", "err", err)
+			ch.signal(client, wire.OpAlreadyPlaying)
+			return
+		}
+		log.Info("account is playing on another server", "server", heldBy)
+		if heldBy == 0 || p.Unknow84 == 0 {
+			ch.signal(client, wire.OpAlreadyPlaying)
+			return
+		}
+		// Ask the DBSRV of that server to save and log it out; the client
+		// retries, as it does for another channel of this server.
+		if _, err := s.st.EnqueueTo(ctx, heldBy, "kick", login, struct{}{}, "dbsrv"); err != nil {
+			log.Error("kick on the other server", "err", err)
+		}
+		ch.signal(client, wire.OpDisconnectPrevious)
+		return
+	}
+
 	// Reload now that we own the account: a save-and-quit from another
-	// channel may have committed after the first read.
+	// channel or server may have committed after the first read.
 	if rec, err = s.st.LoadAccount(ctx, login); err != nil {
 		log.Error("reload account", "err", err)
 		s.endSession(sess)
@@ -144,9 +169,6 @@ func (s *Server) handleAccountLogin(ctx context.Context, ch *channel, pkt protoc
 		return
 	}
 	sess.rec = rec
-	if err := s.st.SetOnline(ctx, login, key.Channel, int(key.Client)); err != nil {
-		log.Error("mark online", "err", err) // only the SQL edit guard depends on it
-	}
 	a = &rec.Account
 	if a.BanType != 0 && !banActive(a, now, s.cfg.Loc) {
 		a.BanType, a.Ban = 0, wire.ItemDate{} // expired; persisted on the next save

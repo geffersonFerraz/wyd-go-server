@@ -1,0 +1,41 @@
+# Testes do servidor. Roda em push, pull request e antes de cada release.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: dbsrv
+          POSTGRES_PASSWORD: dbsrv
+          POSTGRES_DB: dbsrv_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U dbsrv -d dbsrv_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DBSRV_TEST_DSN: postgres://dbsrv:dbsrv@localhost:5432/dbsrv_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: |
+          out=$(gofmt -l cmd internal)
+          if [ -n "$out" ]; then echo "Arquivos sem gofmt:"; echo "$out"; exit 1; fi
+      - run: go vet ./...
+      # -p 1: os pacotes compartilham o mesmo banco de teste e o apagam no início.
+      - run: go test -p 1 -count=1 ./...

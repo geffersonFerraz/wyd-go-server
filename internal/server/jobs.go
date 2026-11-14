@@ -117,7 +117,53 @@ const (
 	resNotOnline     = "not_online"
 	waitOffline      = "waiting_offline"
 	waitCharSelected = "waiting_character"
+	// waitOtherServer: the account is playing on another server and the
+	// change is to this server's world, so it waits for the player to leave.
+	waitOtherServer = "waiting_other_server"
 )
+
+// errMoved: the delivery now belongs to the DBSRV of another server.
+var errMoved = errors.New("delivery moved to another server")
+
+// leaseChannel marks an online_accounts row held by a delivery, not a player.
+const leaseChannel = -1
+
+// withStored runs fn with the stored account of user reserved for this
+// DBSRV: nobody is logged into it here (as withOffline) nor on another
+// server, and nobody can log in until fn returns. It returns the session
+// when the account is online here, or the server that holds it (elsewhere
+// > 0) when it is playing on another one; fn does not run in either case.
+func (s *Server) withStored(ctx context.Context, user string, fn func()) (online *session, elsewhere int, err error) {
+	online = s.sess.withOffline(user, func() {
+		held, heldBy, cerr := s.st.ClaimOnline(ctx, user, leaseChannel, 0)
+		if cerr != nil {
+			err = cerr
+			return
+		}
+		if !held && heldBy != 0 {
+			elsewhere = heldBy
+			return
+		}
+		if held {
+			defer func() {
+				if rerr := s.st.SetOffline(context.WithoutCancel(ctx), user, leaseChannel, 0); rerr != nil {
+					s.log.Error("release account", "account", user, "err", rerr)
+				}
+			}()
+		}
+		fn() // !held: no such account; fn reports it
+	})
+	return online, elsewhere, err
+}
+
+// handOver gives a delivery to the DBSRV of the server where the account is
+// playing: only it can apply the change to the live account.
+func (s *Server) handOver(ctx context.Context, id int64, server int) (string, bool, error) {
+	if err := s.st.MoveDelivery(ctx, id, server, fmt.Sprintf("moved_to_server: %d", server)); err != nil {
+		return "", false, err
+	}
+	return "", false, errMoved
+}
 
 func (s *Server) processDeliveries(ctx context.Context) {
 	list, err := s.st.PendingDeliveries(ctx, 100)
@@ -130,6 +176,10 @@ func (s *Server) processDeliveries(ctx context.Context) {
 	for _, d := range list {
 		result, done, err := s.deliver(ctx, d)
 		log := s.log.With("delivery", d.ID, "kind", d.Kind, "account", d.Username)
+		if errors.Is(err, errMoved) {
+			log.Info("delivery handed to the server where the account is playing")
+			continue // no longer ours: its row must not be touched again
+		}
 		if err != nil {
 			log.Error("delivery failed, will retry", "err", err)
 			_ = s.st.DeferDelivery(ctx, d.ID, "error: "+err.Error())
@@ -288,7 +338,13 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 			return resInvalid + ": nothing to change", true, nil
 		}
 		var found bool
-		online := s.sess.withOffline(user, func() { found, err = s.st.SetPassword(ctx, user, hash, num) })
+		online, elsewhere, lerr := s.withStored(ctx, user, func() { found, err = s.st.SetPassword(ctx, user, hash, num) })
+		if lerr != nil {
+			return "", false, lerr
+		}
+		if elsewhere != 0 {
+			return s.handOver(ctx, d.ID, elsewhere)
+		}
 		if online != nil {
 			return waitOffline, false, nil // the C++ also waited until logout
 		}
@@ -309,7 +365,13 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 			until = p.Until
 		}
 		var found bool
-		online := s.sess.withOffline(user, func() { found, err = s.st.SetBan(ctx, user, p.Type, until) })
+		online, elsewhere, lerr := s.withStored(ctx, user, func() { found, err = s.st.SetBan(ctx, user, p.Type, until) })
+		if lerr != nil {
+			return "", false, lerr
+		}
+		if elsewhere != 0 {
+			return s.handOver(ctx, d.ID, elsewhere)
+		}
 		if online != nil {
 			date := wire.ItemDate{}
 			if until != nil {
@@ -351,6 +413,8 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 			}
 			it.Effect[i] = wire.ItemEffect{Index: uint8(e[0]), Value: uint16(e[1])}
 		}
+		// The storage is this server's: it can be written while the account
+		// plays on another server, which never touches it.
 		slot := -1
 		online := s.sess.withOffline(user, func() { slot, err = s.st.PutInStorage(ctx, user, it) })
 		if online != nil {
@@ -391,13 +455,18 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 		// (0) or "account disabled" (1) message.
 		online := s.sess.byName(user)
 		if online == nil {
+			if where, err := s.st.Online(ctx, user); err != nil {
+				return "", false, err
+			} else if where != nil && where.Server != s.st.Server() {
+				return s.handOver(ctx, d.ID, where.Server)
+			}
 			return resNotOnline, true, nil
 		}
 		s.sendSavingQuit(online, 2)
 		return resSentOnline, true, nil
 
 	case "edit":
-		return s.deliverEdit(ctx, user, d.Payload)
+		return s.deliverEdit(ctx, d.ID, user, d.Payload)
 
 	case "login_unblock":
 		// The lock lives in each channel's memory: tell all of them.
@@ -421,7 +490,13 @@ func (s *Server) deliver(ctx context.Context, d store.Delivery) (result string, 
 			return resInvalid + ": amount", true, nil
 		}
 		var found bool
-		online := s.sess.withOffline(user, func() { found, err = s.st.AddCash(ctx, user, p.Amount) })
+		online, elsewhere, lerr := s.withStored(ctx, user, func() { found, err = s.st.AddCash(ctx, user, p.Amount) })
+		if lerr != nil {
+			return "", false, lerr
+		}
+		if elsewhere != 0 {
+			return s.handOver(ctx, d.ID, elsewhere)
+		}
 		if online != nil {
 			ch := s.channel(online.key.Channel)
 			if ch == nil {

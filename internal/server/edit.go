@@ -20,7 +20,11 @@ import (
 //     game (TMSRV would overwrite the storage on its next save);
 //   - access level: always written to the database and DBSRV's copy too
 //     (TMSRV never saves it), and sent to TMSRV when in game.
-func (s *Server) deliverEdit(ctx context.Context, user string, raw json.RawMessage) (string, bool, error) {
+//
+// An account playing on another server: the edit is to this server's world
+// but saving it rewrites the shared account too, so it waits for the player
+// to leave that server. A lock reload goes to the DBSRV of that server.
+func (s *Server) deliverEdit(ctx context.Context, id int64, user string, raw json.RawMessage) (string, bool, error) {
 	var e acctedit.Edit
 	if err := json.Unmarshal(raw, &e); err != nil {
 		return resInvalid + ": " + err.Error(), true, nil
@@ -30,12 +34,18 @@ func (s *Server) deliverEdit(ctx context.Context, user string, raw json.RawMessa
 	}
 
 	if e.Op == acctedit.OpLock {
-		return s.deliverLockReload(user, &e)
+		return s.deliverLockReload(ctx, id, user, &e)
 	}
 
 	var res string
 	var err error
-	online := s.sess.withOffline(user, func() { res, err = s.editStored(ctx, user, &e) })
+	online, elsewhere, lerr := s.withStored(ctx, user, func() { res, err = s.editStored(ctx, user, &e) })
+	if lerr != nil {
+		return "", false, lerr
+	}
+	if elsewhere != 0 {
+		return waitOtherServer, false, nil
+	}
 	if online == nil {
 		if err != nil {
 			return "", false, err
@@ -83,9 +93,14 @@ func (s *Server) deliverEdit(ctx context.Context, user string, raw json.RawMessa
 // deliverLockReload forwards an OpLock to TMSRV when the player is in game
 // (the lock is loaded on entering the world, so offline or at character
 // selection there is nothing to do).
-func (s *Server) deliverLockReload(user string, e *acctedit.Edit) (string, bool, error) {
+func (s *Server) deliverLockReload(ctx context.Context, id int64, user string, e *acctedit.Edit) (string, bool, error) {
 	online := s.sess.withOffline(user, func() {})
 	if online == nil {
+		if where, err := s.st.Online(ctx, user); err != nil {
+			return "", false, err
+		} else if where != nil && where.Server != s.st.Server() {
+			return s.handOver(ctx, id, where.Server)
+		}
 		return resNotOnline, true, nil
 	}
 	online.mu.Lock()

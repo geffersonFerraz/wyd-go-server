@@ -24,45 +24,63 @@ type AssetSource interface {
 	LoadAsset(ctx context.Context, name string) ([]byte, time.Time, error)
 }
 
+// ItemListCache keeps the ItemList.bin of the database in memory. The public
+// listener serves it to anyone, so the database is only asked for the file's
+// date, every few seconds; the file handler and the manifest share one copy.
+type ItemListCache struct {
+	src AssetSource
+	log *slog.Logger
+
+	mu      sync.Mutex
+	content []byte
+	modTime time.Time
+	checked time.Time
+}
+
+// NewItemListCache starts empty; the file is loaded on the first request.
+func NewItemListCache(src AssetSource, log *slog.Logger) *ItemListCache {
+	return &ItemListCache{src: src, log: log}
+}
+
+// Current is the file and its date; nil when the database has none. On a
+// database error it answers with the last good copy.
+func (c *ItemListCache) Current(ctx context.Context) ([]byte, time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if time.Since(c.checked) < itemListRecheck {
+		return c.content, c.modTime
+	}
+	at, ok, err := c.src.AssetUpdatedAt(ctx, store.AssetItemList)
+	if err != nil {
+		c.log.Error("itemlist.bin", "err", err)
+		return c.content, c.modTime
+	}
+	c.checked = time.Now()
+	switch {
+	case !ok:
+		c.content, c.modTime = nil, time.Time{}
+	case !at.Equal(c.modTime) || c.content == nil:
+		b, loaded, err := c.src.LoadAsset(ctx, store.AssetItemList)
+		if err != nil {
+			c.log.Error("itemlist.bin", "err", err)
+			c.checked = time.Time{}
+			return c.content, c.modTime
+		}
+		c.content, c.modTime = b, loaded
+	}
+	return c.content, c.modTime
+}
+
 // ItemListHandler serves the ItemList.bin of the database, so replacing it
 // needs no restart. Every request asks again; an unchanged file costs a 304.
-// The listener is public, so the file is kept in memory and the database is
-// only asked for its date, every few seconds.
 func ItemListHandler(src AssetSource, log *slog.Logger) http.Handler {
-	var (
-		mu      sync.Mutex
-		content []byte
-		modTime time.Time
-		checked time.Time
-	)
-	current := func(ctx context.Context) ([]byte, time.Time) {
-		mu.Lock()
-		defer mu.Unlock()
-		if time.Since(checked) < itemListRecheck {
-			return content, modTime
-		}
-		at, ok, err := src.AssetUpdatedAt(ctx, store.AssetItemList)
-		if err != nil {
-			log.Error("itemlist.bin", "err", err)
-			return content, modTime // the last good copy
-		}
-		checked = time.Now()
-		switch {
-		case !ok:
-			content, modTime = nil, time.Time{}
-		case !at.Equal(modTime) || content == nil:
-			b, loaded, err := src.LoadAsset(ctx, store.AssetItemList)
-			if err != nil {
-				log.Error("itemlist.bin", "err", err)
-				checked = time.Time{}
-				return content, modTime
-			}
-			content, modTime = b, loaded
-		}
-		return content, modTime
-	}
+	return NewItemListCache(src, log).Handler()
+}
+
+// Handler serves the cached file.
+func (c *ItemListCache) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, at := current(r.Context())
+		b, at := c.Current(r.Context())
 		if b == nil {
 			http.Error(w, "itemlist unavailable", http.StatusNotFound)
 			return

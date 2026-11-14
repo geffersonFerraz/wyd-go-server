@@ -95,7 +95,7 @@ func TestGuardIgnoresStaleRowsWhenDBSRVIsDown(t *testing.T) {
 	tm := h.connect()
 	tm.loginOK(5, "TESTER", "secret")
 
-	if _, err := h.st.Pool().Exec(ctx, `UPDATE server_state SET dbsrv_seen_at = now() - interval '5 minutes'`); err != nil {
+	if _, err := h.st.Pool().Exec(ctx, `UPDATE server_status SET dbsrv_seen_at = now() - interval '5 minutes'`); err != nil {
 		t.Fatal(err)
 	}
 	operator, err := store.OpenUnprivileged(ctx, os.Getenv("DBSRV_TEST_DSN"), testLoc)

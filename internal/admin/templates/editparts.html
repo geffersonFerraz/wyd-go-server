@@ -18,7 +18,7 @@
 {{if .Error}}<p class="alert bad" role="alert">{{.Error}}</p>{{end}}
 {{if .Requested}}<p class="alert info">Pedido #{{.Requested}} enviado. Acompanhe em “Pedidos desta conta”.</p>{{end}}
 {{if .Online}}
-<p class="alert info">Online no canal {{.Online.Channel}}. As alterações valem na hora no jogo (com o personagem em jogo) — os itens mostrados aqui são os do último save.</p>
+<p class="alert info">Online no servidor {{.Online.Server}}, canal {{.Online.Channel}}. As alterações valem na hora no jogo (com o personagem em jogo) — os itens mostrados aqui são os do último save.</p>
 {{end}}
 {{end}}
 

@@ -12,6 +12,11 @@
 <header class="top">
   <a class="brand" href="/accounts">DBSRV <span>Admin</span></a>
   <nav class="mainnav"><a href="/accounts">Contas</a><a href="/gamedata/items">Dados do jogo</a><a href="/guilds">Guildas</a><a href="/notice">Aviso global</a><a href="/gm">Comandos GM</a><a href="/stores">Lojas</a><a href="/tracks">Rastreio</a><a href="/messages">Mensagens{{if .UnseenGM}} <span class="pill bad">{{.UnseenGM}}</span>{{end}}</a><a href="/server">Exportar</a><a href="/alerts">Alertas{{if .UnseenAlerts}} <span class="pill bad">{{.UnseenAlerts}}</span>{{end}}</a></nav>
+  {{if .Servers}}<form method="post" action="/server-select" class="logout servers" title="Personagens, guildas, lojas e mensagens são de cada servidor; contas e dados do jogo valem para todos">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <span class="who">Servidor</span>
+    {{range .Servers}}<button class="link" name="server" value="{{.Group}}"{{if .Current}} aria-current="true" disabled{{end}}>{{.Group}}</button>{{end}}
+  </form>{{end}}
   <form method="post" action="/logout" class="logout">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <span class="who">{{.Admin}}</span>
@@ -20,7 +25,7 @@
 </header>
 {{end}}
 <main>
-{{with .Channels}}<p class="muted"><small>Canais:{{range .}} {{.Number}}: {{if .Up}}{{.Online}} online{{else}}desligado{{end}} ·{{end}}</small></p>{{end}}
+{{with .Channels}}<p class="muted"><small>{{if $.Servers}}Servidor {{$.Server}} · {{end}}Canais:{{range .}} {{.Number}}: {{if .Up}}{{.Online}} online{{else}}desligado{{end}} ·{{end}}</small></p>{{end}}
 {{if .DBSRVWarning}}<p class="alert bad" role="alert">{{.DBSRVWarning}}</p>{{end}}
 {{template "content" .}}
 </main>

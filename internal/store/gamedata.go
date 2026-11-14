@@ -324,7 +324,7 @@ func (s *Store) LoadGameData(ctx context.Context) (*GameData, error) {
 		}
 		gd.Teleports = tps
 
-		rows, _ = tx.Query(ctx, `SELECT channel, city, guild_id, changed_by, changed_at FROM gamedata.city_owners ORDER BY channel, city`)
+		rows, _ = tx.Query(ctx, `SELECT channel, city, guild_id, changed_by, changed_at FROM city_owners ORDER BY channel, city`)
 		owners, err := pgx.CollectRows(rows, scanCityOwner)
 		if err != nil {
 			return fmt.Errorf("city_owners: %w", err)

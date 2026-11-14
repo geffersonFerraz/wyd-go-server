@@ -1,6 +1,7 @@
 # Configuração do TMSRV em Go (cmd/tmsrv, flag -config).
 #
-# É a única fonte de configuração do servidor Go: substitui o serverip.txt,
+# É a única fonte de configuração do servidor Go, igual para todos os
+# servidores (ver "servers"): substitui o serverip.txt,
 # o dataserver.txt e o gameconfig.txt do C++ (esses arquivos continuam
 # existindo só para o TMsrv.exe em C++).
 #
@@ -16,48 +17,74 @@ limits:
   max_damage: 1000000000000000          # dano de um golpe em mob. C++: 64000 (62000 no crítico)
   max_attack_defense: 1000000000000000  # ataque e defesa do jogador. C++: 100000
 
-# Endereços de rede.
-network:
-  # Onde está o DBSRV (IP do container dbsrv). C++: dataserver.txt.
-  dbsrv_ip: 172.30.87.11
-  dbsrv_port: 7514
+# Servidores (mundos). Um servidor = um grupo na lista do cliente, com o seu
+# DBSRV e até 10 canais (um TMSRV cada). Todos usam o mesmo banco:
+#
+#   servidor > N canais (TMSRV) > 1 DBSRV ─┐
+#   servidor > N canais (TMSRV) > 1 DBSRV ─┴─> 1 PostgreSQL > 1 painel admin
+#
+# A conta (login, senha, ban, cash) é uma só e entra em qualquer servidor, um
+# de cada vez; personagens, baú, guildas, ranking e donos de cidade são de
+# cada servidor (schema s<group> do banco). Itens, drops, NPCs, experiência e
+# o resto deste arquivo valem para todos.
+#
+# Este arquivo é único e igual em todas as máquinas: o serverlist.bin do
+# cliente sai daqui com todos os servidores (http://<host>/serverlist.bin do
+# painel admin, ou "admin serverlist -o serverlist.bin"). O DBSRV e a TMSRV
+# escolhem o seu servidor com -server <group> (ou WYD_SERVER) e a TMSRV o seu
+# canal com -channel N (ou TMSRV_CHANNEL); com um servidor só, -server é
+# dispensável. O painel admin é um só e cuida de todos. O banco vem do
+# DATABASE_URL (fora deste arquivo, que não guarda senhas). Substitui o
+# serverip.txt e o dataserver.txt do C++ e o data/dbsrv/serverlist.txt do
+# DBSRV.
+#
+#   group:      grupo (mundo) no cliente, 1..10: o número do grupo no sn.bin.
+#               Não se repete.
+#   status_url: servNN.htm com o online por canal, servido pela porta pública
+#               do painel admin. Um arquivo por servidor (serv00.htm,
+#               serv01.htm...): o nome não se repete. Até 63 caracteres.
+#   public_ip:  (opcional) endereço (IPv4 ou nome) dos canais que não têm
+#               "host" próprio.
+#   dbsrv:      onde o DBSRV deste servidor escuta e os canais dele conectam
+#               (no docker-compose, o IP fixo do container).
+#   channels:
+#     number: numerados 1..N, em ordem e sem buracos (o cliente usa a posição
+#             na lista como número do canal). Máximo 10.
+#     ip:     IP em que a TMSRV escuta. É também a origem da conexão com o
+#             DBSRV, que reconhece o canal por ele, então cada canal do
+#             servidor tem o seu. No docker-compose, é o IP fixo do container
+#             na rede wyd. Servidores em máquinas diferentes podem usar os
+#             mesmos IPs privados.
+#     port:   porta em que a TMSRV escuta e em que os jogadores conectam (o
+#             docker-compose publica a mesma porta no host). Na porta 8281 o
+#             serverlist.bin leva só o host (cliente original); nas outras
+#             leva "host:porta", o que exige o cliente com suporte a porta.
+#     host:   (opcional) nome DNS ou IPv4 que os jogadores usam para chegar a
+#             este canal: é o que vai no serverlist.bin. Sem ele vale o
+#             public_ip do servidor. O nome tem de apontar para o endereço
+#             público e a porta do canal; o cliente resolve o nome com o DNS
+#             da máquina do jogador (exige o cliente com suporte a nomes).
+#             host+porta não se repete em nenhum servidor.
+servers:
+  - group: 1
+    # Endereço público do site (porta 80 do painel admin, o mesmo para todos
+    # os servidores): é também daqui que o launcher baixa o serverlist.bin e
+    # o itemlist.bin.
+    status_url: http://wyd.gefferson.com/serv00.htm
+    dbsrv: { ip: 172.30.87.11, port: 7514 }
+    channels:
+      - { number: 1, ip: 172.30.87.21, port: 8281, host: wyd-srv1.gefferson.com }
+      - { number: 2, ip: 172.30.87.22, port: 8282, host: wyd-srv2.gefferson.com }
+      - { number: 3, ip: 172.30.87.23, port: 8283, host: wyd-srv3.gefferson.com }
+      - { number: 4, ip: 172.30.87.24, port: 8284, host: wyd-srv4.gefferson.com }
 
-# Lista de servidores do cliente (serverlist.bin). O painel admin gera o
-# arquivo a partir daqui: http://<host>/serverlist.bin, ou
-# "admin serverlist -o serverlist.bin".
-serverlist:
-  # Grupo (mundo) no cliente, 1..10: o número do grupo no sn.bin.
-  group: 1
-  # Endereço público do site (porta 80 do painel admin): serv00.htm com o
-  # online por canal, e é daqui que o launcher baixa o serverlist.bin e o
-  # itemlist.bin. Até 63 caracteres.
-  status_url: http://wyd.gefferson.com/serv00.htm
-  # public_ip (opcional): endereço (IPv4 ou nome) dos canais que não têm
-  # "host" próprio. Aqui todos têm, então não é preciso.
-  # public_ip: 192.168.77.26
-
-# Canais: um TMSRV (um container no docker-compose) por canal. Cada TMSRV
-# escolhe o seu com -channel N (ou TMSRV_CHANNEL). Substitui o serverip.txt
-# do C++ e o data/dbsrv/serverlist.txt do DBSRV.
-#   number: numerados 1..N, em ordem e sem buracos (o cliente usa a posição
-#           na lista como número do canal). Máximo 10.
-#   ip:     IP em que a TMSRV escuta. É também a origem da conexão com o
-#           DBSRV, que reconhece o canal por ele, então cada canal tem o seu.
-#           No docker-compose, é o IP fixo do container na rede wyd.
-#   port:   porta em que a TMSRV escuta e em que os jogadores conectam (o
-#           docker-compose publica a mesma porta no host). Na porta 8281 o
-#           serverlist.bin leva só o host (cliente original); nas outras leva
-#           "host:porta", o que exige o cliente com suporte a porta.
-#   host:   (opcional) nome DNS ou IPv4 que os jogadores usam para chegar a
-#           este canal: é o que vai no serverlist.bin. Sem ele vale o
-#           serverlist.public_ip. O nome tem de apontar para o endereço
-#           público e a porta do canal; o cliente resolve o nome com o DNS
-#           da máquina do jogador (exige o cliente com suporte a nomes).
-channels:
-  - { number: 1, ip: 172.30.87.21, port: 8281, host: wyd-srv1.gefferson.com }
-  - { number: 2, ip: 172.30.87.22, port: 8282, host: wyd-srv2.gefferson.com }
-  - { number: 3, ip: 172.30.87.23, port: 8283, host: wyd-srv3.gefferson.com }
-  - { number: 4, ip: 172.30.87.24, port: 8284, host: wyd-srv4.gefferson.com }
+  # Segundo servidor, em outra máquina (exemplo; ver "Servidores" no README):
+  # - group: 2
+  #   status_url: http://wyd.gefferson.com/serv01.htm
+  #   dbsrv: { ip: 172.30.87.11, port: 7514 }
+  #   channels:
+  #     - { number: 1, ip: 172.30.87.21, port: 8281, host: wyd2-srv1.gefferson.com }
+  #     - { number: 2, ip: 172.30.87.22, port: 8282, host: wyd2-srv2.gefferson.com }
 
 # Troca de canal dentro do jogo (lista de canais no jogo / comando "srv507").
 change_channel:

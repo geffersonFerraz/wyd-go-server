@@ -24,6 +24,10 @@ rem  de configuracao (padrao tmsrv.yaml). Os IPs dos canais no tmsrv.yaml
 rem  sao os do docker-compose (172.30.87.x); para rodar no Windows, copie-o
 rem  para tmsrv.local.yaml com 127.0.0.1, 127.0.0.2... (um IP por canal: o
 rem  DBSRV reconhece o canal pelo IP) e use TMSRV_CONFIG=tmsrv.local.yaml.
+rem  O DBSRV escuta no endereco "dbsrv" do servidor no yaml (127.0.0.1:7514
+rem  no arquivo local). Se o yaml listar mais de um servidor, WYD_SERVER no
+rem  .env diz qual deles esta maquina roda (o group). O banco (DATABASE_URL)
+rem  e o painel admin sao os mesmos para todos os servidores.
 rem ==========================================================================
 setlocal EnableExtensions
 cd /d "%~dp0"

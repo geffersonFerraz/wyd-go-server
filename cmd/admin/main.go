@@ -15,11 +15,18 @@
 //
 // The panel only queues changes; dbsrv must be running to apply them.
 //
+// One panel manages every server of tmsrv.yaml: they share the database, so
+// the accounts and the game data are the same for all, and a selector at the
+// top picks the server whose world (characters, guilds, stores, messages...)
+// is shown and changed. The public listener serves one serverlist.bin with
+// every server and the servNN.htm of each (the name in its status_url).
+//
 // With -public-listen (e.g. ":80"), a second, unauthenticated listener
 // serves what the game client downloads over plain HTTP:
 //
-//   - /servNN.htm: online count per channel for the server list (the URL in
-//     serverlist.bin, entry [group][0], must point at this host);
+//   - /servNN.htm: online count per channel of each server for the server
+//     list (the status_url of the server, serverlist.bin entry [group][0],
+//     must point at this host);
 //   - /serverlist.bin: the client's server list, built from the channels of
 //     -config (tmsrv.yaml) on every request;
 //   - /itemlist.bin: the client's item list, as it is in the database;
@@ -52,6 +59,7 @@ import (
 
 	"dbsrv/internal/admin"
 	"dbsrv/internal/auth"
+	"dbsrv/internal/cluster"
 	"dbsrv/internal/game"
 	"dbsrv/internal/logfile"
 	"dbsrv/internal/store"
@@ -71,6 +79,13 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "world-import" {
 		if err := worldImport(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "transport-key" {
+		if err := transportKey(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -145,35 +160,62 @@ func run(log *slog.Logger, o options) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	// Unprivileged: the panel must not slip past the online-account guard.
-	st, err := store.OpenUnprivileged(ctx, dsn, time.Local)
-	if err != nil {
-		return fmt.Errorf("database: %w", err)
-	}
-	defer st.Close()
-	if err := st.Migrate(ctx); err != nil {
-		return fmt.Errorf("migrate: %w", err)
-	}
-
-	var channels []int
+	// One panel for every server of the settings. They share the database:
+	// the accounts and the game data are the same, and each server has its
+	// own world (characters, guilds...), which the panel shows one at a time.
 	settings, settingsErr := game.LoadSettings(o.config)
-	if err := settingsErr; err == nil {
-		for _, c := range settings.Channels {
+	servers := []cluster.Server{{Group: 1}}
+	if settingsErr == nil {
+		servers = settings.Servers
+	} else if o.config != "" {
+		log.Warn("servers and channels not read from the settings", "err", settingsErr)
+	}
+	var panels []*admin.Server
+	var status []admin.StatusSource
+	var st *store.Store // any of them, for what every server shares
+	for _, srv := range servers {
+		// Unprivileged: the panel must not slip past the online-account guard.
+		world, err := store.OpenServerUnprivileged(ctx, dsn, time.Local, srv.Group)
+		if err != nil {
+			return fmt.Errorf("database: %w", err)
+		}
+		defer world.Close()
+		if err := world.Migrate(ctx); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+		if st == nil {
+			st = world
+		}
+		var channels []int
+		for _, c := range srv.Channels {
 			channels = append(channels, c.Number)
 		}
-	} else if o.config != "" {
-		log.Warn("channels not read from the settings", "err", err)
-	}
-
-	// City owners: the database is the only source; the first start copies
-	// the owners of tmsrv.yaml for the cities not set yet.
-	if settingsErr == nil {
-		n, err := admin.SeedCityOwners(ctx, st, settings.Cities)
-		if err != nil {
-			log.Warn("city owners not seeded from the settings", "err", err)
-		} else if n > 0 {
-			log.Info("city owners copied from the settings", "cities", n)
+		// City owners: the database is the only source; the first start
+		// copies the owners of tmsrv.yaml for the cities not set yet.
+		if settingsErr == nil {
+			n, err := admin.SeedCityOwners(ctx, world, settings.Cities)
+			if err != nil {
+				log.Warn("city owners not seeded from the settings", "server", srv.Group, "err", err)
+			} else if n > 0 {
+				log.Info("city owners copied from the settings", "server", srv.Group, "cities", n)
+			}
 		}
+		// Guild numbers do not repeat between servers (cluster.GuildRange),
+		// so one folder holds the marks of all of them.
+		markDir := o.markDir
+		if markDir != "" {
+			if err := os.MkdirAll(markDir, 0o755); err != nil {
+				return fmt.Errorf("guildmark dir: %w", err)
+			}
+		}
+		panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: markDir, Channels: channels,
+			SettingsPath: o.config, ConfigDir: o.configDir, StateDir: filepath.Dir(pwFile)}, world, log)
+		if err != nil {
+			return err
+		}
+		panels = append(panels, panel)
+		status = append(status, admin.StatusSource{File: srv.StatusFile(), Store: world})
+		log.Info("server", "group", srv.Group, "channels", len(channels), "status_file", srv.StatusFile())
 	}
 
 	// NPC generators: the first start after they moved to the database
@@ -193,28 +235,25 @@ func run(log *slog.Logger, o options) error {
 		log.Info("drops by chance imported", "lines", n)
 	}
 
-	if o.markDir != "" {
-		if err := os.MkdirAll(o.markDir, 0o755); err != nil {
-			return fmt.Errorf("guildmark dir: %w", err)
-		}
-	}
-	panel, err := admin.New(admin.Config{Users: map[string]string{user: hash}, SecureCookie: secure, GuildMarkDir: o.markDir, Channels: channels,
-		SettingsPath: o.config, ConfigDir: o.configDir, StateDir: filepath.Dir(pwFile)}, st, log)
-	if err != nil {
-		return err
-	}
 	// What the game client downloads goes on its own listener: the client
 	// fetches it over plain HTTP from anywhere, while the panel stays private.
 	if o.publicListen != "" {
 		mux := http.NewServeMux()
-		mux.Handle("/", admin.ServerStatusHandler(st, log))
+		mux.Handle("/", admin.ServerStatusHandler(log, status...))
+		// The launcher reads the manifest first and only downloads the
+		// files whose hash differs from its local copy.
+		var manifest []admin.ManifestSource
 		if o.config != "" {
 			if _, err := admin.BuildServerList(o.config); err != nil {
 				return fmt.Errorf("serverlist.bin: %w", err)
 			}
 			mux.Handle("GET "+admin.ServerListPath, admin.ServerListHandler(o.config, log))
+			manifest = append(manifest, admin.ServerListSource(o.config))
 		}
-		mux.Handle("GET "+admin.ItemListPath, admin.ItemListHandler(st, log))
+		items := admin.NewItemListCache(st, log)
+		mux.Handle("GET "+admin.ItemListPath, items.Handler())
+		manifest = append(manifest, items.Source())
+		mux.Handle("GET "+admin.ManifestPath, admin.ManifestHandler(manifest, log))
 		mux.Handle("GET "+admin.LauncherPath, admin.LauncherHandler())
 		mailer := admin.NewResendMailer(os.Getenv("RESEND_API_KEY"), os.Getenv("RESEND_FROM"))
 		if !mailer.Enabled() {
@@ -237,7 +276,7 @@ func run(log *slog.Logger, o options) error {
 		}()
 		go func() {
 			log.Info("public files", "status", "http://"+o.publicListen+"/serv00.htm", "serverlist", "http://"+o.publicListen+admin.ServerListPath,
-				"itemlist", "http://"+o.publicListen+admin.ItemListPath, "launcher", "http://"+o.publicListen+admin.LauncherPath,
+				"itemlist", "http://"+o.publicListen+admin.ItemListPath, "manifest", "http://"+o.publicListen+admin.ManifestPath, "launcher", "http://"+o.publicListen+admin.LauncherPath,
 				"guild_marks", "http://"+o.publicListen+admin.GuildMarkPath, "dir", o.markDir)
 			if err := public.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				log.Error("public server", "err", err)
@@ -246,7 +285,7 @@ func run(log *slog.Logger, o options) error {
 	}
 	srv := &http.Server{
 		Addr:              listen,
-		Handler:           panel.Handler(),
+		Handler:           admin.Handler(panels...),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -267,7 +306,7 @@ func run(log *slog.Logger, o options) error {
 // writeServerList is "admin serverlist": serverlist.bin from tmsrv.yaml.
 func writeServerList(args []string) error {
 	fs := flag.NewFlagSet("serverlist", flag.ExitOnError)
-	config := fs.String("config", "tmsrv.yaml", "TMSRV settings (serverlist and channels sections)")
+	config := fs.String("config", "tmsrv.yaml", "TMSRV settings (servers section)")
 	out := fs.String("o", "serverlist.bin", "output file (the client reads ./serverlist.bin)")
 	_ = fs.Parse(args)
 	b, err := admin.BuildServerList(*config)

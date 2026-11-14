@@ -293,7 +293,7 @@ func TestRefusesWhenDBSRVOutdatedOrDown(t *testing.T) {
 		t.Error("no banner for outdated dbsrv")
 	}
 
-	if _, err := h.st.Pool().Exec(h.ctx, `UPDATE server_state SET dbsrv_protocol = $1, dbsrv_seen_at = now() - interval '1 minute'`, store.DeliveryProtocol); err != nil {
+	if _, err := h.st.Pool().Exec(h.ctx, `UPDATE server_status SET dbsrv_protocol = $1, dbsrv_seen_at = now() - interval '1 minute'`, store.DeliveryProtocol); err != nil {
 		t.Fatal(err)
 	}
 	code, body, _ = h.post("/accounts/EXISTING/token", url.Values{"csrf": {csrf}, "token": {"1"}, "token2": {"1"}})
@@ -316,7 +316,7 @@ func TestKickButton(t *testing.T) {
 	if _, body, _ := h.get("/accounts/EXISTING"); strings.Contains(body, "Desconectar do jogo</button>") {
 		t.Error("kick button shown for an offline account")
 	}
-	if err := h.st.SetOnline(h.ctx, "EXISTING", 1, 42); err != nil {
+	if ok, _, err := h.st.ClaimOnline(h.ctx, "EXISTING", 1, 42); err != nil || !ok {
 		t.Fatal(err)
 	}
 	_, body, _ := h.get("/accounts/EXISTING")

@@ -143,3 +143,5 @@ table.items form.equip { display: inline-flex; gap: 6px; align-items: center; }
 table.items form.equip select { max-width: 190px; padding: 2px 4px; }
 .removebar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 12px; }
 button.danger:disabled { opacity: .45; cursor: default; }
+
+.servers button[aria-current] { font-weight: 700; text-decoration: none; cursor: default; }

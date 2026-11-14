@@ -72,7 +72,7 @@ type GMCommand struct {
 // GMCommands lists the newest commands.
 func (s *Store) GMCommands(ctx context.Context, limit int) ([]GMCommand, error) {
 	rows, _ := s.pool.Query(ctx, `SELECT id, requested_by, created_at, processed_at IS NOT NULL, COALESCE(result, ''), payload
-		FROM deliveries WHERE kind = 'gm_command' ORDER BY id DESC LIMIT $1`, limit)
+		FROM deliveries WHERE kind = 'gm_command' AND server = $2 ORDER BY id DESC LIMIT $1`, limit, s.server)
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (GMCommand, error) {
 		var c GMCommand
 		var raw []byte

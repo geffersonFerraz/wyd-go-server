@@ -1,6 +1,7 @@
 package game
 
 import (
+	"dbsrv/internal/cluster"
 	"encoding/binary"
 	"testing"
 
@@ -134,5 +135,20 @@ func TestWhisper(t *testing.T) {
 	command(g, a, "Bravo", "oi")
 	if len(sent(b, wire.OpCliCommand)) != 0 {
 		t.Fatal("whisper delivered while blocked")
+	}
+}
+
+// Each server creates guilds in its own range of numbers, so one folder of
+// guild marks serves every server.
+func TestCreateGuildUsesTheServerRange(t *testing.T) {
+	g := partyGame(t)
+	g.cfg.Cluster.Group = 2
+	a := g.users[1]
+	listen(a)
+	pa := &g.mobs[1].info.Player
+	pa.Gold = 200000000
+	command(g, a, "criar", "Lobos")
+	if first, _ := cluster.GuildRange(2); int(pa.GuildIndex) != first || first != 6554 {
+		t.Fatalf("guild %d created on server 2, want %d", pa.GuildIndex, first)
 	}
 }

@@ -16,29 +16,65 @@ var ErrNotFound = errors.New("store: not found")
 
 // Store wraps a connection pool. Loc is the game's wall-clock time zone:
 // STRUCT_ITEMDATE values (bans etc.) are local times without a zone.
+//
+// One database holds every server (world). The accounts, the game data and
+// the delivery queue are shared (schema public / gamedata); the world of each
+// server (characters, items, guilds, ranking...) is in its own schema
+// (SchemaName). A Store works on one server: its connections have
+// search_path = s<server>, public, so the unqualified queries of this
+// package reach that world and no other.
 type Store struct {
-	pool *pgxpool.Pool
-	Loc  *time.Location
+	pool   *pgxpool.Pool
+	Loc    *time.Location
+	server int
 }
+
+// MaxServers is how many servers a database holds (the client's server
+// groups, cluster.MaxGroups).
+const MaxServers = 10
+
+// SchemaName is the schema with the world of a server (its group).
+func SchemaName(server int) string { return fmt.Sprintf("s%d", server) }
+
+// Server is the server (group) this store works on.
+func (s *Store) Server() int { return s.server }
 
 // Open connects as dbsrv: its connections may write accounts that are online
 // in the game (see migration 0005, guard_online_account). Use it for dbsrv,
 // the importer and tests.
+//
+// Open and OpenUnprivileged work on server 1 (tools and tests);
+// OpenServer and OpenServerUnprivileged name the server.
 func Open(ctx context.Context, dsn string, loc *time.Location) (*Store, error) {
-	return open(ctx, dsn, loc, true)
+	return open(ctx, dsn, loc, true, 1)
+}
+
+// OpenServer is Open for the world of a server (its group).
+func OpenServer(ctx context.Context, dsn string, loc *time.Location, server int) (*Store, error) {
+	return open(ctx, dsn, loc, true, server)
+}
+
+// OpenServerUnprivileged is OpenUnprivileged for the world of a server.
+func OpenServerUnprivileged(ctx context.Context, dsn string, loc *time.Location, server int) (*Store, error) {
+	return open(ctx, dsn, loc, false, server)
 }
 
 // OpenUnprivileged connects without the dbsrv writer flag, so the online
 // guard applies (the admin panel).
 func OpenUnprivileged(ctx context.Context, dsn string, loc *time.Location) (*Store, error) {
-	return open(ctx, dsn, loc, false)
+	return open(ctx, dsn, loc, false, 1)
 }
 
-func open(ctx context.Context, dsn string, loc *time.Location, writer bool) (*Store, error) {
+func open(ctx context.Context, dsn string, loc *time.Location, writer bool, server int) (*Store, error) {
+	if server < 1 || server > MaxServers {
+		return nil, fmt.Errorf("store: server must be 1..%d, got %d", MaxServers, server)
+	}
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
+	// The session default, so RESET search_path comes back to it.
+	cfg.ConnConfig.RuntimeParams["search_path"] = SchemaName(server) + ", public"
 	if writer {
 		cfg.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
 			_, err := c.Exec(ctx, `SET dbsrv.writer = 'on'`)
@@ -53,7 +89,7 @@ func open(ctx context.Context, dsn string, loc *time.Location, writer bool) (*St
 		pool.Close()
 		return nil, err
 	}
-	return &Store{pool: pool, Loc: loc}, nil
+	return &Store{pool: pool, Loc: loc, server: server}, nil
 }
 
 func (s *Store) Close() { s.pool.Close() }
@@ -71,11 +107,17 @@ func (s *Store) ResetForTests(ctx context.Context) error {
 	if !strings.HasSuffix(db, "_test") {
 		return fmt.Errorf("store: refusing to wipe database %q (name must end in _test)", db)
 	}
-	_, err := s.pool.Exec(ctx, `DROP SCHEMA IF EXISTS gamedata CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public;`)
+	q := `DROP SCHEMA IF EXISTS gamedata CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public;`
+	for n := 1; n <= MaxServers; n++ {
+		q += ` DROP SCHEMA IF EXISTS ` + SchemaName(n) + ` CASCADE;`
+	}
+	_, err := s.pool.Exec(ctx, q)
 	return err
 }
 
-// LoadAccount reads an account with its characters and items.
+// LoadAccount reads an account with its characters and items on this server.
+// An account that never played here has no world row yet: it comes with an
+// empty storage and no characters.
 func (s *Store) LoadAccount(ctx context.Context, username string) (*AccountRecord, error) {
 	username = strings.ToUpper(username)
 	var rec *AccountRecord
@@ -83,9 +125,11 @@ func (s *Store) LoadAccount(ctx context.Context, username string) (*AccountRecor
 		var id int64
 		var r accountRow
 		err := tx.QueryRow(ctx, `
-			SELECT id, username, password_hash, status, numeric_pass_hash, pass_block, access_level,
-			       cash, honra, novato, storage_gold, ban_type, ban_until, already_reset, data
-			FROM accounts WHERE username = $1`, username).Scan(
+			SELECT a.id, a.username, a.password_hash, a.status, a.numeric_pass_hash, a.pass_block, a.access_level,
+			       a.cash, a.honra, COALESCE(w.novato, 0), COALESCE(w.storage_gold, 0), a.ban_type, a.ban_until,
+			       COALESCE(w.already_reset, false), COALESCE(w.data, '{"CharSlot": -1}'::jsonb)
+			FROM accounts a LEFT JOIN account_world w ON w.account_id = a.id
+			WHERE a.username = $1`, username).Scan(
 			&id, &r.Username, &r.PasswordHash, &r.Status, &r.NumericPassHash, &r.PassBlock, &r.AccessLevel,
 			&r.Cash, &r.Honra, &r.Novato, &r.StorageGold, &r.BanType, &r.BanUntil, &r.AlreadyReset, &r.Data)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -156,20 +200,29 @@ func (s *Store) saveAccountTx(ctx context.Context, tx pgx.Tx, rec *AccountRecord
 	var id int64
 	err = tx.QueryRow(ctx, `
 		INSERT INTO accounts (username, password_hash, status, numeric_pass_hash, pass_block, access_level,
-		                      cash, honra, novato, storage_gold, ban_type, ban_until, already_reset, data)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+		                      cash, honra, ban_type, ban_until)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		ON CONFLICT (username) DO UPDATE SET
 			password_hash = EXCLUDED.password_hash, status = EXCLUDED.status,
 			numeric_pass_hash = EXCLUDED.numeric_pass_hash, pass_block = EXCLUDED.pass_block,
 			access_level = EXCLUDED.access_level, cash = EXCLUDED.cash, honra = EXCLUDED.honra,
-			novato = EXCLUDED.novato, storage_gold = EXCLUDED.storage_gold, ban_type = EXCLUDED.ban_type,
-			ban_until = EXCLUDED.ban_until, already_reset = EXCLUDED.already_reset, data = EXCLUDED.data,
+			ban_type = EXCLUDED.ban_type, ban_until = EXCLUDED.ban_until,
 			updated_at = now()
 		RETURNING id`,
 		row.Username, row.PasswordHash, row.Status, row.NumericPassHash, row.PassBlock, row.AccessLevel,
-		row.Cash, row.Honra, row.Novato, row.StorageGold, row.BanType, row.BanUntil, row.AlreadyReset, row.Data,
+		row.Cash, row.Honra, row.BanType, row.BanUntil,
 	).Scan(&id)
 	if err != nil {
+		return err
+	}
+	// The part of the account that belongs to this server's world.
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO account_world (account_id, novato, storage_gold, already_reset, data)
+		VALUES ($1,$2,$3,$4,$5)
+		ON CONFLICT (account_id) DO UPDATE SET
+			novato = EXCLUDED.novato, storage_gold = EXCLUDED.storage_gold,
+			already_reset = EXCLUDED.already_reset, data = EXCLUDED.data, updated_at = now()`,
+		id, row.Novato, row.StorageGold, row.AlreadyReset, row.Data); err != nil {
 		return err
 	}
 
@@ -265,4 +318,67 @@ func (s *Store) NameOwner(ctx context.Context, name string) (string, error) {
 		return "", ErrNotFound
 	}
 	return user, err
+}
+
+// serverLockBase + server is the advisory lock a DBSRV holds while it serves
+// a server.
+const serverLockBase = 7514_1000
+
+// LockServer makes this process the only DBSRV of the store's server: two of
+// them would each keep its own copy of the accounts and overwrite the other.
+// It fails when another DBSRV holds the server. The lock lives on its own
+// connection until release; if that connection drops, it is taken again as
+// soon as the database answers, and lost reports when that fails because
+// another DBSRV took the server meanwhile.
+func (s *Store) LockServer(ctx context.Context, lost func(error)) (release func(), err error) {
+	key := serverLockBase + s.server
+	take := func(ctx context.Context) (*pgx.Conn, error) {
+		conn, err := pgx.ConnectConfig(ctx, s.pool.Config().ConnConfig)
+		if err != nil {
+			return nil, err
+		}
+		var ok bool
+		if err := conn.QueryRow(ctx, `SELECT pg_try_advisory_lock($1)`, key).Scan(&ok); err != nil || !ok {
+			_ = conn.Close(context.WithoutCancel(ctx))
+			if err == nil {
+				err = fmt.Errorf("another DBSRV is already serving server %d on this database", s.server)
+			}
+			return nil, err
+		}
+		return conn, nil
+	}
+	conn, err := take(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hold, stop := context.WithCancel(context.WithoutCancel(ctx))
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		tick := time.NewTicker(10 * time.Second)
+		defer tick.Stop()
+		for {
+			select {
+			case <-hold.Done():
+				if conn != nil {
+					_ = conn.Close(context.Background())
+				}
+				return
+			case <-tick.C:
+			}
+			if conn != nil {
+				if conn.Ping(hold) == nil {
+					continue
+				}
+				_ = conn.Close(context.Background())
+				conn = nil
+			}
+			if c, err := take(hold); err == nil {
+				conn = c
+			} else if hold.Err() == nil && lost != nil {
+				lost(err)
+			}
+		}
+	}()
+	return func() { stop(); <-done }, nil
 }

@@ -34,10 +34,15 @@ func TestGuilds(t *testing.T) {
 		t.Fatalf("create guild broadcast %+v", gotCG)
 	}
 
-	// Creating over an existing guild is refused silently.
+	// Creating over an existing guild is refused silently, and so is a
+	// number of another server's range (this is server 1: 1..6553).
 	dup := cg
 	dup.GuildID = 6
 	ch1.send(&dup)
+	far := cg
+	far.GuildID = 6554
+	wire.PutCString(far.GuildName[:], "OTHERSRV")
+	ch1.send(&far)
 
 	ch1.send(&wire.AddGuild{Header: wire.NewHeader(wire.OpAddGuild, 0), Type: 0, Value: 500, GuildIndex: 9})
 	both(wire.OpAddGuild, nil) // the dup produced nothing before this

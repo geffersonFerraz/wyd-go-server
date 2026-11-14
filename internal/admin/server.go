@@ -15,6 +15,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"log/slog"
@@ -22,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -63,6 +65,9 @@ type adminSession struct {
 	user    string
 	csrf    string
 	expires time.Time
+	// server is the server (group) whose world this login is looking at
+	// (0 = the first one). Guarded by shared.mu.
+	server int
 }
 
 type failure struct {
@@ -70,21 +75,79 @@ type failure struct {
 	first time.Time
 }
 
-// Server is the admin HTTP handler.
+// Server is the admin panel of one server (world): st works on that
+// server's world and on what every server shares (accounts, game data).
+// Several of them make one panel with Handler: the same login, and a selector
+// for the server whose characters, guilds and so on are shown.
 type Server struct {
 	cfg  Config
 	st   *store.Store
 	log  *slog.Logger
 	tmpl map[string]*template.Template
+	// servers are the servers of the panel this one is part of.
+	servers []int
 
+	*shared
+}
+
+// shared is what the panels of every server have in common.
+type shared struct {
 	mu       sync.Mutex
 	sessions map[string]*adminSession
 	failures map[string]*failure
 	pending  *pendingImport
 }
 
+// Handler is one panel for several servers: every request goes to the
+// Server of the server its login selected (the first until one is chosen).
+func Handler(panels ...*Server) http.Handler {
+	first := panels[0]
+	handlers := map[int]http.Handler{}
+	var groups []int
+	for _, p := range panels {
+		groups = append(groups, p.st.Server())
+	}
+	for _, p := range panels {
+		p.shared, p.servers = first.shared, groups
+		handlers[p.st.Server()] = p.Handler()
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := handlers[groups[0]]
+		if sess := first.currentSession(r); sess != nil {
+			first.mu.Lock()
+			if picked, ok := handlers[sess.server]; ok {
+				h = picked
+			}
+			first.mu.Unlock()
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+// selectServer is POST /server-select: the server this login looks at.
+func (s *Server) selectServer(w http.ResponseWriter, r *http.Request) {
+	n, _ := strconv.Atoi(r.PostFormValue("server"))
+	if !slices.Contains(s.servers, n) {
+		http.Error(w, "servidor desconhecido", http.StatusBadRequest)
+		return
+	}
+	sess := sessionOf(r)
+	s.mu.Lock()
+	sess.server = n
+	s.mu.Unlock()
+	s.log.Info("admin server selected", "user", sess.user, "server", n)
+	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+}
+
+// serverRow is one entry of the server selector.
+type serverRow struct {
+	Group   int
+	Current bool
+}
+
 func New(cfg Config, st *store.Store, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, st: st, log: log, sessions: map[string]*adminSession{}, failures: map[string]*failure{}}
+	s := &Server{cfg: cfg, st: st, log: log, servers: []int{st.Server()},
+		shared: &shared{sessions: map[string]*adminSession{}, failures: map[string]*failure{}}}
 	funcs := template.FuncMap{
 		"status":    statusLabel,
 		"evolution": evolutionLabel,
@@ -150,6 +213,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /login", s.loginPage)
 	mux.HandleFunc("POST /login", s.loginSubmit)
 	mux.HandleFunc("POST /logout", s.auth(s.logout))
+	mux.HandleFunc("POST /server-select", s.auth(s.selectServer))
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/accounts", http.StatusSeeOther) })
 	mux.HandleFunc("GET /accounts", s.auth(s.accountsPage))
 	mux.HandleFunc("POST /accounts", s.auth(s.createAccount))
@@ -567,7 +631,7 @@ func (s *Server) dbsrvProblem(ctx context.Context) string {
 		s.log.Error("dbsrv status", "err", err)
 		return "Não foi possível verificar o DBSRV."
 	case seen == nil || age > heartbeatMaxAge:
-		return "O DBSRV não está rodando (ou é uma versão antiga sem heartbeat). Inicie o dbsrv atualizado e tente de novo."
+		return fmt.Sprintf("O DBSRV do servidor %d não está rodando (ou é uma versão antiga sem heartbeat). Inicie o dbsrv atualizado e tente de novo.", s.st.Server())
 	case proto < store.DeliveryProtocol:
 		return "O DBSRV em execução está desatualizado. Reinicie o dbsrv com o código atual e tente de novo."
 	}
@@ -581,6 +645,14 @@ func (s *Server) page(w http.ResponseWriter, r *http.Request, code int, name str
 	data["Admin"] = sess.user
 	data["CSRF"] = sess.csrf
 	data["DBSRVWarning"] = s.dbsrvProblem(r.Context())
+	data["Server"] = s.st.Server()
+	if len(s.servers) > 1 {
+		rows := make([]serverRow, len(s.servers))
+		for i, g := range s.servers {
+			rows[i] = serverRow{Group: g, Current: g == s.st.Server()}
+		}
+		data["Servers"] = rows
+	}
 	if online, age, err := s.st.ChannelStatus(r.Context()); err == nil && age >= 0 && age <= heartbeatMaxAge {
 		data["Channels"] = channelRows(online)
 	}
@@ -673,6 +745,10 @@ func resultLabel(d store.DeliveryInfo) (string, string) {
 			return "Aguardando o jogador sair do jogo", "wait"
 		case r == "waiting_character":
 			return "Aguardando o jogador entrar com um personagem", "wait"
+		case r == "waiting_other_server":
+			return "Aguardando o jogador sair do outro servidor", "wait"
+		case strings.HasPrefix(r, "moved_to_server"):
+			return "Enviado ao servidor onde o jogador está (" + strings.TrimPrefix(r, "moved_to_server: ") + ")", "wait"
 		case strings.HasPrefix(r, "error"):
 			return "Erro, tentando de novo: " + strings.TrimPrefix(r, "error: "), "bad"
 		case time.Since(d.CreatedAt) > 10*time.Second:

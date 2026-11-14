@@ -2,6 +2,7 @@ package game_test
 
 import (
 	"context"
+	"crypto/ecdh"
 	"fmt"
 	"io"
 	"log/slog"
@@ -32,6 +33,7 @@ type chain struct {
 	st     *store.Store
 	tmAddr string   // channel 1
 	addrs  []string // every channel, index = number-1
+	key    *ecdh.PrivateKey
 }
 
 func newChain(t *testing.T) *chain { return newChainN(t, 1) }
@@ -73,7 +75,12 @@ func newChainN(t *testing.T, n int) *chain {
 			t.Fatal(err)
 		}
 	}
-	c := &chain{t: t, st: st}
+	// The channels run the secure transport, as in production.
+	key, err := protocol.GenerateTransportKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &chain{t: t, st: st, key: key}
 	c.seed("PLAYERA", "pwa", base[0], "Alpha")
 	c.seed("PLAYERB", "pwb", base[2], "Bravo")
 
@@ -82,7 +89,7 @@ func newChainN(t *testing.T, n int) *chain {
 	if err != nil {
 		t.Fatal(err)
 	}
-	layout := cluster.Config{ServerList: cluster.ServerList{Group: 1, PublicIP: "127.0.0.1", StatusURL: "http://127.0.0.1/serv00.htm"}}
+	layout := cluster.Server{Group: 1, PublicIP: "127.0.0.1", StatusURL: "http://127.0.0.1/serv00.htm"}
 	for i := 1; i <= n; i++ {
 		layout.Channels = append(layout.Channels, cluster.Channel{Number: i, IP: fmt.Sprintf("127.0.0.%d", i), Port: 8280 + i})
 	}
@@ -114,6 +121,7 @@ func newChainN(t *testing.T, n int) *chain {
 			t.Fatal(err)
 		}
 		cfg.ListenIP, cfg.Channel, cfg.Cluster = chn.IP, chn.Number, layout
+		cfg.TransportKey = key
 		host, port, _ := net.SplitHostPort(dbLn.Addr().String())
 		cfg.DBIP = host
 		fmt.Sscan(port, &cfg.DBPort)
@@ -195,8 +203,8 @@ func (ch *chain) connectTo(n int) *client {
 		ch.t.Fatal(err)
 	}
 	ch.t.Cleanup(func() { nc.Close() })
-	cl := &client{t: ch.t, nc: nc, c: protocol.NewDialedConn(nc)}
-	if err := cl.c.Hello(); err != nil {
+	cl := &client{t: ch.t, nc: nc, c: protocol.NewDialedSecureConn(nc)}
+	if err := cl.c.ClientHandshake(ch.key.PublicKey()); err != nil {
 		ch.t.Fatal(err)
 	}
 	return cl

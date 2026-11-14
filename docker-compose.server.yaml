@@ -1,0 +1,79 @@
+# Um servidor (mundo) a mais, em outra máquina: só o DBSRV e os canais dele.
+# O PostgreSQL e o painel admin são os da máquina principal
+# (docker-compose.yaml) e servem todos os servidores. Ver "Servidores" no
+# README.
+#
+#   docker compose -f docker-compose.server.yaml up -d --build
+#
+# No .env desta máquina:
+#   WYD_SERVER=2                  o group deste servidor no tmsrv.yaml
+#   DATABASE_URL=postgres://dbsrv:<senha>@<IP privado da máquina principal>:5432/dbsrv
+#   TMSRV_TRANSPORT_KEY=...       a mesma da máquina principal
+#
+# O tmsrv.yaml é o mesmo arquivo da máquina principal. Cada canal do servidor
+# é um serviço tmsrvN abaixo (copie um bloco para adicionar), com o IP, a
+# porta e o "-channel N" iguais aos do yaml; o dbsrv usa o IP de "dbsrv".
+
+name: wyd-server
+
+x-env: &env
+  TZ: America/Sao_Paulo
+  WYD_SERVER: ${WYD_SERVER:?defina WYD_SERVER com o group deste servidor no tmsrv.yaml}
+  DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL com o banco da máquina principal}
+
+x-tmsrv: &tmsrv
+  build: { context: ., args: { CMD: tmsrv } }
+  image: wyd-tmsrv
+  user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+  restart: unless-stopped
+  # Tempo para salvar os jogadores no DBSRV ao parar.
+  stop_grace_period: 30s
+  environment:
+    <<: *env
+    TMSRV_TRANSPORT_KEY: ${TMSRV_TRANSPORT_KEY:?use a mesma chave da máquina principal (ver docs/transporte-seguro.md)}
+  volumes:
+    - ./config:/app/config:ro
+    - ./logs:/app/logs
+    - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+  depends_on:
+    dbsrv: { condition: service_started }
+
+services:
+  dbsrv:
+    build: { context: ., args: { CMD: dbsrv } }
+    image: wyd-dbsrv
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    # Só a TMSRV conecta no DBSRV, pela rede wyd: a porta não é publicada.
+    command: ["-config", "tmsrv.yaml"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.11 }
+    environment:
+      <<: *env
+      DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
+    volumes:
+      - ./logs:/app/logs
+      - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+
+  tmsrv1:
+    <<: *tmsrv
+    command: ["-channel", "1"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.21 }
+    ports:
+      - "8281:8281"
+
+  tmsrv2:
+    <<: *tmsrv
+    command: ["-channel", "2"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.22 }
+    ports:
+      - "8282:8282"
+
+networks:
+  wyd:
+    ipam:
+      config:
+        - subnet: 172.30.87.0/24
+          gateway: 172.30.87.1

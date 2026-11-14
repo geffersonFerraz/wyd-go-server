@@ -20,8 +20,12 @@ const (
 type Config struct {
 	Listen string // ":7514"
 
+	// Group is the server (group) this DBSRV serves: new guilds must be in
+	// its range of guild numbers (cluster.GuildRange). 0 counts as 1.
+	Group int
+
 	// ChannelIPs[i] is the source IP channel i+1 connects from (the
-	// channels section of tmsrv.yaml; formerly serverlist.txt). Several
+	// channels of this server in tmsrv.yaml; formerly serverlist.txt). Several
 	// channels may share an IP (tests); the first free one is used.
 	ChannelIPs []string
 

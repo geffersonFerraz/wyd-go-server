@@ -28,7 +28,7 @@ func scanCityOwner(r pgx.CollectableRow) (CityOwner, error) {
 
 // CityOwners lists the cities set in the panel.
 func (s *Store) CityOwners(ctx context.Context) ([]CityOwner, error) {
-	rows, _ := s.pool.Query(ctx, `SELECT channel, city, guild_id, changed_by, changed_at FROM gamedata.city_owners ORDER BY channel, city`)
+	rows, _ := s.pool.Query(ctx, `SELECT channel, city, guild_id, changed_by, changed_at FROM city_owners ORDER BY channel, city`)
 	return pgx.CollectRows(rows, scanCityOwner)
 }
 
@@ -44,7 +44,7 @@ func (s *Store) SeedCityOwners(ctx context.Context, owners map[int]int, by strin
 			continue
 		}
 		for channel := 1; channel <= MaxChannel; channel++ {
-			tag, err := s.pool.Exec(ctx, `INSERT INTO gamedata.city_owners (channel, city, guild_id, changed_by) VALUES ($1, $2, $3, $4)
+			tag, err := s.pool.Exec(ctx, `INSERT INTO city_owners (channel, city, guild_id, changed_by) VALUES ($1, $2, $3, $4)
 				ON CONFLICT (channel, city) DO NOTHING`, channel, city, guild, by)
 			if err != nil {
 				return added, err
@@ -61,7 +61,7 @@ func (s *Store) SetCityOwner(ctx context.Context, channel, city, guildID int, by
 	if channel < 1 || channel > MaxChannel || city < 0 || city >= MaxCity || guildID < 0 || guildID >= 65535 {
 		return fmt.Errorf("channel %d / city %d / guild %d out of range", channel, city, guildID)
 	}
-	_, err := s.pool.Exec(ctx, `INSERT INTO gamedata.city_owners (channel, city, guild_id, changed_by) VALUES ($1, $2, $3, $4)
+	_, err := s.pool.Exec(ctx, `INSERT INTO city_owners (channel, city, guild_id, changed_by) VALUES ($1, $2, $3, $4)
 		ON CONFLICT (channel, city) DO UPDATE SET guild_id = EXCLUDED.guild_id, changed_by = EXCLUDED.changed_by, changed_at = now()`,
 		channel, city, guildID, by)
 	return err

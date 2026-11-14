@@ -655,7 +655,7 @@ other values (drop rates, exp bonus, refine rates, ...) move to
 
 ## Client protocol
 
-- Listen address and DBSRV address from `tmsrv.yaml` (`network.*`; the C++ read `serverip.txt` / `dataserver.txt`). Max packet 8096 bytes.
+- Listen address and DBSRV address from `tmsrv.yaml` (`servers[].channels` and `servers[].dbsrv`; the C++ read `serverip.txt` / `dataserver.txt`). Max packet 8096 bytes.
 - Same framing/cipher as the DB link (`internal/protocol`): INITCODE hello
   `0x1F11F311`, 12-byte header, KeyTable cipher keyed by header byte 2,
   random key on send (`Rand() % 256`). `CUser::Keys[16]`/`GetHashKey` exist

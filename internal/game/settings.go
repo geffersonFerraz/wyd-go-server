@@ -19,19 +19,18 @@ import (
 )
 
 // Settings is tmsrv.yaml, the only source of the Go server's options: the
-// network addresses (formerly serverip.txt / dataserver.txt), the channels
-// (formerly DBSRV's serverlist.txt; also the source of the client's
+// servers with their DBSRV address and channels (formerly serverip.txt,
+// dataserver.txt and DBSRV's serverlist.txt; also the source of the client's
 // serverlist.bin) and the gameplay values that used to be fixed in code or
-// in the C++ gameconfig.txt. One file describes every channel; each TMSRV
-// picks its own with -channel.
+// in the C++ gameconfig.txt. One file describes every server and channel;
+// each TMSRV picks its own with -server and -channel.
 //
 // Every key must be present in the file: nothing silently falls back to a
 // value in the code (LoadSettings names the missing keys).
 type Settings struct {
-	Limits     LimitSettings      `yaml:"limits"`
-	Network    NetworkSettings    `yaml:"network"`
-	ServerList cluster.ServerList `yaml:"serverlist"`
-	Channels   []cluster.Channel  `yaml:"channels"`
+	Limits LimitSettings `yaml:"limits"`
+	// Servers: every server (group, DBSRV, channels) the client can reach.
+	Servers []cluster.Server `yaml:"servers"`
 	// ChangeChannel: in-game channel change (client "srv507").
 	ChangeChannel ChangeChannelSettings `yaml:"change_channel"`
 	NewbieZone    int                   `yaml:"newbie_zone"`
@@ -165,13 +164,6 @@ type HonorItemSettings struct {
 	Price   int      `yaml:"price"`
 }
 
-// NetworkSettings is where DBSRV is. Where each TMSRV listens comes from
-// its entry in channels.
-type NetworkSettings struct {
-	DBSRVIP   string `yaml:"dbsrv_ip"`
-	DBSRVPort int    `yaml:"dbsrv_port"`
-}
-
 // ChangeChannelSettings tunes the in-game channel change.
 type ChangeChannelSettings struct {
 	// CooldownSeconds: minimum time between two requests of a player.
@@ -241,10 +233,9 @@ func CppSettings() Settings {
 	return Settings{
 		Cities:    []CitySettings{{City: 0}, {City: 1}, {City: 2}, {City: 3}, {City: 4}},
 		InitItems: []InitItemSettings{}, NPCEvents: []NPCEventSettings{}, DailyReward: []DailyRewardSettings{}, Roulette: []RouletteSettings{},
-		Network: NetworkSettings{DBSRVIP: "127.0.0.1", DBSRVPort: 7514},
-		ServerList: cluster.ServerList{Group: 1, PublicIP: "127.0.0.1",
-			StatusURL: "http://127.0.0.1/serv00.htm"},
-		Channels:        []cluster.Channel{{Number: 1, IP: "127.0.0.1", Port: 8281}},
+		Servers: []cluster.Server{{Group: 1, PublicIP: "127.0.0.1", StatusURL: "http://127.0.0.1/serv00.htm",
+			DBSRV:    cluster.DBSRV{IP: "127.0.0.1", Port: 7514},
+			Channels: []cluster.Channel{{Number: 1, IP: "127.0.0.1", Port: 8281}}}},
 		ChangeChannel:   ChangeChannelSettings{CooldownSeconds: 10},
 		NewbieZone:      35,
 		StatSapphire:    30,
@@ -324,13 +315,6 @@ func missingKeys(t reflect.Type, tree map[string]any, prefix string) []string {
 func (s *Settings) validate() error {
 	if err := s.Limits.validate(); err != nil {
 		return err
-	}
-	n := &s.Network
-	if n.DBSRVIP == "" {
-		return errors.New("network.dbsrv_ip is empty")
-	}
-	if n.DBSRVPort < 1 || n.DBSRVPort > 65535 {
-		return fmt.Errorf("network.dbsrv_port must be 1..65535, got %d", n.DBSRVPort)
 	}
 	cl := s.Cluster()
 	if err := cl.Validate(); err != nil {
@@ -516,9 +500,9 @@ func (s *Settings) honorMarketItems() []HonorItem {
 	return out
 }
 
-// Cluster is the channel layout (shared with DBSRV and the admin panel).
+// Cluster is the server layout (shared with DBSRV and the admin panel).
 func (s *Settings) Cluster() cluster.Config {
-	return cluster.Config{ServerList: s.ServerList, Channels: s.Channels}
+	return cluster.Config{Servers: s.Servers}
 }
 
 // ticks converts seconds to 500 ms server ticks.
