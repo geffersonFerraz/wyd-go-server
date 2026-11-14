@@ -1,7 +1,8 @@
 # Release do servidor: ao criar uma tag v* (git tag v1.2.3 && git push origin v1.2.3).
 #
 # - Binários linux/amd64 (dbsrv, tmsrv, admin, xml-import) anexados à release.
-# - Imagens ghcr.io/<dono>/wyd-{dbsrv,tmsrv,admin} com as tags <versão> e latest.
+# - Imagens ghcr.io/<dono>/wyd-{dbsrv,tmsrv,admin} com as tags <versão> (a tag sem
+#   o "v") e latest; em tags semver (v1.2.3), também <major>.<minor>.
 #
 # Tags com hífen (v1.2.3-rc1) viram pre-release e não movem a latest.
 name: release
@@ -75,10 +76,13 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ghcr.io/${{ github.repository_owner }}/wyd-${{ matrix.cmd }}
-          flavor: latest=auto
+          # Qualquer tag v*, mesmo fora do semver (v1.0.0.0): a versão é a tag sem o "v".
+          # {{major}}.{{minor}} só sai quando a tag é semver.
+          flavor: latest=false
           tags: |
-            type=semver,pattern={{version}}
+            type=match,pattern=^v(.+)$,group=1
             type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
           labels: |
             org.opencontainers.image.title=wyd-${{ matrix.cmd }}
       - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
@@ -126,5 +130,10 @@ jobs:
 
           \`wyd-server-$TAG-linux-amd64.tar.gz\`: dbsrv, tmsrv, admin e xml-import para Linux amd64, com \`config/\` e \`tmsrv.yaml\`.
           EOF
-          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
-            --title "$TAG" --notes-file notes.md --generate-notes $prerelease
+          # A release pode já existir (criada pela tela do GitHub): só anexa os arquivos.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG" --notes-file notes.md --generate-notes $prerelease
+          fi
