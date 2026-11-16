@@ -60,10 +60,28 @@ x-tmsrv: &tmsrv
     - ./logs:/app/logs
     - ./tmsrv.yaml:/app/tmsrv.yaml:ro
   depends_on:
+    permissions: { condition: service_completed_successfully }
     postgres: { condition: service_healthy }
     dbsrv: { condition: service_started }
 
 services:
+  # Roda como root antes dos outros e passa logs/, backups/, config/,
+  # guildmarks/ e .admin-state/ para HOST_UID:HOST_GID. As pastas que faltam
+  # o próprio Docker cria ao montar, mas como root, e os containers (que rodam
+  # como HOST_UID) não conseguiriam gravar nelas ("permission denied").
+  permissions:
+    image: postgres:17-alpine
+    user: "0:0"
+    network_mode: none
+    restart: "no"
+    volumes:
+      - ./logs:/w/logs
+      - ./backups:/w/backups
+      - ./config:/w/config
+      - ./guildmarks:/w/guildmarks
+      - ./.admin-state:/w/.admin-state
+    entrypoint: ["chown", "-R", "${HOST_UID:-1000}:${HOST_GID:-1000}", "/w/logs", "/w/backups", "/w/config", "/w/guildmarks", "/w/.admin-state"]
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -105,6 +123,7 @@ services:
       - ./logs:/app/logs
       - ./tmsrv.yaml:/app/tmsrv.yaml:ro
     depends_on:
+      permissions: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
 
   # DBSRV do servidor 2, na mesma máquina e no mesmo banco (schema s2).
@@ -122,6 +141,7 @@ services:
       - ./logs:/app/logs
       - ./tmsrv.yaml:/app/tmsrv.yaml:ro
     depends_on:
+      permissions: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
 
   tmsrv1:
@@ -144,6 +164,7 @@ services:
     <<: *tmsrv
     command: ["-channel", "1", "-server", "2"]
     depends_on:
+      permissions: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
       dbsrv2: { condition: service_started }
     networks:
@@ -155,6 +176,7 @@ services:
     <<: *tmsrv
     command: ["-channel", "2", "-server", "2"]
     depends_on:
+      permissions: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
       dbsrv2: { condition: service_started }
     networks:
@@ -200,6 +222,7 @@ services:
           sleep 3600
         done
     depends_on:
+      permissions: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
 
   # Painel web da equipe, publicado só em 127.0.0.1 (ADMIN_LISTEN). Senha:
@@ -232,6 +255,7 @@ services:
       - ./.admin-state:/app/.admin-state
       - ./tmsrv.yaml:/app/tmsrv.yaml
     depends_on:
+      permissions: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
 
 networks:

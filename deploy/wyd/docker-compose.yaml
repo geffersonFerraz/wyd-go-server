@@ -1,0 +1,271 @@
+# PostgreSQL + DBSRV + TMSRV + painel admin.
+#
+#   docker compose up -d --build    # build and start everything (data persists in the dbsrv-pgdata volume)
+#   docker compose up -d postgres   # only the database
+#   docker compose down             # stop, keep data
+#   docker compose down -v          # stop and DELETE all data
+#
+# Logs: além do console (docker compose logs), cada programa grava um arquivo
+# por dia em ./logs (dbsrv-, tmsrvN-, admin-AAAA-MM-DD.log; 90 dias).
+#
+# Rede própria "wyd" (172.30.87.0/24), IP fixo por container:
+#   172.30.87.10 postgres   172.30.87.11 dbsrv (servidor 1)   172.30.87.12 dbsrv2 (servidor 2)
+#   172.30.87.13 admin      172.30.87.14 backup
+#   172.30.87.21..30 tmsrv1..tmsrv10 (um container por canal, de todos os servidores)
+#
+# Canais: a fonte é a lista "servers" do tmsrv.yaml. Cada canal é um serviço
+# tmsrvN abaixo (copie um bloco para adicionar), com o IP, a porta e o
+# "-channel N" iguais aos do yaml. O DBSRV reconhece o canal pelo IP de
+# origem, e o serverlist.bin (http://<host>/serverlist.bin) leva a porta de
+# cada um. O teste internal/cluster TestComposeMatchesSettings confere que
+# este arquivo e o tmsrv.yaml batem. Ao renomear/remover canais:
+#   docker compose up -d --remove-orphans
+#
+# Mais de um servidor (mundo): todos usam este PostgreSQL e este admin; cada
+# servidor tem o seu dbsrv e os seus tmsrv, com "-server <group>". Os dos
+# outros servidores rodam em outra máquina com docker-compose.server.yaml.
+# O passo a passo está em "Servidores" no README.
+#
+# Portas publicadas no host:
+#   8281, 8282... tmsrvN (jogadores, abertas)   80 admin público: servNN.htm, serverlist.bin, itemlist.bin, manifest.json e marcas de guilda (aberta)
+#   8080 painel admin (127.0.0.1)               5432 postgres (127.0.0.1)       7514 dbsrv: não publicada
+#
+# Connection strings from the host (defaults; override in .env, see .env.example):
+#   app:   postgres://dbsrv:dbsrv@localhost:5432/dbsrv
+#   tests: postgres://dbsrv:dbsrv@localhost:5432/dbsrv_test   (wiped by every test run)
+
+name: dbsrv
+
+# Imagens publicadas pelo workflow release no GHCR; WYD_VERSION no .env escolhe
+# a versão. Para atualizar: docker compose pull && docker compose up -d.
+# Para rodar o código desta pasta em vez delas:
+#   docker compose -f docker-compose.yaml -f docker-compose.build.yaml up -d --build
+
+# Tudo o que os canais têm em comum; cada tmsrvN só muda IP, porta e canal.
+x-tmsrv: &tmsrv
+  image: ghcr.io/geffersonferraz/wyd-tmsrv:${WYD_VERSION:-1.0.2}
+  user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+  restart: unless-stopped
+  # Tempo para salvar os jogadores no DBSRV ao parar.
+  stop_grace_period: 30s
+  environment:
+    # Horários do jogo (Arena, recompensa diária) seguem o relógio local.
+    TZ: America/Sao_Paulo
+    DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
+    # Chave privada do transporte seguro com o cliente, igual em todos os
+    # canais. Crie com: go run ./cmd/admin transport-key -env .env -pub <pasta do jogo>/serverkey.txt
+    TMSRV_TRANSPORT_KEY: ${TMSRV_TRANSPORT_KEY:?crie a chave com "go run ./cmd/admin transport-key -env .env" (ver docs/transporte-seguro.md)}
+  volumes:
+    - ./config:/app/config:ro
+    - ./logs:/app/logs
+    - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+  depends_on:
+    permissions: { condition: service_completed_successfully }
+    postgres: { condition: service_healthy }
+    dbsrv: { condition: service_started }
+
+services:
+  # Roda como root antes dos outros e passa logs/, backups/, config/,
+  # guildmarks/ e .admin-state/ para HOST_UID:HOST_GID. As pastas que faltam
+  # o próprio Docker cria ao montar, mas como root, e os containers (que rodam
+  # como HOST_UID) não conseguiriam gravar nelas ("permission denied").
+  permissions:
+    image: postgres:17-alpine
+    user: "0:0"
+    network_mode: none
+    restart: "no"
+    volumes:
+      - ./logs:/w/logs
+      - ./backups:/w/backups
+      - ./config:/w/config
+      - ./guildmarks:/w/guildmarks
+      - ./.admin-state:/w/.admin-state
+    entrypoint: ["chown", "-R", "${HOST_UID:-1000}:${HOST_GID:-1000}", "/w/logs", "/w/backups", "/w/config", "/w/guildmarks", "/w/.admin-state"]
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dbsrv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dbsrv}
+      POSTGRES_DB: ${POSTGRES_DB:-dbsrv}
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    networks:
+      wyd: { ipv4_address: 172.30.87.10 }
+    ports:
+      # Só local: testes e ferramentas rodando no host.
+      # POSTGRES_BIND: o IP privado desta máquina, quando o dbsrv de outro
+      # servidor conecta de outra VM (nunca um IP público).
+      - "${POSTGRES_BIND:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  dbsrv:
+    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.2}
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    # Só a TMSRV conecta no DBSRV, pela rede wyd: a porta não é publicada.
+    # Escuta no endereço "dbsrv" do servidor no tmsrv.yaml (este IP).
+    command: ["-config", "tmsrv.yaml", "-server", "1"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.11 }
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
+      DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
+    volumes:
+      - ./logs:/app/logs
+      - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+    depends_on:
+      permissions: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+
+  # DBSRV do servidor 2, na mesma máquina e no mesmo banco (schema s2).
+  dbsrv2:
+    image: ghcr.io/geffersonferraz/wyd-dbsrv:${WYD_VERSION:-1.0.2}
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    command: ["-config", "tmsrv.yaml", "-server", "2"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.12 }
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
+      DBSRV_MASTER_PASSWORD_HASH: ${DBSRV_MASTER_PASSWORD_HASH:-}
+    volumes:
+      - ./logs:/app/logs
+      - ./tmsrv.yaml:/app/tmsrv.yaml:ro
+    depends_on:
+      permissions: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+
+  tmsrv1:
+    <<: *tmsrv
+    command: ["-channel", "1", "-server", "1"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.21 }
+    ports:
+      - "8081:8081"
+
+  tmsrv2:
+    <<: *tmsrv
+    command: ["-channel", "2", "-server", "1"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.22 }
+    ports:
+      - "8082:8082"
+
+  tmsrv3:
+    <<: *tmsrv
+    command: ["-channel", "1", "-server", "2"]
+    depends_on:
+      permissions: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      dbsrv2: { condition: service_started }
+    networks:
+      wyd: { ipv4_address: 172.30.87.23 }
+    ports:
+      - "8083:8083"
+
+  tmsrv4:
+    <<: *tmsrv
+    command: ["-channel", "2", "-server", "2"]
+    depends_on:
+      permissions: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      dbsrv2: { condition: service_started }
+    networks:
+      wyd: { ipv4_address: 172.30.87.24 }
+    ports:
+      - "8084:8084"
+
+  # Backup diário do banco em ./backups (dbsrv-AAAA-MM-DD.dump, formato
+  # custom do pg_dump). Confere a cada hora se o backup do dia já existe; o
+  # primeiro sai ao subir. Os antigos não são apagados automaticamente.
+  # Restaurar (substitui o que estiver no banco):
+  #   docker compose stop dbsrv dbsrv2 admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
+  #   docker compose exec -T postgres pg_restore -U dbsrv -d dbsrv --clean --if-exists < backups/dbsrv-AAAA-MM-DD.dump
+  #   docker compose start dbsrv dbsrv2 admin tmsrv1 tmsrv2 tmsrv3 tmsrv4
+  backup:
+    image: postgres:17-alpine
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    networks:
+      wyd: { ipv4_address: 172.30.87.14 }
+    environment:
+      PGHOST: 172.30.87.10
+      PGUSER: ${POSTGRES_USER:-dbsrv}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-dbsrv}
+      PGDATABASE: ${POSTGRES_DB:-dbsrv}
+      TZ: America/Sao_Paulo
+    volumes:
+      - ./backups:/backups
+    # Um .tmp de uma tentativa que falhou é sobrescrito na seguinte.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          f=/backups/$$PGDATABASE-$$(date +%F).dump
+          if [ ! -s "$$f" ]; then
+            if pg_dump -Fc -f "$$f.tmp" && mv "$$f.tmp" "$$f"; then
+              echo "backup: $$f"
+            else
+              echo "backup failed"
+            fi
+          fi
+          sleep 3600
+        done
+    depends_on:
+      permissions: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+
+  # Painel web da equipe, publicado só em 127.0.0.1 (ADMIN_LISTEN). Senha:
+  # ADMIN_PASSWORD_HASH no .env, ou a gerada em .admin-state/.admin-password.
+  # A porta pública (PUBLIC_PORT, padrão 80, sem login) serve ao cliente do
+  # jogo o servNN.htm (online por canal, URL do serverlist.bin), o
+  # serverlist.bin (gerado do tmsrv.yaml), o itemlist.bin (guardado no banco),
+  # a página do launcher (/launcher/)
+  # e as marcas de guilda.
+  admin:
+    image: ghcr.io/geffersonferraz/wyd-admin:${WYD_VERSION:-1.0.2}
+    user: ${HOST_UID:-1000}:${HOST_GID:-1000}
+    restart: unless-stopped
+    command: ["-listen", "172.30.87.13:8085", "-password-file", ".admin-state/.admin-password", "-public-listen", "172.30.87.13:80", "-config", "tmsrv.yaml"]
+    networks:
+      wyd: { ipv4_address: 172.30.87.13 }
+    ports:
+      - "${ADMIN_LISTEN:-127.0.0.1:8085}:8085"
+      # Host PUBLIC_PORT -> porta 80 do container (o -public-listen acima).
+      - "${PUBLIC_PORT:-8080}:80"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dbsrv}:${POSTGRES_PASSWORD:-dbsrv}@172.30.87.10:5432/${POSTGRES_DB:-dbsrv}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
+    volumes:
+      - ./config:/app/config
+      - ./guildmarks:/app/guildmarks
+      - ./logs:/app/logs
+      - ./.admin-state:/app/.admin-state
+      - ./tmsrv.yaml:/app/tmsrv.yaml
+    depends_on:
+      permissions: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+
+networks:
+  wyd:
+    ipam:
+      config:
+        - subnet: 172.30.87.0/24
+          gateway: 172.30.87.1
+
+volumes:
+  pgdata:
+    name: dbsrv-pgdata
